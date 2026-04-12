@@ -1,0 +1,21 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Godot import files
+*.import
+
+# Claude Code
+.claude/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# Temp files
+*.tmp

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" uid="uid://ds7ngwusykwmy" path="res://assets/art/Jun_card1~4.png" id="1_art"]
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/swap_effect.gd" id="3_swap"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_art"]
+atlas = ExtResource("1_art")
+region = Rect2(1784, 818, 701, 615)
+
+[sub_resource type="Resource" id="Effect_swap"]
+script = ExtResource("3_swap")
+value = 1
+
+[resource]
+script = ExtResource("1_script")
+card_name = "밑장 빼기"
+cost = 0
+description = "1장 뽑고, 손에서 1장 버림"
+card_type = 1
+artwork = SubResource("AtlasTexture_art")
+effects = Array[ExtResource("2_base")]([SubResource("Effect_swap")])
