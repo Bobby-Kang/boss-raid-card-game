@@ -7,7 +7,11 @@ signal boss_hp_changed(current: int, max_hp: int)
 signal boss_block_changed(block: int)
 
 var gold_manager: GoldManager
-var mana_manager: ManaManager
+var ap_manager: ApManager
+
+# 카드 조작 Callable (main_scene에서 등록)
+var draw_cards: Callable   # func(count: int) -> void
+var discard_cards: Callable # func(count: int) -> void (선택 UI 포함)
 
 var player_hp: int = 50
 var player_max_hp: int = 50

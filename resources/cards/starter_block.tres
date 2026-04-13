@@ -1,22 +1,16 @@
-[gd_resource type="Resource" script_class="CardData" format=3]
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://dxb5mvkfuqgl"]
 
-[ext_resource type="Texture2D" uid="uid://ds7ngwusykwmy" path="res://assets/art/Jun_card1~4.png" id="1_art"]
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://cvxpcm6la08sn" path="res://scripts/cards/effects/block_effect.gd" id="3_block"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_art"]
-atlas = ExtResource("1_art")
-region = Rect2(1836, 72, 580, 573)
-
 [sub_resource type="Resource" id="Effect_block"]
 script = ExtResource("3_block")
-value = 1
+value = 3
 
 [resource]
 script = ExtResource("1_script")
-card_name = "부적 방패"
-cost = 0
+card_name = "막기"
 card_type = 1
-artwork = SubResource("AtlasTexture_art")
+cost = 1
 effects = Array[ExtResource("2_base")]([SubResource("Effect_block")])

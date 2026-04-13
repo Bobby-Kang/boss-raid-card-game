@@ -1,27 +1,15 @@
-[gd_resource type="Resource" script_class="CardData" format=3]
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://bfnckx27gsb20"]
 
-[ext_resource type="Texture2D" uid="uid://ds7ngwusykwmy" path="res://assets/art/Jun_card1~4.png" id="1_art"]
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://c323gvneknc4m" path="res://scripts/cards/effects/damage_effect.gd" id="3_damage"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_b23t2"]
-atlas = ExtResource("1_art")
-region = Rect2(117, 56, 2599, 1425)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_art"]
-atlas = SubResource("AtlasTexture_b23t2")
-region = Rect2(405, 31, 653, 535)
-
 [sub_resource type="Resource" id="Effect_damage"]
 script = ExtResource("3_damage")
-value = 1
+value = 2
 
 [resource]
 script = ExtResource("1_script")
-card_name = "화염부"
-cost = 0
-description = "장전 후 발동 시 1 피해"
-card_type = 0
-artwork = SubResource("AtlasTexture_art")
+card_name = "베기"
+cost = 1
 effects = Array[ExtResource("2_base")]([SubResource("Effect_damage")])
