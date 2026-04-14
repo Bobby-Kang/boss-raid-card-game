@@ -268,7 +268,7 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 	var num_label := Label.new()
 	num_label.text = str(index)
 	num_label.custom_minimum_size = Vector2(18, 0)
-	num_label.add_theme_font_size_override("font_size", 11)
+	num_label.add_theme_font_size_override("font_size", 14)
 	num_label.add_theme_color_override("font_color", Color(1, 0.85, 0.3, 1))
 	num_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(num_label)
@@ -290,14 +290,14 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 
 	var cost_lbl := Label.new()
 	cost_lbl.text = "[%d]" % card.data.cost
-	cost_lbl.add_theme_font_size_override("font_size", 10)
+	cost_lbl.add_theme_font_size_override("font_size", 13)
 	cost_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 0.4, 1))
 	cost_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(cost_lbl)
 
 	var name_lbl := Label.new()
 	name_lbl.text = card.data.card_name
-	name_lbl.add_theme_font_size_override("font_size", 10)
+	name_lbl.add_theme_font_size_override("font_size", 13)
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(name_lbl)

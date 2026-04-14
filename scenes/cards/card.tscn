@@ -27,12 +27,12 @@ corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
 [node name="Card" type="Control" unique_id=1908339420]
-custom_minimum_size = Vector2(120, 170)
+custom_minimum_size = Vector2(144, 204)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 120.0
-offset_bottom = 170.0
-pivot_offset = Vector2(60, 85)
+offset_right = 144.0
+offset_bottom = 204.0
+pivot_offset = Vector2(72, 102)
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("1_script")
@@ -65,10 +65,11 @@ theme_override_constants/separation = 0
 
 [node name="ArtworkContainer" type="PanelContainer" parent="CardFront/VBox" unique_id=932541393]
 clip_contents = true
-custom_minimum_size = Vector2(0, 88)
+custom_minimum_size = Vector2(0, 95)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.7
 
 [node name="ArtworkArea" type="TextureRect" parent="CardFront/VBox/ArtworkContainer" unique_id=1199956853]
 unique_name_in_owner = true
@@ -81,7 +82,7 @@ stretch_mode = 6
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.0
+size_flags_stretch_ratio = 1.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_info")
 
 [node name="VBox" type="VBoxContainer" parent="CardFront/VBox/InfoPanel" unique_id=761983347]
@@ -93,7 +94,7 @@ unique_name_in_owner = true
 clip_contents = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1, 0.08, 0.06, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 14
 text = "카드 이름"
 horizontal_alignment = 1
 
@@ -106,7 +107,7 @@ clip_contents = true
 custom_minimum_size = Vector2(1, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.12, 0.1, 1)
-theme_override_font_sizes/font_size = 9
+theme_override_font_sizes/font_size = 12
 text = "카드 효과 설명"
 autowrap_mode = 3
 
@@ -114,7 +115,7 @@ autowrap_mode = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.22, 0.22, 1)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 11
 text = "공격"
 horizontal_alignment = 2
 
@@ -123,19 +124,19 @@ layout_mode = 2
 
 [node name="CostBg" type="ColorRect" parent="CardFront/CostBadge" unique_id=187928145]
 layout_mode = 0
-offset_left = 93.0
+offset_left = 117.0
 offset_top = -1.0
-offset_right = 118.0
-offset_bottom = 22.0
+offset_right = 143.0
+offset_bottom = 24.0
 color = Color(0.1, 0.1, 0.1, 0.9)
 
 [node name="CostLabel" type="Label" parent="CardFront/CostBadge" unique_id=956575826]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 93.0
+offset_left = 117.0
 offset_top = -1.0
-offset_right = 118.0
-offset_bottom = 22.0
+offset_right = 143.0
+offset_bottom = 24.0
 theme_override_colors/font_color = Color(1, 0.85, 0.1, 1)
 theme_override_font_sizes/font_size = 12
 text = "0"

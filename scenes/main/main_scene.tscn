@@ -8,11 +8,11 @@
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_active"]
 bg_color = Color(0.08, 0.12, 0.2, 0.85)
-border_color = Color(0.3, 0.65, 1.0, 0.9)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
+border_color = Color(0.3, 0.65, 1, 0.9)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -400,7 +400,6 @@ horizontal_alignment = 1
 [node name="HandBelt" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone/ActiveZoneVBox" unique_id=1565481536]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 1
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
@@ -408,7 +407,7 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.9
+size_flags_stretch_ratio = 1.2
 mouse_filter = 1
 script = ExtResource("5_dropzone")
 zone_type = 1
@@ -422,7 +421,7 @@ theme_override_constants/separation = 4
 [node name="PipeTitleLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel/PipeVBox" unique_id=755901234]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 14
 text = "타임라인 파이프"
 horizontal_alignment = 1
 
@@ -431,7 +430,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
-vertical_scroll_mode = 1
 
 [node name="PipeQueue" type="VBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel/PipeVBox/PipeScroll" unique_id=1271890705]
 unique_name_in_owner = true
@@ -441,8 +439,8 @@ theme_override_constants/separation = 4
 
 [node name="QueueCardHolder" type="Control" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel" unique_id=664475237]
 unique_name_in_owner = true
-layout_mode = 2
 visible = false
+layout_mode = 2
 mouse_filter = 2
 
 [node name="EndTurnOverlay" parent="." unique_id=1313821718 instance=ExtResource("3_overlay")]
