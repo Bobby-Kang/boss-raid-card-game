@@ -365,62 +365,25 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "턴 종료"
 
-[node name="CardDeck" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones" unique_id=210260485]
+[node name="TimelineWrapper" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones" unique_id=210260485]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.8
-
-[node name="DeckLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/CardDeck" unique_id=905517015]
-unique_name_in_owner = true
-layout_mode = 2
-text = "카드 덱"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="DeckCardHolder" type="Control" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/CardDeck" unique_id=1565481536]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-
-[node name="DiscardPile" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones" unique_id=1898512105]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.4
-mouse_filter = 1
 script = ExtResource("5_dropzone")
 zone_type = 1
 
-[node name="DiscardLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/DiscardPile" unique_id=1660471541]
-unique_name_in_owner = true
-layout_mode = 2
-text = "버린 카드 더미"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="DiscardCardHolder" type="Control" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/DiscardPile" unique_id=625212740]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-
-[node name="DrawPile" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones" unique_id=1271890705]
+[node name="TimelineScroll" type="ScrollContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelineWrapper" unique_id=905517015]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.4
+size_flags_vertical = 3
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 0
 
-[node name="DrawPileLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/DrawPile" unique_id=1215589097]
+[node name="TimelineBelt" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelineWrapper/TimelineScroll" unique_id=1565481536]
 unique_name_in_owner = true
 layout_mode = 2
-text = "뽑을 카드
-0장"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="DrawPileCardHolder" type="Control" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/DrawPile" unique_id=664475237]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
 
 [node name="EndTurnOverlay" parent="." unique_id=1313821718 instance=ExtResource("3_overlay")]
 unique_name_in_owner = true

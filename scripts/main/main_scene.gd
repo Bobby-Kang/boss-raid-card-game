@@ -3,6 +3,7 @@ extends Control
 const CardScene := preload("res://scenes/cards/card.tscn")
 const DRAW_COUNT := 5
 const TURNS_PER_ROUND := 5
+const ACTIVE_WINDOW_SIZE := 5
 
 # 카드 종류 (4종)
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
@@ -10,18 +11,12 @@ const CARD_ATTACK := preload("res://resources/cards/starter_attack.tres")
 const CARD_BLOCK := preload("res://resources/cards/starter_block.tres")
 const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
 
-
 # 덱 구성
 const STARTER_DECK: Array = [
 	CARD_DRAW, CARD_BLOCK, CARD_BLOCK, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_ATTACK, CARD_GOLD, CARD_GOLD, CARD_GOLD
 ]
 
-@onready var discard_holder: Control = %DiscardCardHolder
-@onready var deck_holder: Control = %DeckCardHolder
-@onready var draw_pile_holder: Control = %DrawPileCardHolder
-@onready var discard_label: Label = %DiscardLabel
-@onready var deck_label: Label = %DeckLabel
-@onready var draw_pile_label: Label = %DrawPileLabel
+@onready var timeline_belt: HBoxContainer = %TimelineBelt
 @onready var resource_bar: PanelContainer = %ResourceBar
 @onready var hp_label: Label = %HpLabel
 @onready var block_label: Label = %BlockLabel
@@ -35,14 +30,13 @@ const STARTER_DECK: Array = [
 
 # 드롭 존
 @onready var play_drop_zone: PanelContainer = %PlayDropZone
-@onready var discard_pile_zone: PanelContainer = %DiscardPile
+@onready var timeline_wrapper: PanelContainer = %TimelineWrapper
 @onready var reserve_slot: PanelContainer = %ReserveSlot
 @onready var active_slot_1: PanelContainer = %ActiveSlot1
 @onready var active_slot_2: PanelContainer = %ActiveSlot2
 
-var discard_cards: Array[Control] = []
-var deck_cards: Array[Control] = []
-var draw_pile_cards: Array[Control] = []
+# 타임라인 — 단일 원형 큐
+var timeline_cards: Array[Control] = []
 var game_ctx: GameContext
 var is_discarding_from_effect: bool = false
 
@@ -74,7 +68,7 @@ func _setup_game_context() -> void:
 	game_ctx = GameContext.new()
 	game_ctx.gold_manager = resource_bar.gold_manager
 	game_ctx.ap_manager = resource_bar.ap_manager
-	game_ctx.draw_cards = _draw_cards
+	game_ctx.draw_cards = _draw_cards_from_effect
 	game_ctx.discard_cards = _discard_cards_with_selection
 	game_ctx.player_hp_changed.connect(_on_player_hp_changed)
 	game_ctx.player_block_changed.connect(_on_player_block_changed)
@@ -102,24 +96,23 @@ func _on_boss_block_changed(block: int) -> void:
 # === 드롭 존 설정 ===
 
 func _setup_drop_zones() -> void:
-	# 필터 연결
 	play_drop_zone.accept_filter = _can_accept_card
-	discard_pile_zone.accept_filter = _can_accept_card
+	timeline_wrapper.accept_filter = _can_accept_card
 	reserve_slot.accept_filter = _can_accept_card
 	active_slot_1.accept_filter = _can_accept_card
 	active_slot_2.accept_filter = _can_accept_card
 
-	# 드롭 시그널 연결
 	play_drop_zone.card_dropped.connect(_on_play_zone_dropped)
-	discard_pile_zone.card_dropped.connect(_on_discard_zone_dropped)
+	timeline_wrapper.card_dropped.connect(_on_discard_zone_dropped)
 	reserve_slot.card_dropped.connect(_on_reserve_dropped)
 	active_slot_1.card_dropped.connect(_on_active_slot_1_dropped)
 	active_slot_2.card_dropped.connect(_on_active_slot_2_dropped)
 
 
 func _can_accept_card(card: Control, zone_type: DropZone.ZoneType) -> bool:
-	# 손패에 있는 카드만 드래그 가능
-	if card not in deck_cards:
+	var idx := timeline_cards.find(card)
+	# 액티브 윈도우(앞 5장)에 있는 카드만 허용
+	if idx < 0 or idx >= ACTIVE_WINDOW_SIZE:
 		return false
 	match zone_type:
 		DropZone.ZoneType.PLAY:
@@ -143,18 +136,17 @@ func _on_play_zone_dropped(card: Control) -> void:
 
 
 func _on_discard_zone_dropped(card: Control) -> void:
-	_move_card_to_discard(card)
+	_move_card_to_queue_back(card)
 
 
 func _on_reserve_dropped(card: Control) -> void:
 	if reserved_card != null:
 		return
 	reserved_card = card
-	deck_cards.erase(card)
+	timeline_cards.erase(card)
 	card.reparent(reserve_slot)
 	card.position = Vector2.ZERO
-	_rearrange_hand()
-	print("[예비] '%s'를 예비 슬롯에 보관" % card.data.card_name)
+	_update_timeline_display()
 
 
 func _on_active_slot_1_dropped(card: Control) -> void:
@@ -167,18 +159,16 @@ func _on_active_slot_2_dropped(card: Control) -> void:
 
 func _equip_module(card: Control, slot_index: int) -> void:
 	var slot: PanelContainer = active_slot_1 if slot_index == 0 else active_slot_2
-	# 기존 모듈이 있으면 손패로 복귀
 	if active_cards[slot_index] != null:
 		var old := active_cards[slot_index]
-		old.reparent(deck_holder)
-		deck_cards.append(old)
-		_rearrange_hand()
+		old.reparent(timeline_belt)
+		timeline_cards.insert(0, old)
+		_update_timeline_display()
 	active_cards[slot_index] = card
-	deck_cards.erase(card)
+	timeline_cards.erase(card)
 	card.reparent(slot)
 	card.position = Vector2.ZERO
-	_rearrange_hand()
-	print("[모듈] '%s'를 액티브 슬롯 %d에 장착" % [card.data.card_name, slot_index + 1])
+	_update_timeline_display()
 
 
 # === 덱 초기화 ===
@@ -188,7 +178,7 @@ func _build_cards_from(deck_def: Array) -> Array[Control]:
 	for card_data: CardData in deck_def:
 		var card: Control = CardScene.instantiate()
 		card.data = card_data.duplicate()
-		card.is_face_up = false
+		card.is_face_up = true
 		cards.append(card)
 	return cards
 
@@ -197,9 +187,30 @@ func _init_starter_deck() -> void:
 	_clear_cards()
 	var all_cards := _build_cards_from(STARTER_DECK)
 	for card in all_cards:
-		_add_to_draw_pile(card)
-	_update_draw_pile_label()
+		timeline_belt.add_child(card)
+		timeline_cards.append(card)
+	_update_timeline_display()
 	_start_round()
+
+
+# === 타임라인 큐 ===
+
+func _move_card_to_queue_back(card: Control) -> void:
+	timeline_cards.erase(card)
+	timeline_cards.append(card)
+	card.reparent(timeline_belt)
+	_update_timeline_display()
+
+
+func _update_timeline_display() -> void:
+	for i in timeline_cards.size():
+		var card: Control = timeline_cards[i]
+		timeline_belt.move_child(card, i)
+		card.set_active(i < ACTIVE_WINDOW_SIZE)
+
+
+func _activate_window() -> void:
+	_update_timeline_display()
 
 
 # === 라운드/턴 시스템 ===
@@ -255,12 +266,13 @@ func _advance_turn() -> void:
 func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
 
-	# 예비 슬롯 카드를 손패로 복귀
+	# 예비 슬롯 카드를 타임라인 맨 앞에 복귀
 	if reserved_card != null:
-		reserved_card.reparent(deck_holder)
-		deck_cards.append(reserved_card)
-		print("[예비] '%s'가 손패로 복귀" % reserved_card.data.card_name)
+		reserved_card.reparent(timeline_belt)
+		timeline_cards.insert(0, reserved_card)
 		reserved_card = null
+
+	_activate_window()
 
 	var messages: Array[String] = ["플레이어 차례입니다"]
 	phase_banner.show_sequence(messages)
@@ -325,77 +337,42 @@ func _update_turn_order_ui() -> void:
 			slot.modulate = Color(1, 1, 1, 0.7)
 
 
-# === 뽑을 카드 더미 ===
+# === 드로우 (효과용) ===
 
-func _add_to_draw_pile(card: Control) -> void:
-	card.is_face_up = false
-	draw_pile_holder.add_child(card)
-	var idx := draw_pile_cards.size()
-	card.position = Vector2(idx * 3, idx * 2)
-	draw_pile_cards.append(card)
-
-
-func _update_draw_pile_label() -> void:
-	draw_pile_label.text = "뽑을 카드\n%d장" % draw_pile_cards.size()
-
-
-func _recycle_discard_to_draw_pile() -> void:
-	discard_cards.reverse()
-	for card in discard_cards:
-		card.reparent(draw_pile_holder)
-		card.flip_to_back()
-		var idx := draw_pile_cards.size()
-		card.position = Vector2(idx * 3, idx * 2)
-		draw_pile_cards.append(card)
-	discard_cards.clear()
-	_update_draw_pile_label()
-
-
-# === 드로우 ===
-
-func _draw_cards(count: int) -> void:
-	deck_label.visible = false
-
-	for i in range(count):
-		if draw_pile_cards.is_empty():
-			_recycle_discard_to_draw_pile()
-		if draw_pile_cards.is_empty():
+func _draw_cards_from_effect(count: int) -> void:
+	# 타임라인에서 비활성 카드를 앞으로 당겨 활성화
+	# (큐에서 카드를 앞으로 이동 — 실질적으로 즉시 사용 가능하게)
+	var activated := 0
+	for i in range(timeline_cards.size() - 1, -1, -1):
+		if activated >= count:
 			break
-
-		var card: Control = draw_pile_cards.pop_back()
-		card.reparent(deck_holder)
-
-		var current_idx := deck_cards.size()
-		var spacing := card.custom_minimum_size.x + 12
-		var target_x: float = current_idx * spacing
-		card.position = Vector2(target_x + 200, 5)
-
-		var tween := create_tween()
-		tween.tween_property(card, "position", Vector2(target_x, 5), 0.3 + i * 0.08)\
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-		tween.tween_callback(card.flip_to_front)
-
-		deck_cards.append(card)
-
-	_update_draw_pile_label()
+		if i >= ACTIVE_WINDOW_SIZE:
+			var card: Control = timeline_cards[i]
+			timeline_cards.erase(card)
+			timeline_cards.insert(0, card)
+			activated += 1
+	_update_timeline_display()
 
 
-func _start_player_turn(count: int = DRAW_COUNT) -> void:
+func _start_player_turn(_count: int = DRAW_COUNT) -> void:
 	end_turn_button.disabled = false
-	_draw_cards(count)
+	_activate_window()
 
 
 # === 버리기 선택 (이펙트용) ===
 
 func _discard_cards_with_selection(count: int) -> void:
-	if deck_cards.is_empty():
+	var active: Array[Control] = []
+	for i in min(ACTIVE_WINDOW_SIZE, timeline_cards.size()):
+		active.append(timeline_cards[i])
+	if active.is_empty():
 		return
 	is_discarding_from_effect = true
-	var actual := mini(count, deck_cards.size())
-	end_turn_overlay.show_overlay_select(deck_cards.duplicate(), actual)
+	var actual := mini(count, active.size())
+	end_turn_overlay.show_overlay_select(active, actual)
 	var ordered: Array[Control] = await end_turn_overlay.order_confirmed
 	for card in ordered:
-		_move_card_to_discard(card)
+		_move_card_to_queue_back(card)
 	is_discarding_from_effect = false
 
 
@@ -407,67 +384,35 @@ func _play_card(card: Control) -> void:
 
 	var cost: int = card.data.cost
 	if not resource_bar.ap_manager.has(cost):
-		print("[카드] AP 부족: %d 필요, %d 보유" % [cost, resource_bar.ap_manager.current])
 		return
 
 	resource_bar.ap_manager.spend(cost)
-	_move_card_to_discard(card)
+	_move_card_to_queue_back(card)
 
 	for effect in card.data.effects:
 		effect.execute(game_ctx)
-
-	print("[카드] '%s' 사용 | 보스 HP: %d/%d | 방어: %d" % [
-		card.data.card_name, game_ctx.boss_hp, game_ctx.boss_max_hp, game_ctx.player_block
-	])
-
-
-func _move_card_to_discard(card: Control) -> void:
-	deck_cards.erase(card)
-
-	card.reparent(discard_holder)
-	
-	# 🌟 핵심: 버려진 카드가 이후의 마우스 드롭/클릭을 가로막지 않도록 투과 처리
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	
-	var idx := discard_cards.size()
-	card.position = Vector2(idx * 4, idx * 3)
-	discard_cards.append(card)
-
-	if deck_cards.is_empty():
-		deck_label.visible = true
-
-	_rearrange_hand()
-
-
-func _rearrange_hand() -> void:
-	if deck_cards.is_empty():
-		return
-	var spacing := deck_cards[0].custom_minimum_size.x + 12
-	for i in range(deck_cards.size()):
-		var card: Control = deck_cards[i]
-		var target_x: float = i * spacing
-		var tween := create_tween()
-		tween.tween_property(card, "position", Vector2(target_x, 5), 0.2)\
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
 
 # === 턴 종료 ===
 
 func _on_end_turn_pressed() -> void:
-	if deck_cards.is_empty():
+	# 미사용 액티브 카드 수집
+	var remaining: Array[Control] = []
+	for i in min(ACTIVE_WINDOW_SIZE, timeline_cards.size()):
+		remaining.append(timeline_cards[i])
+
+	if remaining.is_empty():
 		_finish_turn()
 		return
 	end_turn_button.disabled = true
-	end_turn_overlay.show_overlay(deck_cards.duplicate())
+	end_turn_overlay.show_overlay(remaining)
 
 
 func _on_end_turn_order_confirmed(ordered_cards: Array[Control]) -> void:
 	if is_discarding_from_effect:
 		return
 	for card in ordered_cards:
-		if not card.is_face_up:
-			continue
-		_move_card_to_discard(card)
+		_move_card_to_queue_back(card)
 	end_turn_button.disabled = false
 	_finish_turn()
 
@@ -478,7 +423,7 @@ func _on_end_turn_cancelled() -> void:
 
 func _finish_turn() -> void:
 	game_ctx.reset_block()
-	resource_bar.gold_manager.reset()  # 골드 증발
+	resource_bar.gold_manager.reset()
 	end_turn_button.disabled = true
 	_advance_turn()
 
@@ -486,12 +431,6 @@ func _finish_turn() -> void:
 # === 정리 ===
 
 func _clear_cards() -> void:
-	for card in discard_cards:
+	for card in timeline_cards:
 		card.queue_free()
-	for card in deck_cards:
-		card.queue_free()
-	for card in draw_pile_cards:
-		card.queue_free()
-	discard_cards.clear()
-	deck_cards.clear()
-	draw_pile_cards.clear()
+	timeline_cards.clear()

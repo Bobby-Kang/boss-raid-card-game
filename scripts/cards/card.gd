@@ -10,6 +10,7 @@ extends Control
 @onready var cost_label: Label = %CostLabel
 
 var is_face_up: bool = false
+var is_active: bool = true
 var data: CardData
 
 
@@ -55,10 +56,17 @@ func _apply_data() -> void:
 			type_label.text = "알 수 없음"
 
 
+func set_active(active: bool) -> void:
+	is_active = active
+	modulate.a = 1.0 if active else 0.5
+	mouse_filter = MOUSE_FILTER_STOP if active else MOUSE_FILTER_IGNORE
+	_set_children_mouse_ignore(self)
+
+
 # --- 드래그 앤 드롭 ---
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
-	if not is_face_up:
+	if not is_face_up or not is_active:
 		return null
 	# 프리뷰 생성
 	set_drag_preview(_create_drag_preview())
