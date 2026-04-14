@@ -262,7 +262,7 @@ func _rebuild_pipe_ui() -> void:
 
 func _create_pipe_row(index: int, card: Control) -> Control:
 	var row := HBoxContainer.new()
-	row.theme_override_constants_separation = 6
+	row.add_theme_constant_override("separation", 6)
 
 	# 순서 번호
 	var num_label := Label.new()
