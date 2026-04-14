@@ -286,7 +286,7 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 	mini.add_theme_stylebox_override("panel", style)
 
 	var hbox := HBoxContainer.new()
-	hbox.theme_override_constants_separation = 4
+	hbox.add_theme_constant_override("separation", 4)
 
 	var cost_lbl := Label.new()
 	cost_lbl.text = "[%d]" % card.data.cost
