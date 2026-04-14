@@ -3,7 +3,6 @@ extends Control
 const CardScene := preload("res://scenes/cards/card.tscn")
 const DRAW_COUNT := 5
 const TURNS_PER_ROUND := 5
-const ACTIVE_WINDOW_SIZE := 5
 
 # 카드 종류 (4종)
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
@@ -11,12 +10,17 @@ const CARD_ATTACK := preload("res://resources/cards/starter_attack.tres")
 const CARD_BLOCK := preload("res://resources/cards/starter_block.tres")
 const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
 
-# 덱 구성
 const STARTER_DECK: Array = [
-	CARD_DRAW, CARD_BLOCK, CARD_BLOCK, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_ATTACK, CARD_GOLD, CARD_GOLD, CARD_GOLD
+	CARD_DRAW, CARD_BLOCK, CARD_BLOCK, CARD_GOLD, CARD_GOLD,
+	CARD_ATTACK, CARD_ATTACK, CARD_GOLD, CARD_GOLD, CARD_GOLD
 ]
 
-@onready var timeline_belt: HBoxContainer = %TimelineBelt
+# 손패 존
+@onready var hand_belt: HBoxContainer = %HandBelt
+# 타임라인 파이프
+@onready var pipe_queue: VBoxContainer = %PipeQueue
+@onready var queue_card_holder: Control = %QueueCardHolder
+
 @onready var resource_bar: PanelContainer = %ResourceBar
 @onready var hp_label: Label = %HpLabel
 @onready var block_label: Label = %BlockLabel
@@ -30,13 +34,15 @@ const STARTER_DECK: Array = [
 
 # 드롭 존
 @onready var play_drop_zone: PanelContainer = %PlayDropZone
-@onready var timeline_wrapper: PanelContainer = %TimelineWrapper
+@onready var timeline_pipe_panel: PanelContainer = %TimelinePipePanel
 @onready var reserve_slot: PanelContainer = %ReserveSlot
 @onready var active_slot_1: PanelContainer = %ActiveSlot1
 @onready var active_slot_2: PanelContainer = %ActiveSlot2
 
-# 타임라인 — 단일 원형 큐
-var timeline_cards: Array[Control] = []
+# 카드 배열
+var hand_cards: Array[Control] = []    # 손패 (최대 5장, 사용 가능)
+var queue_cards: Array[Control] = []   # 타임라인 파이프 (대기 중)
+
 var game_ctx: GameContext
 var is_discarding_from_effect: bool = false
 
@@ -44,7 +50,7 @@ var is_discarding_from_effect: bool = false
 var reserved_card: Control = null
 var active_cards: Array[Control] = [null, null]
 
-# 라운드/턴 시스템
+# 라운드/턴
 var current_round: int = 1
 var current_turn: int = 0
 var turn_order: Array[String] = []
@@ -68,7 +74,7 @@ func _setup_game_context() -> void:
 	game_ctx = GameContext.new()
 	game_ctx.gold_manager = resource_bar.gold_manager
 	game_ctx.ap_manager = resource_bar.ap_manager
-	game_ctx.draw_cards = _draw_cards_from_effect
+	game_ctx.draw_cards = _draw_extra_cards
 	game_ctx.discard_cards = _discard_cards_with_selection
 	game_ctx.player_hp_changed.connect(_on_player_hp_changed)
 	game_ctx.player_block_changed.connect(_on_player_block_changed)
@@ -97,22 +103,21 @@ func _on_boss_block_changed(block: int) -> void:
 
 func _setup_drop_zones() -> void:
 	play_drop_zone.accept_filter = _can_accept_card
-	timeline_wrapper.accept_filter = _can_accept_card
+	timeline_pipe_panel.accept_filter = _can_accept_card
 	reserve_slot.accept_filter = _can_accept_card
 	active_slot_1.accept_filter = _can_accept_card
 	active_slot_2.accept_filter = _can_accept_card
 
 	play_drop_zone.card_dropped.connect(_on_play_zone_dropped)
-	timeline_wrapper.card_dropped.connect(_on_discard_zone_dropped)
+	timeline_pipe_panel.card_dropped.connect(_on_pipe_dropped)
 	reserve_slot.card_dropped.connect(_on_reserve_dropped)
 	active_slot_1.card_dropped.connect(_on_active_slot_1_dropped)
 	active_slot_2.card_dropped.connect(_on_active_slot_2_dropped)
 
 
 func _can_accept_card(card: Control, zone_type: DropZone.ZoneType) -> bool:
-	var idx := timeline_cards.find(card)
-	# 액티브 윈도우(앞 5장)에 있는 카드만 허용
-	if idx < 0 or idx >= ACTIVE_WINDOW_SIZE:
+	# 손패에 있는 카드만 허용
+	if card not in hand_cards:
 		return false
 	match zone_type:
 		DropZone.ZoneType.PLAY:
@@ -135,18 +140,19 @@ func _on_play_zone_dropped(card: Control) -> void:
 	_play_card(card)
 
 
-func _on_discard_zone_dropped(card: Control) -> void:
-	_move_card_to_queue_back(card)
+func _on_pipe_dropped(card: Control) -> void:
+	# 손패 → 파이프 맨 뒤 (효과 없이 버리기)
+	_send_to_pipe_back(card)
 
 
 func _on_reserve_dropped(card: Control) -> void:
 	if reserved_card != null:
 		return
 	reserved_card = card
-	timeline_cards.erase(card)
+	hand_cards.erase(card)
 	card.reparent(reserve_slot)
 	card.position = Vector2.ZERO
-	_update_timeline_display()
+	_update_hand_display()
 
 
 func _on_active_slot_1_dropped(card: Control) -> void:
@@ -161,56 +167,172 @@ func _equip_module(card: Control, slot_index: int) -> void:
 	var slot: PanelContainer = active_slot_1 if slot_index == 0 else active_slot_2
 	if active_cards[slot_index] != null:
 		var old := active_cards[slot_index]
-		old.reparent(timeline_belt)
-		timeline_cards.insert(0, old)
-		_update_timeline_display()
+		old.reparent(hand_belt)
+		hand_cards.append(old)
+		_update_hand_display()
 	active_cards[slot_index] = card
-	timeline_cards.erase(card)
+	hand_cards.erase(card)
 	card.reparent(slot)
 	card.position = Vector2.ZERO
-	_update_timeline_display()
+	_update_hand_display()
 
 
 # === 덱 초기화 ===
 
-func _build_cards_from(deck_def: Array) -> Array[Control]:
-	var cards: Array[Control] = []
-	for card_data: CardData in deck_def:
+func _init_starter_deck() -> void:
+	_clear_cards()
+	for card_data: CardData in STARTER_DECK:
 		var card: Control = CardScene.instantiate()
 		card.data = card_data.duplicate()
 		card.is_face_up = true
-		cards.append(card)
-	return cards
-
-
-func _init_starter_deck() -> void:
-	_clear_cards()
-	var all_cards := _build_cards_from(STARTER_DECK)
-	for card in all_cards:
-		timeline_belt.add_child(card)
-		timeline_cards.append(card)
-	_update_timeline_display()
+		queue_card_holder.add_child(card)
+		queue_cards.append(card)
+	_rebuild_pipe_ui()
 	_start_round()
 
 
-# === 타임라인 큐 ===
+# === 손패 드로우 ===
 
-func _move_card_to_queue_back(card: Control) -> void:
-	timeline_cards.erase(card)
-	timeline_cards.append(card)
-	card.reparent(timeline_belt)
-	_update_timeline_display()
-
-
-func _update_timeline_display() -> void:
-	for i in timeline_cards.size():
-		var card: Control = timeline_cards[i]
-		timeline_belt.move_child(card, i)
-		card.set_active(i < ACTIVE_WINDOW_SIZE)
+func _draw_hand() -> void:
+	# 파이프 앞에서 DRAW_COUNT장 꺼내 손패로
+	var count := mini(DRAW_COUNT, queue_cards.size())
+	for i in count:
+		var card: Control = queue_cards.pop_front()
+		card.reparent(hand_belt)
+		card.set_active(true)
+		hand_cards.append(card)
+	_update_hand_display()
+	_rebuild_pipe_ui()
 
 
-func _activate_window() -> void:
-	_update_timeline_display()
+func _draw_extra_cards(count: int) -> void:
+	# 효과에 의한 추가 드로우
+	var actual := mini(count, queue_cards.size())
+	for i in actual:
+		var card: Control = queue_cards.pop_front()
+		card.reparent(hand_belt)
+		card.set_active(true)
+		hand_cards.append(card)
+	_update_hand_display()
+	_rebuild_pipe_ui()
+
+
+func _start_player_turn() -> void:
+	end_turn_button.disabled = false
+	_draw_hand()
+
+
+# === 파이프로 보내기 ===
+
+func _send_to_pipe_back(card: Control) -> void:
+	hand_cards.erase(card)
+	card.set_active(false)
+	card.reparent(queue_card_holder)
+	queue_cards.append(card)
+	_update_hand_display()
+	_rebuild_pipe_ui()
+
+
+# === 손패 UI 갱신 ===
+
+func _update_hand_display() -> void:
+	if hand_cards.is_empty():
+		return
+	var spacing := hand_cards[0].custom_minimum_size.x + 8
+	for i in hand_cards.size():
+		var card: Control = hand_cards[i]
+		var tween := create_tween()
+		tween.tween_property(card, "position", Vector2(i * spacing, 0), 0.18)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+
+# === 파이프 UI 재빌드 ===
+
+func _rebuild_pipe_ui() -> void:
+	# 기존 UI 행 제거
+	for child in pipe_queue.get_children():
+		child.queue_free()
+
+	# 큐 카드마다 행 생성
+	for i in queue_cards.size():
+		var card: Control = queue_cards[i]
+		var row := _create_pipe_row(i + 1, card)
+		pipe_queue.add_child(row)
+
+
+func _create_pipe_row(index: int, card: Control) -> Control:
+	var row := HBoxContainer.new()
+	row.theme_override_constants_separation = 6
+
+	# 순서 번호
+	var num_label := Label.new()
+	num_label.text = str(index)
+	num_label.custom_minimum_size = Vector2(18, 0)
+	num_label.add_theme_font_size_override("font_size", 11)
+	num_label.add_theme_color_override("font_color", Color(1, 0.85, 0.3, 1))
+	num_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(num_label)
+
+	# 미니 카드 패널
+	var mini := PanelContainer.new()
+	mini.custom_minimum_size = Vector2(0, 28)
+	mini.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.22, 0.20, 0.18, 0.9)
+	style.border_color = Color(0.55, 0.45, 0.3, 1)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	mini.add_theme_stylebox_override("panel", style)
+
+	var hbox := HBoxContainer.new()
+	hbox.theme_override_constants_separation = 4
+
+	var cost_lbl := Label.new()
+	cost_lbl.text = "[%d]" % card.data.cost
+	cost_lbl.add_theme_font_size_override("font_size", 10)
+	cost_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 0.4, 1))
+	cost_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hbox.add_child(cost_lbl)
+
+	var name_lbl := Label.new()
+	name_lbl.text = card.data.card_name
+	name_lbl.add_theme_font_size_override("font_size", 10)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hbox.add_child(name_lbl)
+
+	mini.add_child(hbox)
+	row.add_child(mini)
+	return row
+
+
+# === 버리기 선택 (이펙트용) ===
+
+func _discard_cards_with_selection(count: int) -> void:
+	if hand_cards.is_empty():
+		return
+	is_discarding_from_effect = true
+	var actual := mini(count, hand_cards.size())
+	end_turn_overlay.show_overlay_select(hand_cards.duplicate(), actual)
+	var ordered: Array[Control] = await end_turn_overlay.order_confirmed
+	for card in ordered:
+		_send_to_pipe_back(card)
+	is_discarding_from_effect = false
+
+
+# === 카드 사용 ===
+
+func _play_card(card: Control) -> void:
+	if not card.data:
+		return
+	var cost: int = card.data.cost
+	if not resource_bar.ap_manager.has(cost):
+		return
+	resource_bar.ap_manager.spend(cost)
+	_send_to_pipe_back(card)
+	for effect in card.data.effects:
+		effect.execute(game_ctx)
 
 
 # === 라운드/턴 시스템 ===
@@ -266,13 +388,13 @@ func _advance_turn() -> void:
 func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
 
-	# 예비 슬롯 카드를 타임라인 맨 앞에 복귀
+	# 예비 슬롯 카드를 파이프 맨 앞에 삽입
 	if reserved_card != null:
-		reserved_card.reparent(timeline_belt)
-		timeline_cards.insert(0, reserved_card)
+		reserved_card.set_active(false)
+		reserved_card.reparent(queue_card_holder)
+		queue_cards.insert(0, reserved_card)
 		reserved_card = null
-
-	_activate_window()
+		_rebuild_pipe_ui()
 
 	var messages: Array[String] = ["플레이어 차례입니다"]
 	phase_banner.show_sequence(messages)
@@ -321,10 +443,8 @@ func _update_turn_order_ui() -> void:
 		elif turn_num <= current_turn:
 			var who: String = turn_order[i - 1]
 			lbl.text = "T%d\n%s" % [turn_num, "플레이어" if who == "player" else "보스"]
-			if who == "player":
-				lbl.add_theme_color_override("font_color", Color(0.3, 0.5, 1.0))
-			else:
-				lbl.add_theme_color_override("font_color", Color(0.9, 0.25, 0.25))
+			lbl.add_theme_color_override("font_color",
+				Color(0.3, 0.5, 1.0) if who == "player" else Color(0.9, 0.25, 0.25))
 		else:
 			lbl.text = "T%d\n???" % turn_num
 			lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
@@ -337,82 +457,21 @@ func _update_turn_order_ui() -> void:
 			slot.modulate = Color(1, 1, 1, 0.7)
 
 
-# === 드로우 (효과용) ===
-
-func _draw_cards_from_effect(count: int) -> void:
-	# 타임라인에서 비활성 카드를 앞으로 당겨 활성화
-	# (큐에서 카드를 앞으로 이동 — 실질적으로 즉시 사용 가능하게)
-	var activated := 0
-	for i in range(timeline_cards.size() - 1, -1, -1):
-		if activated >= count:
-			break
-		if i >= ACTIVE_WINDOW_SIZE:
-			var card: Control = timeline_cards[i]
-			timeline_cards.erase(card)
-			timeline_cards.insert(0, card)
-			activated += 1
-	_update_timeline_display()
-
-
-func _start_player_turn(_count: int = DRAW_COUNT) -> void:
-	end_turn_button.disabled = false
-	_activate_window()
-
-
-# === 버리기 선택 (이펙트용) ===
-
-func _discard_cards_with_selection(count: int) -> void:
-	var active: Array[Control] = []
-	for i in min(ACTIVE_WINDOW_SIZE, timeline_cards.size()):
-		active.append(timeline_cards[i])
-	if active.is_empty():
-		return
-	is_discarding_from_effect = true
-	var actual := mini(count, active.size())
-	end_turn_overlay.show_overlay_select(active, actual)
-	var ordered: Array[Control] = await end_turn_overlay.order_confirmed
-	for card in ordered:
-		_move_card_to_queue_back(card)
-	is_discarding_from_effect = false
-
-
-# === 카드 사용 ===
-
-func _play_card(card: Control) -> void:
-	if not card.data:
-		return
-
-	var cost: int = card.data.cost
-	if not resource_bar.ap_manager.has(cost):
-		return
-
-	resource_bar.ap_manager.spend(cost)
-	_move_card_to_queue_back(card)
-
-	for effect in card.data.effects:
-		effect.execute(game_ctx)
-
-
 # === 턴 종료 ===
 
 func _on_end_turn_pressed() -> void:
-	# 미사용 액티브 카드 수집
-	var remaining: Array[Control] = []
-	for i in min(ACTIVE_WINDOW_SIZE, timeline_cards.size()):
-		remaining.append(timeline_cards[i])
-
-	if remaining.is_empty():
+	if hand_cards.is_empty():
 		_finish_turn()
 		return
 	end_turn_button.disabled = true
-	end_turn_overlay.show_overlay(remaining)
+	end_turn_overlay.show_overlay(hand_cards.duplicate())
 
 
 func _on_end_turn_order_confirmed(ordered_cards: Array[Control]) -> void:
 	if is_discarding_from_effect:
 		return
 	for card in ordered_cards:
-		_move_card_to_queue_back(card)
+		_send_to_pipe_back(card)
 	end_turn_button.disabled = false
 	_finish_turn()
 
@@ -431,6 +490,10 @@ func _finish_turn() -> void:
 # === 정리 ===
 
 func _clear_cards() -> void:
-	for card in timeline_cards:
+	for card in hand_cards:
 		card.queue_free()
-	timeline_cards.clear()
+	for card in queue_cards:
+		card.queue_free()
+	hand_cards.clear()
+	queue_cards.clear()
+	_rebuild_pipe_ui()
