@@ -8,11 +8,12 @@ const TURNS_PER_ROUND := 5
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
 const CARD_ATTACK := preload("res://resources/cards/starter_attack.tres")
 const CARD_BLOCK := preload("res://resources/cards/starter_block.tres")
-const CARD_DRAW := preload("res://resources/cards/starter_swap.tres")
+const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
 
-# 덱 구성: [리소스, 수량]
+
+# 덱 구성
 const STARTER_DECK: Array = [
-	[CARD_GOLD, 5], [CARD_ATTACK, 2], [CARD_BLOCK, 2], [CARD_DRAW, 1]
+	CARD_DRAW, CARD_BLOCK, CARD_BLOCK, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_ATTACK, CARD_GOLD, CARD_GOLD, CARD_GOLD
 ]
 
 @onready var discard_holder: Control = %DiscardCardHolder
@@ -32,21 +33,33 @@ const STARTER_DECK: Array = [
 @onready var round_label: Label = %RoundLabel
 @onready var turn_slots_container: HBoxContainer = %TurnSlotsContainer
 
+# 드롭 존
+@onready var play_drop_zone: PanelContainer = %PlayDropZone
+@onready var discard_pile_zone: PanelContainer = %DiscardPile
+@onready var reserve_slot: PanelContainer = %ReserveSlot
+@onready var active_slot_1: PanelContainer = %ActiveSlot1
+@onready var active_slot_2: PanelContainer = %ActiveSlot2
+
 var discard_cards: Array[Control] = []
 var deck_cards: Array[Control] = []
 var draw_pile_cards: Array[Control] = []
 var game_ctx: GameContext
 var is_discarding_from_effect: bool = false
 
+# 예비/액티브 슬롯
+var reserved_card: Control = null
+var active_cards: Array[Control] = [null, null]
+
 # 라운드/턴 시스템
 var current_round: int = 1
-var current_turn: int = 0  # 1~5, 0은 초기 상태
-var turn_order: Array[String] = []  # turns 2~5의 순서
+var current_turn: int = 0
+var turn_order: Array[String] = []
 var turn_slot_labels: Array[Label] = []
 
 
 func _ready() -> void:
 	_setup_game_context()
+	_setup_drop_zones()
 	_init_starter_deck()
 	resource_bar.gold_manager.set_to(0)
 	resource_bar.ap_manager.set_to(3)
@@ -86,28 +99,105 @@ func _on_boss_block_changed(block: int) -> void:
 	boss_block_label.text = "보스 상태\n방어력 %d" % block
 
 
+# === 드롭 존 설정 ===
+
+func _setup_drop_zones() -> void:
+	# 필터 연결
+	play_drop_zone.accept_filter = _can_accept_card
+	discard_pile_zone.accept_filter = _can_accept_card
+	reserve_slot.accept_filter = _can_accept_card
+	active_slot_1.accept_filter = _can_accept_card
+	active_slot_2.accept_filter = _can_accept_card
+
+	# 드롭 시그널 연결
+	play_drop_zone.card_dropped.connect(_on_play_zone_dropped)
+	discard_pile_zone.card_dropped.connect(_on_discard_zone_dropped)
+	reserve_slot.card_dropped.connect(_on_reserve_dropped)
+	active_slot_1.card_dropped.connect(_on_active_slot_1_dropped)
+	active_slot_2.card_dropped.connect(_on_active_slot_2_dropped)
+
+
+func _can_accept_card(card: Control, zone_type: DropZone.ZoneType) -> bool:
+	# 손패에 있는 카드만 드래그 가능
+	if card not in deck_cards:
+		return false
+	match zone_type:
+		DropZone.ZoneType.PLAY:
+			return true
+		DropZone.ZoneType.DISCARD:
+			return true
+		DropZone.ZoneType.RESERVE:
+			if reserved_card != null:
+				return false
+			for effect in card.data.effects:
+				if effect is GainGoldEffect:
+					return true
+			return false
+		DropZone.ZoneType.ACTIVE:
+			return card.data.card_type == CardData.CardType.MODULE
+	return false
+
+
+func _on_play_zone_dropped(card: Control) -> void:
+	_play_card(card)
+
+
+func _on_discard_zone_dropped(card: Control) -> void:
+	_move_card_to_discard(card)
+
+
+func _on_reserve_dropped(card: Control) -> void:
+	if reserved_card != null:
+		return
+	reserved_card = card
+	deck_cards.erase(card)
+	card.reparent(reserve_slot)
+	card.position = Vector2.ZERO
+	_rearrange_hand()
+	print("[예비] '%s'를 예비 슬롯에 보관" % card.data.card_name)
+
+
+func _on_active_slot_1_dropped(card: Control) -> void:
+	_equip_module(card, 0)
+
+
+func _on_active_slot_2_dropped(card: Control) -> void:
+	_equip_module(card, 1)
+
+
+func _equip_module(card: Control, slot_index: int) -> void:
+	var slot: PanelContainer = active_slot_1 if slot_index == 0 else active_slot_2
+	# 기존 모듈이 있으면 손패로 복귀
+	if active_cards[slot_index] != null:
+		var old := active_cards[slot_index]
+		old.reparent(deck_holder)
+		deck_cards.append(old)
+		_rearrange_hand()
+	active_cards[slot_index] = card
+	deck_cards.erase(card)
+	card.reparent(slot)
+	card.position = Vector2.ZERO
+	_rearrange_hand()
+	print("[모듈] '%s'를 액티브 슬롯 %d에 장착" % [card.data.card_name, slot_index + 1])
+
+
 # === 덱 초기화 ===
 
 func _build_cards_from(deck_def: Array) -> Array[Control]:
 	var cards: Array[Control] = []
-	for entry in deck_def:
-		var card_data: CardData = entry[0]
-		var count: int = entry[1]
-		for i in range(count):
-			var card: Control = CardScene.instantiate()
-			card.data = card_data.duplicate()
-			card.is_face_up = false
-			cards.append(card)
+	for card_data: CardData in deck_def:
+		var card: Control = CardScene.instantiate()
+		card.data = card_data.duplicate()
+		card.is_face_up = false
+		cards.append(card)
 	return cards
 
 
 func _init_starter_deck() -> void:
 	_clear_cards()
-
 	var all_cards := _build_cards_from(STARTER_DECK)
 	for card in all_cards:
 		_add_to_draw_pile(card)
-
 	_update_draw_pile_label()
 	_start_round()
 
@@ -123,10 +213,8 @@ func _start_round() -> void:
 
 
 func _build_turn_order() -> void:
-	# 턴 2~5: 플레이어 2장 + 보스 2장 셔플
 	turn_order.clear()
 	turn_order = ["player", "player", "boss", "boss"]
-	# 보스 연속 2회 초과 방지 셔플
 	for _attempt in range(100):
 		turn_order.shuffle()
 		if _validate_turn_order():
@@ -134,9 +222,7 @@ func _build_turn_order() -> void:
 
 
 func _validate_turn_order() -> bool:
-	# 턴 1은 항상 플레이어이므로, turn_order[0]이 boss면 최대 연속 1
-	# turn_order 내에서 boss 3연속 불가 (턴1 플레이어 포함하여 계산)
-	var full_order: Array[String] = ["player"]  # 턴 1
+	var full_order: Array[String] = ["player"]
 	full_order.append_array(turn_order)
 	var consecutive_boss := 0
 	for who in full_order:
@@ -151,17 +237,12 @@ func _validate_turn_order() -> bool:
 
 func _advance_turn() -> void:
 	current_turn += 1
-
 	if current_turn > TURNS_PER_ROUND:
-		# 라운드 종료 → 다음 라운드
 		current_round += 1
 		_start_round()
 		return
-
 	_update_turn_order_ui()
-
 	if current_turn == 1:
-		# 턴 1: 항상 플레이어 선공
 		_begin_player_turn()
 	else:
 		var who: String = turn_order[current_turn - 2]
@@ -173,6 +254,14 @@ func _advance_turn() -> void:
 
 func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
+
+	# 예비 슬롯 카드를 손패로 복귀
+	if reserved_card != null:
+		reserved_card.reparent(deck_holder)
+		deck_cards.append(reserved_card)
+		print("[예비] '%s'가 손패로 복귀" % reserved_card.data.card_name)
+		reserved_card = null
+
 	var messages: Array[String] = ["플레이어 차례입니다"]
 	phase_banner.show_sequence(messages)
 	await phase_banner.banner_finished
@@ -197,7 +286,6 @@ func _update_round_label() -> void:
 
 
 func _update_turn_order_ui() -> void:
-	# 턴 슬롯 라벨 동적 생성 (첫 호출 시)
 	if turn_slot_labels.is_empty():
 		for i in range(TURNS_PER_ROUND):
 			var slot := PanelContainer.new()
@@ -219,7 +307,6 @@ func _update_turn_order_ui() -> void:
 			lbl.text = "T1\n플레이어"
 			lbl.add_theme_color_override("font_color", Color(0.3, 0.5, 1.0))
 		elif turn_num <= current_turn:
-			# 공개된 턴
 			var who: String = turn_order[i - 1]
 			lbl.text = "T%d\n%s" % [turn_num, "플레이어" if who == "player" else "보스"]
 			if who == "player":
@@ -230,7 +317,6 @@ func _update_turn_order_ui() -> void:
 			lbl.text = "T%d\n???" % turn_num
 			lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 
-		# 현재 턴 하이라이트 vs 완료 턴 흐리게
 		if turn_num == current_turn:
 			slot.modulate = Color(1, 1, 1, 1)
 		elif turn_num < current_turn:
@@ -268,26 +354,27 @@ func _recycle_discard_to_draw_pile() -> void:
 # === 드로우 ===
 
 func _draw_cards(count: int) -> void:
-	if draw_pile_cards.size() < count:
-		_recycle_discard_to_draw_pile()
-
-	var actual_count := mini(count, draw_pile_cards.size())
 	deck_label.visible = false
 
-	var start_idx := deck_cards.size()
-	for i in range(actual_count):
+	for i in range(count):
+		if draw_pile_cards.is_empty():
+			_recycle_discard_to_draw_pile()
+		if draw_pile_cards.is_empty():
+			break
+
 		var card: Control = draw_pile_cards.pop_back()
 		card.reparent(deck_holder)
 
+		var current_idx := deck_cards.size()
 		var spacing := card.custom_minimum_size.x + 12
-		var target_x: float = (start_idx + i) * spacing
+		var target_x: float = current_idx * spacing
 		card.position = Vector2(target_x + 200, 5)
 
 		var tween := create_tween()
-		tween.tween_property(card, "position", Vector2(target_x, 5), 0.3 + i * 0.08).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		tween.tween_property(card, "position", Vector2(target_x, 5), 0.3 + i * 0.08)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		tween.tween_callback(card.flip_to_front)
 
-		card.card_clicked.connect(_on_deck_card_clicked)
 		deck_cards.append(card)
 
 	_update_draw_pile_label()
@@ -314,10 +401,6 @@ func _discard_cards_with_selection(count: int) -> void:
 
 # === 카드 사용 ===
 
-func _on_deck_card_clicked(card: Control) -> void:
-	_play_card(card)
-
-
 func _play_card(card: Control) -> void:
 	if not card.data:
 		return
@@ -328,6 +411,7 @@ func _play_card(card: Control) -> void:
 		return
 
 	resource_bar.ap_manager.spend(cost)
+	_move_card_to_discard(card)
 
 	for effect in card.data.effects:
 		effect.execute(game_ctx)
@@ -336,15 +420,15 @@ func _play_card(card: Control) -> void:
 		card.data.card_name, game_ctx.boss_hp, game_ctx.boss_max_hp, game_ctx.player_block
 	])
 
-	_move_card_to_discard(card)
-
 
 func _move_card_to_discard(card: Control) -> void:
-	if card.card_clicked.is_connected(_on_deck_card_clicked):
-		card.card_clicked.disconnect(_on_deck_card_clicked)
 	deck_cards.erase(card)
 
 	card.reparent(discard_holder)
+	
+	# 🌟 핵심: 버려진 카드가 이후의 마우스 드롭/클릭을 가로막지 않도록 투과 처리
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
 	var idx := discard_cards.size()
 	card.position = Vector2(idx * 4, idx * 3)
 	discard_cards.append(card)

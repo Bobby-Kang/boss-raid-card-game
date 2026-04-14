@@ -1,7 +1,7 @@
 class_name CardData
 extends Resource
 
-enum CardType { ATTACK, SKILL, POWER }
+enum CardType { ATTACK, SKILL, POWER, MODULE }
 
 @export var card_name: String = ""
 @export var cost: int = 0

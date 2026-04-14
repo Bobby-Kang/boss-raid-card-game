@@ -11,6 +11,6 @@ value = 3
 [resource]
 script = ExtResource("1_script")
 card_name = "막기"
-card_type = 1
 cost = 1
+card_type = 1
 effects = Array[ExtResource("2_base")]([SubResource("Effect_block")])

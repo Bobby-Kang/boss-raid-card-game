@@ -30,6 +30,8 @@ corner_radius_bottom_left = 8
 custom_minimum_size = Vector2(120, 170)
 layout_mode = 3
 anchors_preset = 0
+offset_right = 120.0
+offset_bottom = 170.0
 pivot_offset = Vector2(60, 85)
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -42,6 +44,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 texture = SubResource("AtlasTexture_back")
 expand_mode = 1
 stretch_mode = 5
@@ -53,6 +56,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
 [node name="VBox" type="VBoxContainer" parent="CardFront" unique_id=575944954]
@@ -117,7 +121,7 @@ horizontal_alignment = 2
 [node name="CostBadge" type="Control" parent="CardFront" unique_id=1408552143]
 layout_mode = 2
 
-[node name="CostBg" type="ColorRect" parent="CardFront/CostBadge"]
+[node name="CostBg" type="ColorRect" parent="CardFront/CostBadge" unique_id=187928145]
 layout_mode = 0
 offset_left = 93.0
 offset_top = -1.0
@@ -137,14 +141,3 @@ theme_override_font_sizes/font_size = 12
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="ClickArea" type="Button" parent="." unique_id=1994670151]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_default_cursor_shape = 2
-flat = true
