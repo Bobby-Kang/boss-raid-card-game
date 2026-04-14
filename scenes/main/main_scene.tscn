@@ -299,32 +299,6 @@ theme_override_font_sizes/font_size = 11
 text = "방어력 0"
 horizontal_alignment = 1
 
-[node name="ReserveRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox" unique_id=84411753]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="ReserveLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ReserveRow" unique_id=232739440]
-layout_mode = 2
-theme_override_font_sizes/font_size = 9
-text = "예비"
-vertical_alignment = 1
-
-[node name="ReserveSlot" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ReserveRow" unique_id=420986964]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 40)
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 1
-script = ExtResource("5_dropzone")
-zone_type = 2
-
-[node name="ReserveSlotLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ReserveRow/ReserveSlot" unique_id=1366650417]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
-theme_override_font_sizes/font_size = 9
-text = "빈 슬롯"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="ActiveRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox" unique_id=2028098073]
 layout_mode = 2

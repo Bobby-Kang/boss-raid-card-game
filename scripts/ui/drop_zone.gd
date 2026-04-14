@@ -3,7 +3,7 @@ extends PanelContainer
 
 signal card_dropped(card: Control)
 
-enum ZoneType { PLAY, DISCARD, RESERVE, ACTIVE }
+enum ZoneType { PLAY, DISCARD, ACTIVE }
 @export var zone_type: ZoneType = ZoneType.PLAY
 
 ## main_scene에서 설정하는 필터 함수: func(card, zone_type) -> bool

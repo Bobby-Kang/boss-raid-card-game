@@ -35,7 +35,6 @@ const STARTER_DECK: Array = [
 # 드롭 존
 @onready var play_drop_zone: PanelContainer = %PlayDropZone
 @onready var timeline_pipe_panel: PanelContainer = %TimelinePipePanel
-@onready var reserve_slot: PanelContainer = %ReserveSlot
 @onready var active_slot_1: PanelContainer = %ActiveSlot1
 @onready var active_slot_2: PanelContainer = %ActiveSlot2
 
@@ -47,7 +46,6 @@ var game_ctx: GameContext
 var is_discarding_from_effect: bool = false
 
 # 예비/액티브 슬롯
-var reserved_card: Control = null
 var active_cards: Array[Control] = [null, null]
 
 # 라운드/턴
@@ -104,13 +102,11 @@ func _on_boss_block_changed(block: int) -> void:
 func _setup_drop_zones() -> void:
 	play_drop_zone.accept_filter = _can_accept_card
 	timeline_pipe_panel.accept_filter = _can_accept_card
-	reserve_slot.accept_filter = _can_accept_card
 	active_slot_1.accept_filter = _can_accept_card
 	active_slot_2.accept_filter = _can_accept_card
 
 	play_drop_zone.card_dropped.connect(_on_play_zone_dropped)
 	timeline_pipe_panel.card_dropped.connect(_on_pipe_dropped)
-	reserve_slot.card_dropped.connect(_on_reserve_dropped)
 	active_slot_1.card_dropped.connect(_on_active_slot_1_dropped)
 	active_slot_2.card_dropped.connect(_on_active_slot_2_dropped)
 
@@ -124,13 +120,6 @@ func _can_accept_card(card: Control, zone_type: DropZone.ZoneType) -> bool:
 			return true
 		DropZone.ZoneType.DISCARD:
 			return true
-		DropZone.ZoneType.RESERVE:
-			if reserved_card != null:
-				return false
-			for effect in card.data.effects:
-				if effect is GainGoldEffect:
-					return true
-			return false
 		DropZone.ZoneType.ACTIVE:
 			return card.data.card_type == CardData.CardType.MODULE
 	return false
@@ -143,16 +132,6 @@ func _on_play_zone_dropped(card: Control) -> void:
 func _on_pipe_dropped(card: Control) -> void:
 	# 손패 → 파이프 맨 뒤 (효과 없이 버리기)
 	_send_to_pipe_back(card)
-
-
-func _on_reserve_dropped(card: Control) -> void:
-	if reserved_card != null:
-		return
-	reserved_card = card
-	hand_cards.erase(card)
-	card.reparent(reserve_slot)
-	card.position = Vector2.ZERO
-	_update_hand_display()
 
 
 func _on_active_slot_1_dropped(card: Control) -> void:
@@ -387,14 +366,6 @@ func _advance_turn() -> void:
 
 func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
-
-	# 예비 슬롯 카드를 파이프 맨 앞에 삽입
-	if reserved_card != null:
-		reserved_card.set_active(false)
-		reserved_card.reparent(queue_card_holder)
-		queue_cards.insert(0, reserved_card)
-		reserved_card = null
-		_rebuild_pipe_ui()
 
 	var messages: Array[String] = ["플레이어 차례입니다"]
 	phase_banner.show_sequence(messages)
