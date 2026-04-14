@@ -11,8 +11,8 @@ const CARD_BLOCK := preload("res://resources/cards/starter_block.tres")
 const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
 
 const STARTER_DECK: Array = [
-	CARD_DRAW, CARD_BLOCK, CARD_BLOCK, CARD_GOLD, CARD_GOLD,
-	CARD_ATTACK, CARD_ATTACK, CARD_GOLD, CARD_GOLD, CARD_GOLD
+	CARD_GOLD, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_BLOCK,
+	CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_BLOCK, CARD_DRAW
 ]
 
 # 손패 존
