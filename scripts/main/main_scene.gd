@@ -4,11 +4,19 @@ const CardScene := preload("res://scenes/cards/card.tscn")
 const DRAW_COUNT := 5
 const TURNS_PER_ROUND := 5
 
-# 카드 종류 (4종)
+# 카드 종류 (공용 스타터 4종)
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
 const CARD_ATTACK := preload("res://resources/cards/starter_attack.tres")
 const CARD_BLOCK := preload("res://resources/cards/starter_block.tres")
 const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
+
+# 전사 전용 모듈
+const MODULE_COUNTER_STANCE := preload("res://resources/cards/warrior/module_counter_stance.tres")
+
+# Rage UI
+const RAGE_COLOR := Color(1.0, 0.55, 0.15, 1.0)
+const RAGE_EMPTY_COLOR := Color(0.35, 0.35, 0.35, 1.0)
+const RAGE_ORB_SIZE := 12
 
 const STARTER_DECK: Array = [
 	CARD_GOLD, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_BLOCK,
@@ -38,14 +46,20 @@ const STARTER_DECK: Array = [
 @onready var active_slot_1: PanelContainer = %ActiveSlot1
 @onready var active_slot_2: PanelContainer = %ActiveSlot2
 
+# Rage UI (전사 투기 발산)
+@onready var rage_label: Label = %RageLabel
+@onready var rage_orbs: HBoxContainer = %RageOrbs
+@onready var rage_button: Button = %RageButton
+
 # 카드 배열
 var hand_cards: Array[Control] = []    # 손패 (최대 5장, 사용 가능)
 var queue_cards: Array[Control] = []   # 타임라인 파이프 (대기 중)
 
 var game_ctx: GameContext
+var rage_system: WarriorRageSystem
 var is_discarding_from_effect: bool = false
 
-# 예비/액티브 슬롯
+# 액티브 슬롯
 var active_cards: Array[Control] = [null, null]
 
 # 라운드/턴
@@ -83,6 +97,13 @@ func _setup_game_context() -> void:
 	_on_boss_hp_changed(game_ctx.boss_hp, game_ctx.boss_max_hp)
 	_on_boss_block_changed(game_ctx.boss_block)
 
+	# 전사 전용 — 투기 발산 시스템
+	rage_system = WarriorRageSystem.new(game_ctx)
+	rage_system.rage_changed.connect(_on_rage_changed)
+	_create_rage_orbs(WarriorRageSystem.MAX_RAGE)
+	rage_button.pressed.connect(_on_rage_button_pressed)
+	_on_rage_changed(rage_system.stacks, WarriorRageSystem.MAX_RAGE)
+
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	hp_label.text = "HP %d/%d" % [current, max_hp]
@@ -115,13 +136,16 @@ func _can_accept_card(card: Control, zone_type: DropZone.ZoneType) -> bool:
 	# 손패에 있는 카드만 허용
 	if card not in hand_cards:
 		return false
+	var is_module: bool = card.data.card_type == CardData.CardType.MODULE
 	match zone_type:
 		DropZone.ZoneType.PLAY:
-			return true
+			# 모듈은 사용 불가 (장착 전용)
+			return not is_module
 		DropZone.ZoneType.DISCARD:
-			return true
+			# 모듈은 파이프로 버릴 수 없음 (장착 전용)
+			return not is_module
 		DropZone.ZoneType.ACTIVE:
-			return card.data.card_type == CardData.CardType.MODULE
+			return is_module
 	return false
 
 
@@ -167,7 +191,19 @@ func _init_starter_deck() -> void:
 		queue_card_holder.add_child(card)
 		queue_cards.append(card)
 	_rebuild_pipe_ui()
+	_equip_warrior_modules()
 	_start_round()
+
+
+func _equip_warrior_modules() -> void:
+	# 반격 태세를 액티브 슬롯 1에 기본 장착 (파이프/손패와 별개)
+	var card: Control = CardScene.instantiate()
+	card.data = MODULE_COUNTER_STANCE.duplicate()
+	card.is_face_up = true
+	active_slot_1.add_child(card)
+	card.position = Vector2.ZERO
+	active_cards[0] = card
+	card.set_active(false)
 
 
 # === 손패 드로우 ===
@@ -350,6 +386,8 @@ func _validate_turn_order() -> bool:
 func _advance_turn() -> void:
 	current_turn += 1
 	if current_turn > TURNS_PER_ROUND:
+		# 라운드 종료 — 방어도 리셋
+		game_ctx.reset_block()
 		current_round += 1
 		_start_round()
 		return
@@ -381,6 +419,10 @@ func _begin_boss_turn() -> void:
 	phase_banner.show_sequence(messages)
 	await phase_banner.banner_finished
 	game_ctx.deal_damage_to_player(5)
+	# 장착된 모듈의 보스 턴 종료 훅 실행
+	for card in active_cards:
+		if card and card.data and card.data.module_ability:
+			card.data.module_ability.on_boss_turn_end(game_ctx)
 	_advance_turn()
 
 
@@ -452,7 +494,9 @@ func _on_end_turn_cancelled() -> void:
 
 
 func _finish_turn() -> void:
-	game_ctx.reset_block()
+	# 남은 AP를 투기 스택으로 치환 (플레이어 턴 종료 시)
+	rage_system.add(resource_bar.ap_manager.current)
+	# 골드는 턴 종료 시 증발, 방어도는 라운드 종료까지 유지
 	resource_bar.gold_manager.reset()
 	end_turn_button.disabled = true
 	_advance_turn()
@@ -468,3 +512,32 @@ func _clear_cards() -> void:
 	hand_cards.clear()
 	queue_cards.clear()
 	_rebuild_pipe_ui()
+
+
+# === 투기 발산 UI (전사 전용) ===
+
+func _create_rage_orbs(count: int) -> void:
+	for child in rage_orbs.get_children():
+		child.queue_free()
+	for i in range(count):
+		var orb := ColorRect.new()
+		orb.custom_minimum_size = Vector2(RAGE_ORB_SIZE, RAGE_ORB_SIZE)
+		orb.color = RAGE_EMPTY_COLOR
+		rage_orbs.add_child(orb)
+
+
+func _on_rage_changed(stacks: int, max_stacks: int) -> void:
+	rage_label.text = "투기 %d/%d" % [stacks, max_stacks]
+	var orbs := rage_orbs.get_children()
+	for i in range(orbs.size()):
+		orbs[i].color = RAGE_COLOR if i < stacks else RAGE_EMPTY_COLOR
+	rage_button.disabled = stacks < max_stacks
+
+
+func _on_rage_button_pressed() -> void:
+	# 플레이어 턴일 때만 발동 가능 (턴 종료 버튼이 활성 상태 == 플레이어 턴)
+	if end_turn_button.disabled:
+		return
+	if not rage_system.can_consume():
+		return
+	rage_system.consume()

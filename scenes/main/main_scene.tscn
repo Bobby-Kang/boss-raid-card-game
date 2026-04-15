@@ -257,11 +257,30 @@ theme_override_constants/separation = 3
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="BuffLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar" unique_id=380891074]
+[node name="VBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar" unique_id=1168652075]
 layout_mode = 2
-text = "버프 구역"
+theme_override_constants/separation = 2
+
+[node name="RageLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar/VBox" unique_id=1168652076]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.55, 0.15, 1)
+theme_override_font_sizes/font_size = 11
+text = "투기 0/10"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="RageOrbs" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar/VBox" unique_id=1168652077]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 3
+
+[node name="RageButton" type="Button" parent="BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar/VBox" unique_id=1168652078]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "투기 발산"
 
 [node name="PlayerZones" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea" unique_id=1701593457]
 custom_minimum_size = Vector2(0, 180)
