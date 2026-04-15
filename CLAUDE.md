@@ -10,13 +10,13 @@
 
 ### 자원 시스템
 - **AP** (최대 3): 카드 사용 비용. 플레이어 턴 시작 시 3으로 리셋. 턴 종료 시 남은 AP → 전사 투기 스택
-- **골드**: 재화 카드로 획득. **턴 종료 시 증발**
+- **골드** (최대 10): 재화 카드로 획득. **턴 종료 시 증발**. 라운드 마켓 카드 구매 + 마켓 리롤(3 골드)에 사용
 - **방어도**: 피해 흡수. **라운드 종료 시 리셋** (한 라운드 5턴 동안 누적/유지)
 - `ApManager` (`scripts/ui/ap_manager.gd`), `GoldManager` (`scripts/ui/gold_manager.gd`)
 - `ResourceBar` (`scripts/ui/resource_bar.gd`): AP/골드 UI 통합 관리
 
 ### 카드 시스템
-- `CardData` Resource (`scripts/cards/card_data.gd`): 카드 데이터. `effects: Array[CardEffect]` + `module_ability: ModuleAbility`
+- `CardData` Resource (`scripts/cards/card_data.gd`): 카드 데이터. `effects: Array[CardEffect]` + `module_ability: ModuleAbility` + `gold_cost: int`(마켓 가격)
 - `CardEffect` 계층 (`scripts/cards/effects/`): `DamageEffect`, `BlockEffect`, `GainGoldEffect`, `DrawEffect`, `DiscardEffect`
 - `ModuleAbility` 계층 (`scripts/cards/modules/`): 모듈 카드의 패시브 훅 베이스 (`on_boss_turn_end` 등)
 - `GameContext` (`scripts/main/game_context.gd`): 공유 상태(HP, 방어도) + Callable (`draw_cards`, `discard_cards`)
@@ -36,6 +36,13 @@
 
 ### 슬롯 시스템
 - **액티브 슬롯** (`%ActiveSlot1`, `%ActiveSlot2`): MODULE 타입 카드 장착. 슬롯1은 시작 시 반격 태세 기본 장착
+
+### 라운드 마켓
+- `MarketPanel` (`scripts/ui/market_panel.gd`): MiddleArea 가운데 패널. 라운드 시작 시 `card_pool`에서 3장 무작위 진열
+- 카드별 고정 골드 가격(`CardData.gold_cost`). 구매 시 골드 차감 + `card_purchased` 시그널 → `main_scene._on_market_card_purchased`가 파이프 맨 뒤에 추가
+- 리롤: AP 3 또는 골드 3 (플레이어 턴 한정, 횟수 제한 없음)
+- 풀: 직업별 `resources/cards/<job>/market/*.tres` (전사: 강타·굳건한 방패·돌격·명상)
+- 보스 턴/턴 종료 시 `set_player_turn(false)` 호출로 모든 버튼 비활성
 
 ### 전사 고유 시스템
 - **투기 스택** (`WarriorRageSystem`): 플레이어 턴 종료 시 남은 AP → 스택 (최대 10). 10스택 시 0 AP로 보스 10 피해 + 방어도 +10
@@ -70,6 +77,7 @@ scripts/
     resource_bar.gd            # AP + 골드 UI
     ap_manager.gd              # AP 상태 관리
     gold_manager.gd            # 골드 상태 관리
+    market_panel.gd            # 라운드 마켓 (3슬롯 + 리롤)
 
 scenes/
   main/main_scene.tscn
@@ -80,6 +88,11 @@ resources/
     starter_*.tres             # 모든 직업 공용 스타터 카드 (4종)
     warrior/                   # 전사 고유 카드/모듈 리소스
       module_counter_stance.tres
+      market/                  # 전사 마켓 카드 풀
+        market_strike.tres
+        market_bulwark.tres
+        market_charge.tres
+        market_meditation.tres
 ```
 
 ### 새 직업 추가 가이드

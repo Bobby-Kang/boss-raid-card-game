@@ -51,6 +51,9 @@ const STARTER_DECK: Array = [
 @onready var rage_orbs: HBoxContainer = %RageOrbs
 @onready var rage_button: Button = %RageButton
 
+# 마켓 (MarketPanel — class_name 등록 race 회피 위해 PanelContainer로 타이핑)
+@onready var market_panel: PanelContainer = %MarketPanel
+
 # 카드 배열
 var hand_cards: Array[Control] = []    # 손패 (최대 5장, 사용 가능)
 var queue_cards: Array[Control] = []   # 타임라인 파이프 (대기 중)
@@ -103,6 +106,11 @@ func _setup_game_context() -> void:
 	_create_rage_orbs(WarriorRageSystem.MAX_RAGE)
 	rage_button.pressed.connect(_on_rage_button_pressed)
 	_on_rage_changed(rage_system.stacks, WarriorRageSystem.MAX_RAGE)
+
+	# 라운드 마켓
+	market_panel.setup(resource_bar.ap_manager, resource_bar.gold_manager)
+	market_panel.card_purchased.connect(_on_market_card_purchased)
+	market_panel.set_player_turn(false)
 
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
@@ -357,6 +365,8 @@ func _start_round() -> void:
 	_update_round_label()
 	_update_turn_order_ui()
 	current_turn = 0
+	if market_panel:
+		market_panel.refresh_slots()
 	_advance_turn()
 
 
@@ -408,10 +418,14 @@ func _begin_player_turn() -> void:
 	var messages: Array[String] = ["플레이어 차례입니다"]
 	phase_banner.show_sequence(messages)
 	await phase_banner.banner_finished
+	if market_panel:
+		market_panel.set_player_turn(true)
 	_start_player_turn()
 
 
 func _begin_boss_turn() -> void:
+	if market_panel:
+		market_panel.set_player_turn(false)
 	var messages: Array[String] = [
 		"보스 차례입니다",
 		"플레이어에게 5 피해를 입힙니다",
@@ -499,6 +513,8 @@ func _finish_turn() -> void:
 	# 골드는 턴 종료 시 증발, 방어도는 라운드 종료까지 유지
 	resource_bar.gold_manager.reset()
 	end_turn_button.disabled = true
+	if market_panel:
+		market_panel.set_player_turn(false)
 	_advance_turn()
 
 
@@ -532,6 +548,19 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 	for i in range(orbs.size()):
 		orbs[i].color = RAGE_COLOR if i < stacks else RAGE_EMPTY_COLOR
 	rage_button.disabled = stacks < max_stacks
+
+
+# === 마켓 ===
+
+func _on_market_card_purchased(card_data: CardData) -> void:
+	# 구매한 카드는 파이프 맨 뒤에 추가됨
+	var card: Control = CardScene.instantiate()
+	card.data = card_data.duplicate()
+	card.is_face_up = true
+	queue_card_holder.add_child(card)
+	card.set_active(false)
+	queue_cards.append(card)
+	_rebuild_pipe_ui()
 
 
 func _on_rage_button_pressed() -> void:

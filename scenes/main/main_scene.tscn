@@ -5,6 +5,12 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/end_turn_overlay.tscn" id="3_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/phase_banner.tscn" id="4_banner"]
 [ext_resource type="Script" uid="uid://ccs458o56bs1t" path="res://scripts/ui/drop_zone.gd" id="5_dropzone"]
+[ext_resource type="Script" path="res://scripts/ui/market_panel.gd" id="6_market"]
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="6b_card_data"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_strike.tres" id="7_m_strike"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_bulwark.tres" id="8_m_bulwark"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_charge.tres" id="9_m_charge"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_meditation.tres" id="10_m_meditation"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_active"]
 bg_color = Color(0.08, 0.12, 0.2, 0.85)
@@ -174,9 +180,12 @@ unique_name_in_owner = true
 layout_mode = 2
 
 [node name="MarketPanel" type="PanelContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=1644372998]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.5
+script = ExtResource("6_market")
+card_pool = Array[ExtResource("6b_card_data")]([ExtResource("7_m_strike"), ExtResource("8_m_bulwark"), ExtResource("9_m_charge"), ExtResource("10_m_meditation")])
 
 [node name="ActionLogPanel" type="PanelContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=1286874714]
 layout_mode = 2

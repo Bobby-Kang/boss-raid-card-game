@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/block_effect.gd" id="3_block"]
+
+[sub_resource type="Resource" id="Effect_block"]
+script = ExtResource("3_block")
+value = 5
+
+[resource]
+script = ExtResource("1_script")
+card_name = "굳건한 방패"
+cost = 1
+gold_cost = 3
+description = "방어도 +5"
+card_type = 1
+effects = Array[ExtResource("2_base")]([SubResource("Effect_block")])
