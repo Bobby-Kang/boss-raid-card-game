@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="CardData" format=3]
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://dffejvyfhrac1"]
 
-[ext_resource type="Script" path="res://scripts/cards/card_data.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/characters/warrior/counter_stance_ability.gd" id="2_ability"]
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="1_xy51q"]
+[ext_resource type="Script" uid="uid://ccinrchd4kip1" path="res://scripts/characters/warrior/counter_stance_ability.gd" id="2_ability"]
 
 [sub_resource type="Resource" id="Ability_counter_stance"]
 script = ExtResource("2_ability")
@@ -10,7 +11,6 @@ module_id = "counter_stance"
 [resource]
 script = ExtResource("1_script")
 card_name = "반격 태세"
-cost = 0
 description = "보스 턴 종료 시, 방어도가 1 이상 남으면 보스에게 2 피해"
 card_type = 3
 module_ability = SubResource("Ability_counter_stance")

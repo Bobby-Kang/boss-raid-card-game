@@ -5,8 +5,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/end_turn_overlay.tscn" id="3_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/phase_banner.tscn" id="4_banner"]
 [ext_resource type="Script" uid="uid://ccs458o56bs1t" path="res://scripts/ui/drop_zone.gd" id="5_dropzone"]
-[ext_resource type="Script" path="res://scripts/ui/market_panel.gd" id="6_market"]
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="6b_card_data"]
+[ext_resource type="Script" uid="uid://ba7lku4rmtowj" path="res://scripts/ui/market_panel.gd" id="6_market"]
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/market_strike.tres" id="7_m_strike"]
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/market_bulwark.tres" id="8_m_bulwark"]
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/market_charge.tres" id="9_m_charge"]
@@ -282,8 +282,8 @@ vertical_alignment = 1
 [node name="RageOrbs" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar/VBox" unique_id=1168652077]
 unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 3
+alignment = 1
 
 [node name="RageButton" type="Button" parent="BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar/VBox" unique_id=1168652078]
 unique_name_in_owner = true
@@ -326,7 +326,6 @@ theme_override_colors/font_color = Color(0.4, 0.7, 0.9, 1)
 theme_override_font_sizes/font_size = 11
 text = "방어력 0"
 horizontal_alignment = 1
-
 
 [node name="ActiveRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox" unique_id=2028098073]
 layout_mode = 2

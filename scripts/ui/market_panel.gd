@@ -10,9 +10,11 @@ extends PanelContainer
 
 signal card_purchased(card_data: CardData)
 
+const CardScene := preload("res://scenes/cards/card.tscn")
 const SLOT_COUNT := 3
 const REROLL_AP_COST := 3
 const REROLL_GOLD_COST := 3
+const CARD_SCALE := 0.7
 
 @export var card_pool: Array[CardData] = []
 
@@ -25,10 +27,12 @@ var _root_vbox: VBoxContainer
 var _slots_hbox: HBoxContainer
 var _reroll_ap_button: Button
 var _reroll_gold_button: Button
-var _slot_widgets: Array = []  # Array of dictionaries {root, name_lbl, desc_lbl, cost_lbl, buy_btn}
+var _slot_widgets: Array = []  # Array of dicts {slot, card_holder, card, buy_btn}
 
 
 func _ready() -> void:
+	# PlayDropZone(같은 부모 트리 상위에서 덮음)을 회피해 클릭이 마켓에 닿도록 z_index 상승
+	z_index = 1
 	_build_ui()
 
 
@@ -66,7 +70,7 @@ func _build_ui() -> void:
 	_root_vbox.add_theme_constant_override("separation", 4)
 	add_child(_root_vbox)
 
-	# 헤더
+	# 헤더 (제목 + 리롤 버튼 2개)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 6)
 	_root_vbox.add_child(header)
@@ -92,7 +96,8 @@ func _build_ui() -> void:
 
 	# 슬롯 영역
 	_slots_hbox = HBoxContainer.new()
-	_slots_hbox.add_theme_constant_override("separation", 6)
+	_slots_hbox.add_theme_constant_override("separation", 8)
+	_slots_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	_slots_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_slots_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_root_vbox.add_child(_slots_hbox)
@@ -102,54 +107,32 @@ func _build_ui() -> void:
 
 
 func _build_slot_widget(index: int) -> Dictionary:
-	var slot := PanelContainer.new()
-	slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	slot.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# 카드 한 장 + 구매 버튼을 세로로 묶음
+	var slot_vbox := VBoxContainer.new()
+	slot_vbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	slot_vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	slot_vbox.add_theme_constant_override("separation", 4)
+	_slots_hbox.add_child(slot_vbox)
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.18, 0.16, 0.13, 0.9)
-	style.border_color = Color(0.55, 0.45, 0.3, 1)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	slot.add_theme_stylebox_override("panel", style)
+	# 카드 자리 (스케일된 카드를 담는 wrapper — 레이아웃이 축소된 크기를 인식하도록)
+	var card_holder := Control.new()
+	var card_w := int(144 * CARD_SCALE)
+	var card_h := int(204 * CARD_SCALE)
+	card_holder.custom_minimum_size = Vector2(card_w, card_h)
+	slot_vbox.add_child(card_holder)
 
-	_slots_hbox.add_child(slot)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
-	slot.add_child(vbox)
-
-	var name_lbl := Label.new()
-	name_lbl.add_theme_font_size_override("font_size", 12)
-	name_lbl.add_theme_color_override("font_color", Color(1, 0.95, 0.85, 1))
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(name_lbl)
-
-	var desc_lbl := Label.new()
-	desc_lbl.add_theme_font_size_override("font_size", 10)
-	desc_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85, 1))
-	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(desc_lbl)
-
-	var cost_lbl := Label.new()
-	cost_lbl.add_theme_font_size_override("font_size", 11)
-	cost_lbl.add_theme_color_override("font_color", Color(1, 0.85, 0.3, 1))
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(cost_lbl)
-
+	# 구매 버튼
 	var buy_btn := Button.new()
 	buy_btn.text = "구매"
-	buy_btn.add_theme_font_size_override("font_size", 10)
+	buy_btn.add_theme_font_size_override("font_size", 11)
+	buy_btn.custom_minimum_size = Vector2(card_w, 0)
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
-	vbox.add_child(buy_btn)
+	slot_vbox.add_child(buy_btn)
 
 	return {
-		"root": slot,
-		"name_lbl": name_lbl,
-		"desc_lbl": desc_lbl,
-		"cost_lbl": cost_lbl,
+		"slot": slot_vbox,
+		"card_holder": card_holder,
+		"card": null,
 		"buy_btn": buy_btn,
 	}
 
@@ -159,24 +142,37 @@ func _build_slot_widget(index: int) -> Dictionary:
 func _render_slots() -> void:
 	for i in range(SLOT_COUNT):
 		var widget: Dictionary = _slot_widgets[i]
+		# 기존 카드 인스턴스 제거
+		if widget.card != null and is_instance_valid(widget.card):
+			widget.card.queue_free()
+			widget.card = null
+
 		if i < slots.size():
 			var card_data: CardData = slots[i]
-			widget.root.visible = true
-			widget.name_lbl.text = "[%d AP] %s" % [card_data.cost, card_data.card_name]
-			widget.desc_lbl.text = card_data.get_description_text()
-			widget.cost_lbl.text = "%d 골드" % card_data.gold_cost
-			widget.buy_btn.text = "구매"
+			widget.slot.visible = true
+			# 새 카드 인스턴스 생성 (마켓용 — 비활성, 드래그 불가)
+			var card: Control = CardScene.instantiate()
+			card.data = card_data
+			card.is_face_up = true
+			card.scale = Vector2(CARD_SCALE, CARD_SCALE)
+			card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			widget.card_holder.add_child(card)
+			widget.card = card
+			# _ready 후 비활성 처리 (드래그 차단 + 시각적 dim 제거)
+			card.set_active(false)
+			card.modulate.a = 1.0  # 비활성이라도 마켓 카드는 또렷하게
+			widget.buy_btn.text = "구매 (%d G)" % card_data.gold_cost
 		else:
-			widget.root.visible = false
+			widget.slot.visible = false
 	_refresh_button_states()
 
 
 func _refresh_button_states() -> void:
 	var has_ap := ap_manager != null and ap_manager.has(REROLL_AP_COST)
-	var has_gold := gold_manager != null and gold_manager.current >= REROLL_GOLD_COST
+	var has_gold_for_reroll := gold_manager != null and gold_manager.current >= REROLL_GOLD_COST
 
 	_reroll_ap_button.disabled = not is_player_turn or not has_ap
-	_reroll_gold_button.disabled = not is_player_turn or not has_gold
+	_reroll_gold_button.disabled = not is_player_turn or not has_gold_for_reroll
 
 	for i in range(SLOT_COUNT):
 		var widget: Dictionary = _slot_widgets[i]
