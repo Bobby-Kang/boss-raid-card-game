@@ -18,6 +18,13 @@ const RAGE_COLOR := Color(1.0, 0.55, 0.15, 1.0)
 const RAGE_EMPTY_COLOR := Color(0.35, 0.35, 0.35, 1.0)
 const RAGE_ORB_SIZE := 12
 
+# Phase UI
+const PHASE_COLORS := {
+	1: Color(1, 1, 1, 1),
+	2: Color(0.5, 0.7, 1.0, 1),
+	3: Color(1.0, 0.4, 0.4, 1),
+}
+
 const STARTER_DECK: Array = [
 	CARD_GOLD, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_BLOCK,
 	CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_BLOCK, CARD_DRAW
@@ -38,6 +45,7 @@ const STARTER_DECK: Array = [
 @onready var end_turn_overlay: CanvasLayer = %EndTurnOverlay
 @onready var phase_banner: CanvasLayer = %PhaseBanner
 @onready var round_label: Label = %RoundLabel
+@onready var phase_label: Label = %PhaseLabel
 @onready var turn_slots_container: HBoxContainer = %TurnSlotsContainer
 
 # 드롭 존
@@ -60,6 +68,7 @@ var queue_cards: Array[Control] = []   # 타임라인 파이프 (대기 중)
 
 var game_ctx: GameContext
 var rage_system: WarriorRageSystem
+var phase_system: BossPhaseSystem
 var is_discarding_from_effect: bool = false
 
 # 액티브 슬롯
@@ -112,6 +121,11 @@ func _setup_game_context() -> void:
 	market_panel.card_purchased.connect(_on_market_card_purchased)
 	market_panel.set_player_turn(false)
 
+	# 보스 페이즈 시스템 (HP/라운드 트리거 → 마켓 티어 매칭)
+	phase_system = BossPhaseSystem.new(game_ctx)
+	phase_system.phase_changed.connect(_on_phase_changed)
+	_apply_phase_label(phase_system.current_phase)
+
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	hp_label.text = "HP %d/%d" % [current, max_hp]
@@ -121,6 +135,8 @@ func _on_player_block_changed(block: int) -> void:
 
 func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	boss_hp_label.text = "보스 체력\nHP %d/%d" % [current, max_hp]
+	if phase_system:
+		phase_system.check_hp_trigger()
 
 func _on_boss_block_changed(block: int) -> void:
 	boss_block_label.text = "보스 상태\n방어력 %d" % block
@@ -365,6 +381,9 @@ func _start_round() -> void:
 	_update_round_label()
 	_update_turn_order_ui()
 	current_turn = 0
+	# 페이즈 라운드 트리거는 마켓 refresh 이전에 평가 (새 페이즈가 즉시 반영되도록)
+	if phase_system:
+		phase_system.check_round_trigger(current_round)
 	if market_panel:
 		market_panel.refresh_slots()
 	_advance_turn()
@@ -570,3 +589,21 @@ func _on_rage_button_pressed() -> void:
 	if not rage_system.can_consume():
 		return
 	rage_system.consume()
+
+
+# === 보스 페이즈 ===
+
+func _on_phase_changed(new_phase: int, _old_phase: int) -> void:
+	if market_panel:
+		market_panel.set_phase(new_phase)
+	_apply_phase_label(new_phase)
+	if phase_banner:
+		phase_banner.show_sequence(["페이즈 %d 진입!" % new_phase])
+
+
+func _apply_phase_label(phase: int) -> void:
+	if not phase_label:
+		return
+	phase_label.text = "페이즈 %d" % phase
+	var color: Color = PHASE_COLORS.get(phase, Color.WHITE)
+	phase_label.add_theme_color_override("font_color", color)

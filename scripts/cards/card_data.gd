@@ -9,6 +9,7 @@ enum CardType { ATTACK, SKILL, POWER, MODULE }
 @export var card_name: String = ""
 @export var cost: int = 0
 @export var gold_cost: int = 0
+@export var tier: int = 1
 @export var description: String = ""
 @export var card_type: CardType = CardType.ATTACK
 @export var artwork: Texture2D = null

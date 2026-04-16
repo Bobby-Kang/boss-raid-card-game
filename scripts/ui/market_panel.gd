@@ -19,10 +19,21 @@ const CARD_HEIGHT := 204
 
 @export var card_pool: Array[CardData] = []
 
+# 페이즈별 티어 가중치 테이블
+# phase 1: T1만
+# phase 2: T2 메인, T1은 낮은 확률로 등장
+# phase 3: T3 메인, T2 보조, T1 거의 안 나옴
+const TIER_WEIGHTS := {
+	1: {1: 100, 2: 0,   3: 0},
+	2: {1: 20,  2: 100, 3: 0},
+	3: {1: 5,   2: 30,  3: 100},
+}
+
 var ap_manager: ApManager
 var gold_manager: GoldManager
 var slots: Array[CardData] = []
 var is_player_turn: bool = false
+var current_phase: int = 1
 
 var _root_vbox: VBoxContainer
 var _slots_hbox: HBoxContainer
@@ -49,17 +60,40 @@ func refresh_slots() -> void:
 	if card_pool.is_empty():
 		_render_slots()
 		return
-	var pool := card_pool.duplicate()
-	pool.shuffle()
-	var n := mini(SLOT_COUNT, pool.size())
-	for i in range(n):
-		slots.append(pool[i])
+	var weights: Dictionary = TIER_WEIGHTS.get(current_phase, TIER_WEIGHTS[1])
+	var available := card_pool.duplicate()
+	for i in range(mini(SLOT_COUNT, available.size())):
+		var card := _weighted_pick(available, weights)
+		if card == null:
+			break
+		slots.append(card)
+		available.erase(card)
 	_render_slots()
 
 
 func set_player_turn(value: bool) -> void:
 	is_player_turn = value
 	_refresh_button_states()
+
+
+func set_phase(phase: int) -> void:
+	# 진행 중인 슬롯은 유지, 다음 refresh부터 적용
+	current_phase = phase
+
+
+func _weighted_pick(pool: Array, weights: Dictionary) -> CardData:
+	var total := 0
+	for c in pool:
+		total += int(weights.get(c.tier, 0))
+	if total <= 0:
+		return null
+	var roll := randi() % total
+	var acc := 0
+	for c in pool:
+		acc += int(weights.get(c.tier, 0))
+		if roll < acc:
+			return c
+	return pool[0]
 
 
 # === UI 빌드 ===

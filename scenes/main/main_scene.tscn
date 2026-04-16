@@ -11,6 +11,10 @@
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/market_bulwark.tres" id="8_m_bulwark"]
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/market_charge.tres" id="9_m_charge"]
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/market_meditation.tres" id="10_m_meditation"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/tier2/market_cleave.tres" id="11_m_cleave"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/tier2/market_iron_will.tres" id="12_m_iron_will"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/tier2/market_swift_blow.tres" id="13_m_swift_blow"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/tier2/market_regroup.tres" id="14_m_regroup"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_active"]
 bg_color = Color(0.08, 0.12, 0.2, 0.85)
@@ -175,6 +179,12 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 1
 
+[node name="PhaseLabel" type="Label" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel" unique_id=874512098]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 1
+text = "페이즈 1"
+
 [node name="TurnSlotsContainer" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel" unique_id=2091243094]
 unique_name_in_owner = true
 layout_mode = 2
@@ -185,7 +195,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.5
 script = ExtResource("6_market")
-card_pool = Array[ExtResource("6b_card_data")]([ExtResource("7_m_strike"), ExtResource("8_m_bulwark"), ExtResource("9_m_charge"), ExtResource("10_m_meditation")])
+card_pool = Array[ExtResource("6b_card_data")]([ExtResource("7_m_strike"), ExtResource("8_m_bulwark"), ExtResource("9_m_charge"), ExtResource("10_m_meditation"), ExtResource("11_m_cleave"), ExtResource("12_m_iron_will"), ExtResource("13_m_swift_blow"), ExtResource("14_m_regroup")])
 
 [node name="ActionLogPanel" type="PanelContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=1286874714]
 layout_mode = 2

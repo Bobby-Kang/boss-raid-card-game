@@ -18,5 +18,6 @@ script = ExtResource("1_script")
 card_name = "돌격"
 cost = 1
 gold_cost = 4
+tier = 1
 description = "보스에게 3 피해 + 방어도 +2"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_damage"), SubResource("Effect_block")])

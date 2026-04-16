@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://cxbr8bbfmhype"]
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b2t1cleave2tr1"]
 
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
@@ -6,13 +6,13 @@
 
 [sub_resource type="Resource" id="Effect_damage"]
 script = ExtResource("3_damage")
-value = 5
+value = 8
 
 [resource]
 script = ExtResource("1_script")
-card_name = "강타"
+card_name = "참격"
 cost = 2
-gold_cost = 4
-tier = 1
-description = "보스에게 5 피해"
+gold_cost = 6
+tier = 2
+description = "보스에게 8 피해"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_damage")])

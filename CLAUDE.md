@@ -16,7 +16,7 @@
 - `ResourceBar` (`scripts/ui/resource_bar.gd`): AP/골드 UI 통합 관리
 
 ### 카드 시스템
-- `CardData` Resource (`scripts/cards/card_data.gd`): 카드 데이터. `effects: Array[CardEffect]` + `module_ability: ModuleAbility` + `gold_cost: int`(마켓 가격)
+- `CardData` Resource (`scripts/cards/card_data.gd`): 카드 데이터. `effects: Array[CardEffect]` + `module_ability: ModuleAbility` + `gold_cost: int`(마켓 가격) + `tier: int`(마켓 추첨 가중치 등급, 1=기본/2=중/3=고)
 - `CardEffect` 계층 (`scripts/cards/effects/`): `DamageEffect`, `BlockEffect`, `GainGoldEffect`, `DrawEffect`, `DiscardEffect`
 - `ModuleAbility` 계층 (`scripts/cards/modules/`): 모듈 카드의 패시브 훅 베이스 (`on_boss_turn_end` 등)
 - `GameContext` (`scripts/main/game_context.gd`): 공유 상태(HP, 방어도) + Callable (`draw_cards`, `discard_cards`)
@@ -34,6 +34,14 @@
 - `main_scene.gd`: `_advance_turn()` → `_begin_player_turn()` / `_begin_boss_turn()`
 - 라운드 경계(`current_turn > TURNS_PER_ROUND`)에서 방어도 리셋
 
+### 보스 페이즈 시스템
+- `BossPhaseSystem` (`scripts/bosses/boss_phase_system.gd`, RefCounted): 3단계(1·2·3) 페이즈 상태 + 전환 판정
+- 전환 트리거: **HP 임계** OR **라운드 임계** (둘 중 빠른 쪽). HP 임계 = `[0.66, 0.33]`(boss_max_hp 비율), 라운드 임계 = `[3, 5]`. 단방향(올라가기만)
+- 평가 시점: 보스 HP 변경(`_on_boss_hp_changed` → `check_hp_trigger()`), 라운드 시작(`_start_round` → `check_round_trigger(current_round)`, 마켓 refresh 이전)
+- `phase_changed(new, old)` 시그널 → `MarketPanel.set_phase(new)` 다음 refresh 가중치 반영, `%PhaseLabel` 텍스트·색 갱신, `phase_banner` 안내
+- **GameContext와 분리**: 페이즈는 보스 전용 상태이므로 공유 컨텍스트에 추가하지 않음. ctx 참조만 위임
+- 마켓 가중치 (`MarketPanel.TIER_WEIGHTS`): Phase 1 = T1 100·T2 0·T3 0 / Phase 2 = T1 20·T2 100·T3 0 / Phase 3 = T1 5·T2 30·T3 100. 누적이지만 하위 티어 가중치 급감
+
 ### 슬롯 시스템
 - **액티브 슬롯** (`%ActiveSlot1`, `%ActiveSlot2`): MODULE 타입 카드 장착. 슬롯1은 시작 시 반격 태세 기본 장착
 
@@ -41,7 +49,8 @@
 - `MarketPanel` (`scripts/ui/market_panel.gd`): MiddleArea 가운데 패널. 라운드 시작 시 `card_pool`에서 3장 무작위 진열
 - 카드별 고정 골드 가격(`CardData.gold_cost`). 구매 시 골드 차감 + `card_purchased` 시그널 → `main_scene._on_market_card_purchased`가 파이프 맨 뒤에 추가
 - 리롤: AP 3 또는 골드 3 (플레이어 턴 한정, 횟수 제한 없음)
-- 풀: 직업별 `resources/cards/<job>/market/*.tres` (전사: 강타·굳건한 방패·돌격·명상)
+- 풀: 직업별 `resources/cards/<job>/market/*.tres` + `tier2/*.tres` (전사 T1: 강타·굳건한 방패·돌격·명상, T2: 참격·강철 의지·속공·재정비)
+- 추첨: 페이즈별 가중치 기반 (`_weighted_pick`). 페이즈가 올라가면 상위 티어가 주력으로 등장
 - 보스 턴/턴 종료 시 `set_player_turn(false)` 호출로 모든 버튼 비활성
 
 ### 전사 고유 시스템
@@ -72,6 +81,8 @@ scripts/
     warrior/
       rage_system.gd           # 전사 투기 스택 + 발산 로직
       counter_stance_ability.gd  # 전사 "반격 태세" 모듈 구현
+  bosses/                      # 보스 시스템 루트
+    boss_phase_system.gd       # 3단계 페이즈 (HP/라운드 OR 트리거)
   ui/
     drop_zone.gd               # 드롭 존 (PLAY/DISCARD/ACTIVE)
     resource_bar.gd            # AP + 골드 UI
@@ -88,11 +99,16 @@ resources/
     starter_*.tres             # 모든 직업 공용 스타터 카드 (4종)
     warrior/                   # 전사 고유 카드/모듈 리소스
       module_counter_stance.tres
-      market/                  # 전사 마켓 카드 풀
+      market/                  # 전사 마켓 Tier 1 카드 풀
         market_strike.tres
         market_bulwark.tres
         market_charge.tres
         market_meditation.tres
+        tier2/                 # 전사 마켓 Tier 2 카드 풀
+          market_cleave.tres
+          market_iron_will.tres
+          market_swift_blow.tres
+          market_regroup.tres
 ```
 
 ### 새 직업 추가 가이드
