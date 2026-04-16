@@ -14,7 +14,8 @@ const CardScene := preload("res://scenes/cards/card.tscn")
 const SLOT_COUNT := 3
 const REROLL_AP_COST := 3
 const REROLL_GOLD_COST := 3
-const CARD_SCALE := 0.7
+const CARD_WIDTH := 144
+const CARD_HEIGHT := 204
 
 @export var card_pool: Array[CardData] = []
 
@@ -31,8 +32,6 @@ var _slot_widgets: Array = []  # Array of dicts {slot, card_holder, card, buy_bt
 
 
 func _ready() -> void:
-	# PlayDropZone(같은 부모 트리 상위에서 덮음)을 회피해 클릭이 마켓에 닿도록 z_index 상승
-	z_index = 1
 	_build_ui()
 
 
@@ -114,18 +113,16 @@ func _build_slot_widget(index: int) -> Dictionary:
 	slot_vbox.add_theme_constant_override("separation", 4)
 	_slots_hbox.add_child(slot_vbox)
 
-	# 카드 자리 (스케일된 카드를 담는 wrapper — 레이아웃이 축소된 크기를 인식하도록)
+	# 카드 자리 (실제 카드 크기 그대로)
 	var card_holder := Control.new()
-	var card_w := int(144 * CARD_SCALE)
-	var card_h := int(204 * CARD_SCALE)
-	card_holder.custom_minimum_size = Vector2(card_w, card_h)
+	card_holder.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
 	slot_vbox.add_child(card_holder)
 
 	# 구매 버튼
 	var buy_btn := Button.new()
 	buy_btn.text = "구매"
-	buy_btn.add_theme_font_size_override("font_size", 11)
-	buy_btn.custom_minimum_size = Vector2(card_w, 0)
+	buy_btn.add_theme_font_size_override("font_size", 13)
+	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 32)
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
 	slot_vbox.add_child(buy_btn)
 
@@ -154,7 +151,6 @@ func _render_slots() -> void:
 			var card: Control = CardScene.instantiate()
 			card.data = card_data
 			card.is_face_up = true
-			card.scale = Vector2(CARD_SCALE, CARD_SCALE)
 			card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			widget.card_holder.add_child(card)
 			widget.card = card

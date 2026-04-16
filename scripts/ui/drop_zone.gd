@@ -6,6 +6,10 @@ signal card_dropped(card: Control)
 enum ZoneType { PLAY, DISCARD, ACTIVE }
 @export var zone_type: ZoneType = ZoneType.PLAY
 
+## true면 평소엔 mouse_filter=IGNORE(클릭 통과), 드래그 중에만 STOP(드롭 대상).
+## PlayDropZone처럼 다른 UI(MarketPanel 등) 위를 덮는 투명 드롭존에서 사용.
+@export var pass_through_when_idle: bool = false
+
 ## main_scene에서 설정하는 필터 함수: func(card, zone_type) -> bool
 var accept_filter: Callable
 
@@ -20,6 +24,8 @@ func _ready() -> void:
 	_highlight_style.border_color = Color(0.3, 0.9, 0.3, 0.8)
 	_highlight_style.set_border_width_all(2)
 	_highlight_style.set_corner_radius_all(4)
+	if pass_through_when_idle:
+		mouse_filter = MOUSE_FILTER_IGNORE
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
@@ -42,7 +48,12 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_DRAG_END:
+	if what == NOTIFICATION_DRAG_BEGIN:
+		if pass_through_when_idle:
+			mouse_filter = MOUSE_FILTER_STOP
+	elif what == NOTIFICATION_DRAG_END:
+		if pass_through_when_idle:
+			mouse_filter = MOUSE_FILTER_IGNORE
 		_restore_style()
 
 

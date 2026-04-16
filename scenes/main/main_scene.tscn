@@ -154,7 +154,7 @@ vertical_alignment = 1
 [node name="MiddleWrapper" type="Control" parent="BattleField/VBoxLayout" unique_id=492146476]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.22
+size_flags_stretch_ratio = 0.32
 
 [node name="MiddleArea" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper" unique_id=2022677500]
 layout_mode = 1
@@ -206,8 +206,9 @@ offset_right = 2.0
 offset_bottom = 85.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 1
+mouse_filter = 2
 script = ExtResource("5_dropzone")
+pass_through_when_idle = true
 
 [node name="BottomArea" type="VBoxContainer" parent="BattleField/VBoxLayout" unique_id=488632899]
 layout_mode = 2
