@@ -598,7 +598,8 @@ func _on_phase_changed(new_phase: int, _old_phase: int) -> void:
 		market_panel.set_phase(new_phase)
 	_apply_phase_label(new_phase)
 	if phase_banner:
-		phase_banner.show_sequence(["페이즈 %d 진입!" % new_phase])
+		var messages: Array[String] = ["페이즈 %d 진입!" % new_phase]
+		phase_banner.show_sequence(messages)
 
 
 func _apply_phase_label(phase: int) -> void:

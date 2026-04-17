@@ -352,6 +352,9 @@
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-04-17 | PhaseLabel 위치 변경: TurnInfoPanel → BossInfoRight 상단 (보스 우측 정보 열에 크게 표시, font_size 20) |
+| 2026-04-17 | `show_sequence` 호출 시 `Array[String]` 타입 불일치 오류 수정 |
+| 2026-04-17 | `BossPhaseSystem._evaluate()` HP/라운드 비교 변수 타입 추론 오류 수정 (`bool` 명시 + `float()`/`int()` 캐스트) |
 | 2026-04-16 | 보스 3단계 페이즈 시스템 + 마켓 티어 매칭 구현 (`BossPhaseSystem`, HP/라운드 OR 트리거) |
 | 2026-04-16 | `CardData.tier` 필드 추가 + 전사 Tier 2 카드 4종 (참격·강철 의지·속공·재정비) |
 | 2026-04-16 | `MarketPanel` 가중치 추첨(`TIER_WEIGHTS`)으로 교체 |
