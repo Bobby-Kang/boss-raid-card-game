@@ -48,5 +48,5 @@ horizontal_alignment = 1
 layout_mode = 2
 custom_minimum_size = Vector2(200, 48)
 theme_override_font_sizes/font_size = 18
-text = "다시 시작"
+text = "타이틀로"
 size_flags_horizontal = 4

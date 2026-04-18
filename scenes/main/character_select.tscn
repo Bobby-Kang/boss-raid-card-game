@@ -1,0 +1,351 @@
+[gd_scene format=3 uid="uid://character_select_main"]
+
+[ext_resource type="Script" path="res://scripts/main/character_select.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
+bg_color = Color(0.1, 0.1, 0.14, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.35, 0.45, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_boss"]
+bg_color = Color(0.14, 0.06, 0.06, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.7, 0.2, 0.2, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_player"]
+bg_color = Color(0.06, 0.1, 0.16, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.55, 0.9, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="CharacterSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.08, 0.1, 1)
+
+[node name="RootVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="PanelContainer" parent="RootVBox"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="HeaderLabel" type="Label" parent="RootVBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 26
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_bottom = 16
+text = "전투 준비"
+horizontal_alignment = 1
+
+[node name="MainArea" type="HBoxContainer" parent="RootVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="BossPanel" type="PanelContainer" parent="RootVBox/MainArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBox_boss")
+
+[node name="BossVBox" type="VBoxContainer" parent="RootVBox/MainArea/BossPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="BossTag" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.35, 0.35, 1)
+theme_override_font_sizes/font_size = 14
+text = "BOSS"
+horizontal_alignment = 1
+
+[node name="BossName" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 52
+text = "버그베어"
+horizontal_alignment = 1
+
+[node name="BossFacePanel" type="PanelContainer" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 220)
+
+[node name="BossFaceLabel" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossFacePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 48
+text = "👹"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BossSeparator" type="HSeparator" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+layout_mode = 2
+
+[node name="BossStatVBox" type="VBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BossHpRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox"]
+layout_mode = 2
+
+[node name="BossHpIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossHpRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "HP"
+
+[node name="BossHpVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossHpRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 16
+text = "100"
+
+[node name="BossAtkRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox"]
+layout_mode = 2
+
+[node name="BossAtkIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossAtkRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "기본 공격"
+
+[node name="BossAtkVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossAtkRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 16
+text = "매 턴 5 피해"
+
+[node name="BossPhaseRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox"]
+layout_mode = 2
+
+[node name="BossPhaseIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossPhaseRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "페이즈"
+
+[node name="BossPhaseVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossPhaseRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 16
+text = "3단계 (HP / 라운드 진행)"
+
+[node name="BossFlavorLabel" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.45, 0.45, 1)
+theme_override_font_sizes/font_size = 14
+text = "\"으르렁...\""
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="VsDivider" type="PanelContainer" parent="RootVBox/MainArea"]
+layout_mode = 2
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(80, 0)
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="VsLabel" type="Label" parent="RootVBox/MainArea/VsDivider"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 32
+text = "VS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerPanel" type="PanelContainer" parent="RootVBox/MainArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBox_player")
+
+[node name="PlayerVBox" type="VBoxContainer" parent="RootVBox/MainArea/PlayerPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="PlayerTag" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.7, 1.0, 1)
+theme_override_font_sizes/font_size = 14
+text = "PLAYER"
+horizontal_alignment = 1
+
+[node name="PlayerName" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_font_sizes/font_size = 52
+text = "전사"
+horizontal_alignment = 1
+
+[node name="PlayerFacePanel" type="PanelContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 220)
+
+[node name="PlayerFaceLabel" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerFacePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 48
+text = "🗡️"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerSeparator" type="HSeparator" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+
+[node name="PlayerStatVBox" type="VBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PlayerHpRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+layout_mode = 2
+
+[node name="PlayerHpIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerHpRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "HP"
+
+[node name="PlayerHpVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerHpRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_font_sizes/font_size = 16
+text = "50"
+
+[node name="PlayerApRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+layout_mode = 2
+
+[node name="PlayerApIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerApRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "AP"
+
+[node name="PlayerApVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerApRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_font_sizes/font_size = 16
+text = "3 (매 플레이어 턴 리셋)"
+
+[node name="PlayerDeckRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+layout_mode = 2
+
+[node name="PlayerDeckIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerDeckRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "스타터 덱"
+
+[node name="PlayerDeckVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerDeckRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_font_sizes/font_size = 16
+text = "10장"
+
+[node name="PlayerAbilityRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+layout_mode = 2
+
+[node name="PlayerAbilityIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerAbilityRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "고유 능력"
+
+[node name="PlayerAbilityVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerAbilityRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_font_sizes/font_size = 16
+text = "투기 발산 / 반격 태세"
+autowrap_mode = 3
+
+[node name="PlayerFlavorLabel" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.5, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "\"타임라인을 설계하라.\""
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Footer" type="PanelContainer" parent="RootVBox"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="FooterHBox" type="HBoxContainer" parent="RootVBox/Footer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_bottom = 16
+alignment = 2
+
+[node name="BackButton" type="Button" parent="RootVBox/Footer/FooterHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(140, 44)
+theme_override_font_sizes/font_size = 16
+text = "← 타이틀"
+
+[node name="FightButton" type="Button" parent="RootVBox/Footer/FooterHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(220, 44)
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+text = "전투 시작!"
