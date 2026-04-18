@@ -13,7 +13,7 @@ extends RefCounted
 #   POWER:  파워 존에 놓임 → 매 보스 턴 카운트다운 -1 → 0이 되면 발동 → 버린 카드 더미
 #
 # 공개 범위:
-#   덱: 장수만 공개 (내용 비공개)
+#   덱: 남은 카드 구성 공개 (이름만, 순서 비공개 — 알파벳/가나다 정렬로 표시)
 #   파워 존: 항상 공개 (카운트다운 포함)
 #   버린 카드 더미: 공개
 
@@ -125,6 +125,15 @@ func get_remaining_count() -> int:
 
 func get_discard_count() -> int:
 	return discard.size()
+
+
+# 덱에 남은 카드 이름 목록 — 순서를 숨기기 위해 가나다순 정렬
+func get_remaining_names_sorted() -> Array[String]:
+	var names: Array[String] = []
+	for card in deck:
+		names.append(card.card_name)
+	names.sort()
+	return names
 
 
 func get_active_powers() -> Array:

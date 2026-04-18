@@ -523,8 +523,15 @@ func _begin_boss_turn() -> void:
 
 # === 보스 덱 UI 핸들러 ===
 
-func _on_boss_deck_changed(remaining: int) -> void:
-	boss_deck_count_label.text = "🃏 덱\n%d장" % remaining
+func _on_boss_deck_changed(_remaining: int) -> void:
+	var names := boss_deck_system.get_remaining_names_sorted()
+	if names.is_empty():
+		boss_deck_count_label.text = "덱 (0장)\n—"
+		return
+	var lines: PackedStringArray = ["덱 (%d장)" % names.size()]
+	for name in names:
+		lines.append("· " + name)
+	boss_deck_count_label.text = "\n".join(lines)
 
 func _on_boss_card_discarded(_card: BossCardData) -> void:
 	boss_discard_label.text = "버린 카드\n%d장" % boss_deck_system.get_discard_count()

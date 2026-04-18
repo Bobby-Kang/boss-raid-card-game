@@ -96,17 +96,16 @@ vertical_alignment = 1
 [node name="BossCardDeck" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow" unique_id=1353816694]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.2
+size_flags_stretch_ratio = 0.35
 
 [node name="BossDeckCountLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossCardDeck" unique_id=1580672654]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 15
-text = "🃏 덱
-0장"
+theme_override_font_sizes/font_size = 14
+text = "덱 (0장)"
 horizontal_alignment = 1
-vertical_alignment = 1
+vertical_alignment = 0
 
 [node name="BossFace" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow" unique_id=752482370]
 layout_mode = 2
