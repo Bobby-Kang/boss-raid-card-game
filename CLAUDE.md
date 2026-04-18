@@ -34,6 +34,17 @@
 - `main_scene.gd`: `_advance_turn()` → `_begin_player_turn()` / `_begin_boss_turn()`
 - 라운드 경계(`current_turn > TURNS_PER_ROUND`)에서 방어도 리셋
 
+### 보스 카드덱 시스템 (에이언즈 엔드 방식)
+- `BossDeckSystem` (`scripts/bosses/boss_deck_system.gd`, RefCounted): 보스 카드 덱 관리
+- 구조: Phase1 카드(내부 셔플) → Phase2 카드(내부 셔플) → Phase3 카드(내부 셔플) 순으로 쌓음. 티어 경계 고정, 덱 소진 시 버린 카드 전체 재셔플
+- 카드 타입: **ATTACK** (즉시 실행 → 버린 카드), **POWER** (파워 존에 배치 → 매 보스 턴 카운트다운 -1 → 0 시 발동)
+- 공개 범위: 덱 장수만 표시(내용 비공개), 파워 존 항상 공개(카운트다운 포함), 버린 카드 더미 공개
+- `BossCardData` (`scripts/bosses/boss_card_data.gd`, Resource): 카드명/타입/카운트다운/아이콘/설명/효과 배열
+- 보스 전용 효과 (`scripts/bosses/effects/`): `BossDamageEffect`(플레이어 피해), `BossBlockEffect`(보스 방어도), `BossForceDiscardEffect`(강제 버리기)
+- 보스 턴 흐름: ① 파워 틱(0 도달 시 즉시 발동) → ② 카드 드로우 → ③ 배너 표시 → ④ 카드 실행 → ⑤ 모듈 훅
+- UI: `%BossDeckCountLabel`(덱 장수), `%BossDiscardLabel`(버린 카드 수), `%BossCurrentCardLabel`(이번 턴 카드), `%BossPowerZone`(활성 파워 목록)
+- 버그베어 카드: `resources/bosses/bugbear/phase1~3/` (총 13장 — Phase1: 5장, Phase2: 4장, Phase3: 4장)
+
 ### 보스 페이즈 시스템
 - `BossPhaseSystem` (`scripts/bosses/boss_phase_system.gd`, RefCounted): 3단계(1·2·3) 페이즈 상태 + 전환 판정
 - 전환 트리거: **HP 임계** OR **라운드 임계** (둘 중 빠른 쪽). HP 임계 = `[0.66, 0.33]`(boss_max_hp 비율), 라운드 임계 = `[3, 5]`. 단방향(올라가기만)

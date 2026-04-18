@@ -13,6 +13,27 @@ const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
 # 전사 전용 모듈
 const MODULE_COUNTER_STANCE := preload("res://resources/cards/warrior/module_counter_stance.tres")
 
+# 버그베어 보스 카드덱 (Phase별 티어 블록)
+const BUGBEAR_PHASE1: Array = [
+	preload("res://resources/bosses/bugbear/phase1/bugbear_scratch.tres"),
+	preload("res://resources/bosses/bugbear/phase1/bugbear_scratch_2.tres"),
+	preload("res://resources/bosses/bugbear/phase1/bugbear_growl.tres"),
+	preload("res://resources/bosses/bugbear/phase1/bugbear_crouch.tres"),
+	preload("res://resources/bosses/bugbear/phase1/bugbear_toxic_claw.tres"),
+]
+const BUGBEAR_PHASE2: Array = [
+	preload("res://resources/bosses/bugbear/phase2/bugbear_heavy_strike.tres"),
+	preload("res://resources/bosses/bugbear/phase2/bugbear_rage_roar.tres"),
+	preload("res://resources/bosses/bugbear/phase2/bugbear_iron_wall.tres"),
+	preload("res://resources/bosses/bugbear/phase2/bugbear_combo_scratch.tres"),
+]
+const BUGBEAR_PHASE3: Array = [
+	preload("res://resources/bosses/bugbear/phase3/bugbear_frenzy.tres"),
+	preload("res://resources/bosses/bugbear/phase3/bugbear_crush.tres"),
+	preload("res://resources/bosses/bugbear/phase3/bugbear_despair_roar.tres"),
+	preload("res://resources/bosses/bugbear/phase3/bugbear_last_stand.tres"),
+]
+
 # Rage UI
 const RAGE_COLOR := Color(1.0, 0.55, 0.15, 1.0)
 const RAGE_EMPTY_COLOR := Color(0.35, 0.35, 0.35, 1.0)
@@ -63,6 +84,12 @@ const STARTER_DECK: Array = [
 # 마켓 (MarketPanel — class_name 등록 race 회피 위해 PanelContainer로 타이핑)
 @onready var market_panel: PanelContainer = %MarketPanel
 
+# 보스 카드 UI
+@onready var boss_deck_count_label: Label = %BossDeckCountLabel
+@onready var boss_discard_label: Label = %BossDiscardLabel
+@onready var boss_current_card_label: Label = %BossCurrentCardLabel
+@onready var boss_power_zone: VBoxContainer = %BossPowerZone
+
 # 카드 배열
 var hand_cards: Array[Control] = []    # 손패 (최대 5장, 사용 가능)
 var queue_cards: Array[Control] = []   # 타임라인 파이프 (대기 중)
@@ -70,6 +97,7 @@ var queue_cards: Array[Control] = []   # 타임라인 파이프 (대기 중)
 var game_ctx: GameContext
 var rage_system: WarriorRageSystem
 var phase_system: BossPhaseSystem
+var boss_deck_system: BossDeckSystem
 var is_discarding_from_effect: bool = false
 var game_over: bool = false
 
@@ -127,6 +155,15 @@ func _setup_game_context() -> void:
 	phase_system = BossPhaseSystem.new(game_ctx)
 	phase_system.phase_changed.connect(_on_phase_changed)
 	_apply_phase_label(phase_system.current_phase)
+
+	# 보스 덱 시스템 (에이언즈 엔드 방식 — 티어 블록 FIFO, 파워 카운트다운)
+	boss_deck_system = BossDeckSystem.new(game_ctx)
+	boss_deck_system.deck_changed.connect(_on_boss_deck_changed)
+	boss_deck_system.power_zone_updated.connect(_on_boss_power_zone_updated)
+	boss_deck_system.card_discarded.connect(_on_boss_card_discarded)
+	boss_deck_system.setup(BUGBEAR_PHASE1, BUGBEAR_PHASE2, BUGBEAR_PHASE3)
+	_on_boss_deck_changed(boss_deck_system.get_remaining_count())
+	_on_boss_power_zone_updated([])
 
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
@@ -453,18 +490,66 @@ func _begin_player_turn() -> void:
 func _begin_boss_turn() -> void:
 	if market_panel:
 		market_panel.set_player_turn(false)
-	var messages: Array[String] = [
-		"보스 차례입니다",
-		"플레이어에게 5 피해를 입힙니다",
-	]
+
+	# 1. 파워 카운트다운 틱 (0이 된 파워 카드 즉시 발동)
+	var triggered: Array[BossCardData] = boss_deck_system.tick_powers()
+
+	# 2. 다음 카드 드로우
+	var drawn: BossCardData = boss_deck_system.draw_next()
+
+	# 3. 배너 메시지 구성
+	var messages: Array[String] = ["보스 차례입니다"]
+	for card in triggered:
+		messages.append("💥 %s 발동!" % card.card_name)
+		messages.append(card.description)
+	if drawn:
+		messages.append(drawn.get_intent_text())
+		if drawn.card_type == BossCardData.BossCardType.POWER:
+			messages.append("⏳ 파워 존에 배치됩니다")
+
 	phase_banner.show_sequence(messages)
 	await phase_banner.banner_finished
-	game_ctx.deal_damage_to_player(5)
-	# 장착된 모듈의 보스 턴 종료 훅 실행
+
+	# 4. 카드 실행 + 현재 카드 UI 업데이트
+	if drawn:
+		boss_current_card_label.text = drawn.get_intent_text()
+		boss_deck_system.play_card(drawn)
+	else:
+		boss_current_card_label.text = "—"
+
+	# 5. 장착된 모듈의 보스 턴 종료 훅 실행
 	for card in active_cards:
 		if card and card.data and card.data.module_ability:
 			card.data.module_ability.on_boss_turn_end(game_ctx)
 	_advance_turn()
+
+
+# === 보스 덱 UI 핸들러 ===
+
+func _on_boss_deck_changed(remaining: int) -> void:
+	boss_deck_count_label.text = "🃏 덱\n%d장" % remaining
+
+func _on_boss_card_discarded(_card: BossCardData) -> void:
+	boss_discard_label.text = "버린 카드\n%d장" % boss_deck_system.get_discard_count()
+
+func _on_boss_power_zone_updated(active_powers: Array) -> void:
+	for child in boss_power_zone.get_children():
+		child.queue_free()
+	if active_powers.is_empty():
+		var lbl := Label.new()
+		lbl.text = "—"
+		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		boss_power_zone.add_child(lbl)
+	else:
+		for entry in active_powers:
+			var lbl := Label.new()
+			lbl.text = "⏳ %s  (%d턴 후)" % [entry.card.card_name, entry.tokens]
+			lbl.add_theme_color_override("font_color", Color(1, 0.7, 0.2, 1))
+			lbl.add_theme_font_size_override("font_size", 15)
+			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			boss_power_zone.add_child(lbl)
 
 
 # === 턴 오더 UI ===

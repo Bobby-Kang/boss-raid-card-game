@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BossCardData" format=3]
+
+[ext_resource type="Script" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_block_effect.gd" id="3_block"]
+
+[sub_resource type="Resource" id="Effect_block"]
+script = ExtResource("3_block")
+value = 15
+
+[resource]
+script = ExtResource("1_script")
+card_name = "철벽"
+card_type = 1
+countdown = 1
+intent_icon = "⏳"
+description = "1턴 후: 보스 방어도 +15"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_block")])

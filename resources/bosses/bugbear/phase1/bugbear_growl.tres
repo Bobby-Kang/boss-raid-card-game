@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="BossCardData" format=3]
+
+[ext_resource type="Script" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_force_discard_effect.gd" id="4_discard"]
+
+[sub_resource type="Resource" id="Effect_dmg"]
+script = ExtResource("3_dmg")
+value = 3
+
+[sub_resource type="Resource" id="Effect_discard"]
+script = ExtResource("4_discard")
+value = 1
+
+[resource]
+script = ExtResource("1_script")
+card_name = "으르렁"
+card_type = 0
+intent_icon = "😤"
+description = "3 피해 + 카드 1장 강제 버리기"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_discard")])
