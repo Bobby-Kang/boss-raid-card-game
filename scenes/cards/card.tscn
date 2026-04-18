@@ -94,7 +94,7 @@ unique_name_in_owner = true
 clip_contents = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1, 0.08, 0.06, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 16
 text = "카드 이름"
 horizontal_alignment = 1
 
@@ -107,7 +107,7 @@ clip_contents = true
 custom_minimum_size = Vector2(1, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.12, 0.1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 13
 text = "카드 효과 설명"
 autowrap_mode = 3
 
@@ -115,7 +115,7 @@ autowrap_mode = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.22, 0.22, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 13
 text = "공격"
 horizontal_alignment = 2
 
@@ -138,7 +138,7 @@ offset_top = -1.0
 offset_right = 143.0
 offset_bottom = 24.0
 theme_override_colors/font_color = Color(1, 0.85, 0.1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 14
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1

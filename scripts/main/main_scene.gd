@@ -313,7 +313,7 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 	var num_label := Label.new()
 	num_label.text = str(index)
 	num_label.custom_minimum_size = Vector2(18, 0)
-	num_label.add_theme_font_size_override("font_size", 14)
+	num_label.add_theme_font_size_override("font_size", 16)
 	num_label.add_theme_color_override("font_color", Color(1, 0.85, 0.3, 1))
 	num_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(num_label)
@@ -335,14 +335,14 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 
 	var cost_lbl := Label.new()
 	cost_lbl.text = "[%d]" % card.data.cost
-	cost_lbl.add_theme_font_size_override("font_size", 13)
+	cost_lbl.add_theme_font_size_override("font_size", 15)
 	cost_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 0.4, 1))
 	cost_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(cost_lbl)
 
 	var name_lbl := Label.new()
 	name_lbl.text = card.data.card_name
-	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.add_theme_font_size_override("font_size", 15)
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(name_lbl)
@@ -481,7 +481,7 @@ func _update_turn_order_ui() -> void:
 			var lbl := Label.new()
 			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			lbl.add_theme_font_size_override("font_size", 10)
+			lbl.add_theme_font_size_override("font_size", 13)
 			slot.add_child(lbl)
 			turn_slots_container.add_child(slot)
 			turn_slot_labels.append(lbl)

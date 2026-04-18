@@ -110,20 +110,20 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "마켓"
-	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", Color(1, 0.85, 0.3, 1))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 
 	_reroll_ap_button = Button.new()
 	_reroll_ap_button.text = "리롤 (3 AP)"
-	_reroll_ap_button.add_theme_font_size_override("font_size", 10)
+	_reroll_ap_button.add_theme_font_size_override("font_size", 16)
 	_reroll_ap_button.pressed.connect(_on_reroll_ap_pressed)
 	header.add_child(_reroll_ap_button)
 
 	_reroll_gold_button = Button.new()
 	_reroll_gold_button.text = "리롤 (3 G)"
-	_reroll_gold_button.add_theme_font_size_override("font_size", 10)
+	_reroll_gold_button.add_theme_font_size_override("font_size", 16)
 	_reroll_gold_button.pressed.connect(_on_reroll_gold_pressed)
 	header.add_child(_reroll_gold_button)
 
@@ -155,8 +155,8 @@ func _build_slot_widget(index: int) -> Dictionary:
 	# 구매 버튼
 	var buy_btn := Button.new()
 	buy_btn.text = "구매"
-	buy_btn.add_theme_font_size_override("font_size", 13)
-	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 32)
+	buy_btn.add_theme_font_size_override("font_size", 17)
+	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 36)
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
 	slot_vbox.add_child(buy_btn)
 
