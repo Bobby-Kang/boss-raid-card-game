@@ -66,13 +66,14 @@ theme_override_constants/separation = 10
 [node name="BossArea" type="PanelContainer" parent="BattleField/VBoxLayout" unique_id=2063685351]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.36
+size_flags_stretch_ratio = 0.32
 
 [node name="BossVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea" unique_id=429015942]
 layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="TopRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox" unique_id=480433461]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.6
@@ -96,13 +97,21 @@ vertical_alignment = 1
 [node name="BossCardDeck" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow" unique_id=1353816694]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 size_flags_stretch_ratio = 0.35
 
-[node name="BossDeckCountLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossCardDeck" unique_id=1580672654]
+[node name="BossDeckScroll" type="ScrollContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossCardDeck" unique_id=5550001]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="BossDeckCountLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossCardDeck/BossDeckScroll" unique_id=1580672654]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "덱 (0장)"
 horizontal_alignment = 1
 vertical_alignment = 0
@@ -162,7 +171,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="BottomRow" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox" unique_id=1355105720]
-custom_minimum_size = Vector2(0, 192)
+custom_minimum_size = Vector2(0, 178)
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.4
@@ -194,6 +203,7 @@ horizontal_alignment = 1
 
 [node name="BossCurrentCardContainer" type="CenterContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox/CurrentCardPanel/CurrentCardVBox" unique_id=1169136590]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 145)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -219,6 +229,7 @@ horizontal_alignment = 1
 
 [node name="BossPowerZone" type="HBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox/PowerZonePanel/PowerZoneVBox" unique_id=1169136594]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 145)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

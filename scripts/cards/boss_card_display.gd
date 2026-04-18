@@ -5,8 +5,8 @@ extends Control
 # 플레이어 카드(card.tscn)와 유사한 외형이지만 드래그 없이 표시 전용
 # POWER 카드에는 카운트다운 토큰 뱃지(우상단 오렌지 원)를 표시
 
-const CARD_W := 118
-const CARD_H := 168
+const CARD_W := 100
+const CARD_H := 145
 
 var _icon_label: Label
 var _name_label: Label
