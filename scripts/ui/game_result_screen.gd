@@ -4,6 +4,7 @@ extends CanvasLayer
 # show_result(true)  → 승리 연출
 # show_result(false) → 패배 연출
 
+@onready var background: ColorRect = $Background
 @onready var result_label: Label = $Background/VBox/ResultLabel
 @onready var sub_label: Label = $Background/VBox/SubLabel
 @onready var restart_button: Button = $Background/VBox/RestartButton
@@ -24,10 +25,10 @@ func show_result(is_win: bool) -> void:
 		result_label.add_theme_color_override("font_color", Color(0.9, 0.25, 0.25, 1.0))
 		sub_label.text = "쓰러지고 말았다..."
 	visible = true
-	# 페이드 인
-	modulate.a = 0.0
+	# 페이드 인 (CanvasLayer는 modulate 없음 → Background CanvasItem으로 처리)
+	background.modulate.a = 0.0
 	var tween := create_tween()
-	tween.tween_property(self, "modulate:a", 1.0, 0.5)
+	tween.tween_property(background, "modulate:a", 1.0, 0.5)
 
 
 func _on_restart_pressed() -> void:
