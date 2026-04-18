@@ -87,8 +87,8 @@ const STARTER_DECK: Array = [
 # 보스 카드 UI
 @onready var boss_deck_count_label: Label = %BossDeckCountLabel
 @onready var boss_discard_label: Label = %BossDiscardLabel
-@onready var boss_current_card_label: Label = %BossCurrentCardLabel
-@onready var boss_power_zone: VBoxContainer = %BossPowerZone
+@onready var boss_current_card_container: Control = %BossCurrentCardContainer
+@onready var boss_power_zone: HBoxContainer = %BossPowerZone
 
 # 카드 배열
 var hand_cards: Array[Control] = []    # 손패 (최대 5장, 사용 가능)
@@ -164,6 +164,7 @@ func _setup_game_context() -> void:
 	boss_deck_system.setup(BUGBEAR_PHASE1, BUGBEAR_PHASE2, BUGBEAR_PHASE3)
 	_on_boss_deck_changed(boss_deck_system.get_remaining_count())
 	_on_boss_power_zone_updated([])
+	_show_boss_empty_label(boss_current_card_container)
 
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
@@ -508,11 +509,14 @@ func _begin_boss_turn() -> void:
 	await phase_banner.banner_finished
 
 	# 4. 카드 실행 + 현재 카드 UI 업데이트
+	_clear_boss_card_container(boss_current_card_container)
 	if drawn:
-		boss_current_card_label.text = drawn.get_intent_text()
+		var display := BossCardDisplay.new()
+		boss_current_card_container.add_child(display)
+		display.setup(drawn, drawn.countdown)
 		boss_deck_system.play_card(drawn)
 	else:
-		boss_current_card_label.text = "—"
+		_show_boss_empty_label(boss_current_card_container)
 
 	# 5. 장착된 모듈의 보스 턴 종료 훅 실행
 	for card in active_cards:
@@ -537,23 +541,33 @@ func _on_boss_card_discarded(_card: BossCardData) -> void:
 	boss_discard_label.text = "버린 카드\n%d장" % boss_deck_system.get_discard_count()
 
 func _on_boss_power_zone_updated(active_powers: Array) -> void:
-	for child in boss_power_zone.get_children():
-		child.queue_free()
+	_clear_boss_card_container(boss_power_zone)
 	if active_powers.is_empty():
-		var lbl := Label.new()
-		lbl.text = "—"
-		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
-		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		boss_power_zone.add_child(lbl)
+		_show_boss_empty_label(boss_power_zone)
 	else:
 		for entry in active_powers:
-			var lbl := Label.new()
-			lbl.text = "⏳ %s  (%d턴 후)" % [entry.card.card_name, entry.tokens]
-			lbl.add_theme_color_override("font_color", Color(1, 0.7, 0.2, 1))
-			lbl.add_theme_font_size_override("font_size", 15)
-			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			boss_power_zone.add_child(lbl)
+			var display := BossCardDisplay.new()
+			boss_power_zone.add_child(display)
+			display.setup(entry.card, entry.tokens)
+
+
+# 컨테이너 자식을 모두 제거
+func _clear_boss_card_container(container: Control) -> void:
+	for child in container.get_children():
+		child.queue_free()
+
+
+# 카드 없음 표시 ("—" 라벨)
+func _show_boss_empty_label(container: Control) -> void:
+	var lbl := Label.new()
+	lbl.text = "—"
+	lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+	lbl.add_theme_font_size_override("font_size", 14)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.add_child(lbl)
 
 
 # === 턴 오더 UI ===

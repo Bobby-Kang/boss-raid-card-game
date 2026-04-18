@@ -42,13 +42,14 @@
 - `BossCardData` (`scripts/bosses/boss_card_data.gd`, Resource): 카드명/타입/카운트다운/아이콘/설명/효과 배열
 - 보스 전용 효과 (`scripts/bosses/effects/`): `BossDamageEffect`(플레이어 피해), `BossBlockEffect`(보스 방어도), `BossForceDiscardEffect`(강제 버리기)
 - 보스 턴 흐름: ① 파워 틱(0 도달 시 즉시 발동) → ② 카드 드로우 → ③ 배너 표시 → ④ 카드 실행 → ⑤ 모듈 훅
-- UI: `%BossDeckCountLabel`(덱 장수), `%BossDiscardLabel`(버린 카드 수), `%BossCurrentCardLabel`(이번 턴 카드), `%BossPowerZone`(활성 파워 목록)
+- UI: `%BossDeckCountLabel`(덱 장수+이름목록), `%BossDiscardLabel`(버린 카드 수), `%BossCurrentCardContainer`(이번 턴 카드 — BossCardDisplay 인스턴스), `%BossPowerZone`(활성 파워 카드 — BossCardDisplay 인스턴스 목록)
+- `BossCardDisplay` (`scripts/cards/boss_card_display.gd`, Control): 보스 카드 시각 위젯 (드래그 없음). 아이콘·이름·설명·타입 표시. POWER 카드에는 우상단 오렌지 카운트다운 뱃지 표시. 118×168px
 - 버그베어 카드: `resources/bosses/bugbear/phase1~3/` (총 13장 — Phase1: 5장, Phase2: 4장, Phase3: 4장)
 
 ### 보스 페이즈 시스템
 - `BossPhaseSystem` (`scripts/bosses/boss_phase_system.gd`, RefCounted): 3단계(1·2·3) 페이즈 상태 + 전환 판정
-- 전환 트리거: **HP 임계** OR **라운드 임계** (둘 중 빠른 쪽). HP 임계 = `[0.66, 0.33]`(boss_max_hp 비율), 라운드 임계 = `[3, 5]`. 단방향(올라가기만)
-- 평가 시점: 보스 HP 변경(`_on_boss_hp_changed` → `check_hp_trigger()`), 라운드 시작(`_start_round` → `check_round_trigger(current_round)`, 마켓 refresh 이전)
+- 전환 트리거: **HP 임계만** (라운드 트리거 제거됨). HP 임계 = `[0.66, 0.33]`(boss_max_hp 비율). 단방향(올라가기만)
+- 평가 시점: 보스 HP 변경(`_on_boss_hp_changed` → `check_hp_trigger()`)
 - `phase_changed(new, old)` 시그널 → `MarketPanel.set_phase(new)` 다음 refresh 가중치 반영, `%PhaseLabel` 텍스트·색 갱신, `phase_banner` 안내
 - **GameContext와 분리**: 페이즈는 보스 전용 상태이므로 공유 컨텍스트에 추가하지 않음. ctx 참조만 위임
 - 마켓 가중치 (`MarketPanel.TIER_WEIGHTS`): Phase 1 = T1 100·T2 0·T3 0 / Phase 2 = T1 20·T2 100·T3 0 / Phase 3 = T1 5·T2 30·T3 100. 누적이지만 하위 티어 가중치 급감
@@ -83,8 +84,9 @@ scripts/
     main_scene.gd              # 게임 루프, 턴 관리, 드롭 핸들러
     game_context.gd            # 공유 상태 (HP, 블록, Callable). 직업 고유 상태 금지
   cards/
-    card.gd                    # 카드 노드 (드래그&드롭)
+    card.gd                    # 카드 노드 (드래그&드롭, 플레이어용)
     card_data.gd               # CardData Resource (effects, module_ability)
+    boss_card_display.gd       # 보스 카드 표시 위젯 (읽기 전용, 드래그 없음)
     effects/                   # [공유] 카드 효과 클래스 계층 (CardEffect 상속)
     modules/
       module_ability.gd        # [공유] 모듈 능력 베이스 클래스 (훅 인터페이스)
@@ -93,7 +95,7 @@ scripts/
       rage_system.gd           # 전사 투기 스택 + 발산 로직
       counter_stance_ability.gd  # 전사 "반격 태세" 모듈 구현
   bosses/                      # 보스 시스템 루트
-    boss_phase_system.gd       # 3단계 페이즈 (HP/라운드 OR 트리거)
+    boss_phase_system.gd       # 3단계 페이즈 (HP 임계 트리거, 단방향)
   ui/
     drop_zone.gd               # 드롭 존 (PLAY/DISCARD/ACTIVE)
     resource_bar.gd            # AP + 골드 UI
