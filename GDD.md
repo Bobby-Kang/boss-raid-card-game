@@ -309,7 +309,8 @@
 - [ ] 보스 패턴 다양화 + 공격 예고 표시
 - [x] 플레이어 방어력 — 라운드 종료 시 리셋
 - [ ] 보스 방어력 리셋 타이밍 구현
-- [ ] 승리/패배 화면
+- [x] 승리/패배 화면 (game_result_screen, 0.5초 페이드인, 타이틀 복귀)
+- [x] 타이틀 화면 + 캐릭터 선택 화면 (씬 흐름: 타이틀 → 캐릭터 선택 → 전투)
 
 ### Phase B — 마켓 시스템
 - [x] 라운드 마켓: 매 라운드 3장 공개, 골드로 구매 (전사 4종 풀)
@@ -352,6 +353,11 @@
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-04-18 | CanvasLayer modulate 오류 수정 — `show_result` 페이드인 대상을 `self` → `Background(ColorRect)`로 변경 |
+| 2026-04-18 | 캐릭터 선택 화면 UI 개선 — 아트워크 패널 고정 높이(100px), 고유 능력 텍스트 한 줄 정렬, 전체 폰트 상향(이름 48pt / 스탯 17pt / 이모지 52pt) |
+| 2026-04-18 | 캐릭터 선택 화면(character_select.tscn) 축소 — 잘림 방지 |
+| 2026-04-18 | 타이틀 화면(title_screen.tscn) + 캐릭터 선택 화면(character_select.tscn) 추가. 씬 흐름: 타이틀 → 캐릭터 선택 → 전투 → 결과 → 타이틀 |
+| 2026-04-18 | 승리/패배 결과 화면(game_result_screen.tscn) 구현 — CanvasLayer layer=20, 0.5초 페이드인, "타이틀로" 버튼 |
 | 2026-04-17 | PhaseLabel 위치 변경: TurnInfoPanel → BossInfoRight 상단 (보스 우측 정보 열에 크게 표시, font_size 20) |
 | 2026-04-17 | `show_sequence` 호출 시 `Array[String]` 타입 불일치 오류 수정 |
 | 2026-04-17 | `BossPhaseSystem._evaluate()` HP/라운드 비교 변수 타입 추론 오류 수정 (`bool` 명시 + `float()`/`int()` 캐스트) |
