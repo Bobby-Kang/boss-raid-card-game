@@ -44,6 +44,7 @@ const STARTER_DECK: Array = [
 @onready var end_turn_button: Button = %EndTurnButton
 @onready var end_turn_overlay: CanvasLayer = %EndTurnOverlay
 @onready var phase_banner: CanvasLayer = %PhaseBanner
+@onready var game_result_screen: CanvasLayer = %GameResultScreen
 @onready var round_label: Label = %RoundLabel
 @onready var phase_label: Label = %PhaseLabel
 @onready var turn_slots_container: HBoxContainer = %TurnSlotsContainer
@@ -70,6 +71,7 @@ var game_ctx: GameContext
 var rage_system: WarriorRageSystem
 var phase_system: BossPhaseSystem
 var is_discarding_from_effect: bool = false
+var game_over: bool = false
 
 # 액티브 슬롯
 var active_cards: Array[Control] = [null, null]
@@ -129,6 +131,8 @@ func _setup_game_context() -> void:
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	hp_label.text = "HP %d/%d" % [current, max_hp]
+	if current <= 0 and not game_over:
+		_trigger_game_over(false)
 
 func _on_player_block_changed(block: int) -> void:
 	block_label.text = "방어력 %d" % block
@@ -137,6 +141,8 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	boss_hp_label.text = "보스 체력\nHP %d/%d" % [current, max_hp]
 	if phase_system:
 		phase_system.check_hp_trigger()
+	if current <= 0 and not game_over:
+		_trigger_game_over(true)
 
 func _on_boss_block_changed(block: int) -> void:
 	boss_block_label.text = "보스 상태\n방어력 %d" % block
@@ -413,6 +419,8 @@ func _validate_turn_order() -> bool:
 
 
 func _advance_turn() -> void:
+	if game_over:
+		return
 	current_turn += 1
 	if current_turn > TURNS_PER_ROUND:
 		# 라운드 종료 — 방어도 리셋
@@ -608,3 +616,17 @@ func _apply_phase_label(phase: int) -> void:
 	phase_label.text = "페이즈 %d" % phase
 	var color: Color = PHASE_COLORS.get(phase, Color.WHITE)
 	phase_label.add_theme_color_override("font_color", color)
+
+
+# === 게임 종료 ===
+
+func _trigger_game_over(is_win: bool) -> void:
+	game_over = true
+	# 모든 입력 차단
+	end_turn_button.disabled = true
+	if market_panel:
+		market_panel.set_player_turn(false)
+	# 결과 화면 표시 (배너가 재생 중이라면 잠깐 기다렸다가)
+	if phase_banner and phase_banner.visible:
+		await phase_banner.banner_finished
+	game_result_screen.show_result(is_win)

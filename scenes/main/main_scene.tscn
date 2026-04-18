@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://bb8aiotvjgxfb" path="res://scripts/ui/resource_bar.gd" id="2_resource_bar"]
 [ext_resource type="PackedScene" path="res://scenes/ui/end_turn_overlay.tscn" id="3_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/ui/phase_banner.tscn" id="4_banner"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_result_screen.tscn" id="15_result"]
 [ext_resource type="Script" uid="uid://ccs458o56bs1t" path="res://scripts/ui/drop_zone.gd" id="5_dropzone"]
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="6b_card_data"]
 [ext_resource type="Script" uid="uid://ba7lku4rmtowj" path="res://scripts/ui/market_panel.gd" id="6_market"]
@@ -462,4 +463,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 
 [node name="PhaseBanner" parent="." unique_id=814868930 instance=ExtResource("4_banner")]
+unique_name_in_owner = true
+
+[node name="GameResultScreen" parent="." unique_id=923847651 instance=ExtResource("15_result")]
 unique_name_in_owner = true
