@@ -424,9 +424,6 @@ func _start_round() -> void:
 	_update_round_label()
 	_update_turn_order_ui()
 	current_turn = 0
-	# 페이즈 라운드 트리거는 마켓 refresh 이전에 평가 (새 페이즈가 즉시 반영되도록)
-	if phase_system:
-		phase_system.check_round_trigger(current_round)
 	if market_panel:
 		market_panel.refresh_slots()
 	_advance_turn()
