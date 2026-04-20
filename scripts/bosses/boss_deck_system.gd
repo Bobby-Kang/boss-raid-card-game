@@ -119,6 +119,14 @@ func play_card(card: BossCardData) -> void:
 			power_zone_updated.emit(active_powers.duplicate())
 
 
+# 덱 앞 카드를 제거하지 않고 참조 (의도 미리보기용)
+# 덱이 비었을 때 버린 카드 더미가 있으면 "재편성 예정" 의미로 null 반환
+func peek_next() -> BossCardData:
+	if deck.is_empty():
+		return null
+	return deck[0]
+
+
 func get_remaining_count() -> int:
 	return deck.size()
 

@@ -88,6 +88,7 @@ const STARTER_DECK: Array = [
 @onready var boss_deck_count_label: Label = %BossDeckCountLabel
 @onready var boss_discard_label: Label = %BossDiscardLabel
 @onready var boss_current_card_container: Control = %BossCurrentCardContainer
+@onready var boss_next_card_container: Control = %BossNextCardContainer
 @onready var boss_power_zone: HBoxContainer = %BossPowerZone
 
 # 카드 배열
@@ -528,14 +529,39 @@ func _begin_boss_turn() -> void:
 # === 보스 덱 UI 핸들러 ===
 
 func _on_boss_deck_changed(_remaining: int) -> void:
+	# 덱 카드 목록 갱신
 	var names := boss_deck_system.get_remaining_names_sorted()
 	if names.is_empty():
 		boss_deck_count_label.text = "덱 (0장)\n—"
-		return
-	var lines: PackedStringArray = ["덱 (%d장)" % names.size()]
-	for name in names:
-		lines.append("· " + name)
-	boss_deck_count_label.text = "\n".join(lines)
+	else:
+		var lines: PackedStringArray = ["덱 (%d장)" % names.size()]
+		for name in names:
+			lines.append("· " + name)
+		boss_deck_count_label.text = "\n".join(lines)
+	# 다음 카드 미리보기 갱신
+	_refresh_boss_next_card_preview()
+
+
+# 다음 예고 패널 갱신 — deck_changed 시마다 호출
+func _refresh_boss_next_card_preview() -> void:
+	_clear_boss_card_container(boss_next_card_container)
+	var next_card := boss_deck_system.peek_next()
+	if next_card == null:
+		# 덱 소진 → 버린 카드 더미 재편성 예정임을 표시
+		var lbl := Label.new()
+		lbl.text = "재편성"
+		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		boss_next_card_container.add_child(lbl)
+	else:
+		var display := BossCardDisplay.new()
+		boss_next_card_container.add_child(display)
+		display.setup(next_card)
+		display.modulate = Color(1, 1, 1, 0.60)  # 반투명으로 "예고" 느낌 표현
 
 func _on_boss_card_discarded(_card: BossCardData) -> void:
 	boss_discard_label.text = "버린 카드\n%d장" % boss_deck_system.get_discard_count()

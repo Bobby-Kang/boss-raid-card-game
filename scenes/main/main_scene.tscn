@@ -186,7 +186,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.38
+size_flags_stretch_ratio = 0.28
 
 [node name="CurrentCardVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox/CurrentCardPanel" unique_id=1169136588]
 layout_mode = 2
@@ -208,11 +208,37 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="NextCardPanel" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox" unique_id=5560001]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.28
+
+[node name="NextCardVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox/NextCardPanel" unique_id=5560002]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="NextCardTitle" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox/NextCardPanel/NextCardVBox" unique_id=5560003]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.70, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "다음 예고"
+horizontal_alignment = 1
+
+[node name="BossNextCardContainer" type="CenterContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox/NextCardPanel/NextCardVBox" unique_id=5560004]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 145)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
 [node name="PowerZonePanel" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox" unique_id=1169136591]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.62
+size_flags_stretch_ratio = 0.44
 
 [node name="PowerZoneVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/BottomRow/BottomHBox/PowerZonePanel" unique_id=1169136592]
 layout_mode = 2
