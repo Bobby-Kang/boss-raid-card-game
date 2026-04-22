@@ -160,13 +160,22 @@ func _build_ui() -> void:
 	_reroll_gold_button.pressed.connect(_on_reroll_gold_pressed)
 	header.add_child(_reroll_gold_button)
 
-	# 4-레인 슬롯 영역
+	# 4-레인 슬롯 영역 (마진 감싸기)
+	var slots_margin := MarginContainer.new()
+	slots_margin.add_theme_constant_override("margin_left",   12)
+	slots_margin.add_theme_constant_override("margin_right",  12)
+	slots_margin.add_theme_constant_override("margin_top",    6)
+	slots_margin.add_theme_constant_override("margin_bottom", 6)
+	slots_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slots_margin.size_flags_vertical   = Control.SIZE_EXPAND_FILL
+	_root_vbox.add_child(slots_margin)
+
 	_slots_hbox = HBoxContainer.new()
-	_slots_hbox.add_theme_constant_override("separation", 6)
+	_slots_hbox.add_theme_constant_override("separation", 20)
 	_slots_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	_slots_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_slots_hbox.size_flags_vertical   = Control.SIZE_EXPAND_FILL
-	_root_vbox.add_child(_slots_hbox)
+	slots_margin.add_child(_slots_hbox)
 
 	for i in range(LANE_COUNT):
 		_lane_widgets.append(_build_lane_widget(i))
@@ -198,9 +207,11 @@ func _build_lane_widget(index: int) -> Dictionary:
 	# 구매 버튼
 	var buy_btn := Button.new()
 	buy_btn.text = "구매"
-	buy_btn.add_theme_font_size_override("font_size", 14)
-	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 32)
+	buy_btn.add_theme_font_size_override("font_size", 15)
+	buy_btn.add_theme_color_override("font_color", Color(0.1, 0.08, 0.05, 1))
+	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 36)
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
+	_style_buy_button(buy_btn, meta["color"])
 	lane_vbox.add_child(buy_btn)
 
 	return {
@@ -210,6 +221,41 @@ func _build_lane_widget(index: int) -> Dictionary:
 		"card":        null,
 		"buy_btn":     buy_btn,
 	}
+
+
+func _style_buy_button(btn: Button, lane_color: Color) -> void:
+	# Normal — 레인 색 기반 골드/채도 조정 배경
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = lane_color.darkened(0.35)
+	normal.border_color = lane_color
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("normal", normal)
+
+	# Hover — 밝게
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = lane_color.darkened(0.15)
+	hover.border_color = lane_color.lightened(0.2)
+	hover.set_border_width_all(2)
+	hover.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("hover", hover)
+
+	# Pressed — 살짝 어둡게
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = lane_color.darkened(0.5)
+	pressed.border_color = lane_color
+	pressed.set_border_width_all(2)
+	pressed.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	# Disabled — 회색
+	var disabled := StyleBoxFlat.new()
+	disabled.bg_color = Color(0.2, 0.2, 0.2, 0.6)
+	disabled.border_color = Color(0.35, 0.35, 0.35, 1)
+	disabled.set_border_width_all(1)
+	disabled.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_disabled_color", Color(0.45, 0.45, 0.45, 1))
 
 
 # === 렌더링 ===
