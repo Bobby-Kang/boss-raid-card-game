@@ -171,7 +171,7 @@ func _build_ui() -> void:
 	_root_vbox.add_child(slots_margin)
 
 	_slots_hbox = HBoxContainer.new()
-	_slots_hbox.add_theme_constant_override("separation", 20)
+	_slots_hbox.add_theme_constant_override("separation", 36)
 	_slots_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	_slots_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_slots_hbox.size_flags_vertical   = Control.SIZE_EXPAND_FILL
@@ -187,7 +187,7 @@ func _build_lane_widget(index: int) -> Dictionary:
 	var lane_vbox := VBoxContainer.new()
 	lane_vbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	lane_vbox.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
-	lane_vbox.add_theme_constant_override("separation", 3)
+	lane_vbox.add_theme_constant_override("separation", 4)
 	_slots_hbox.add_child(lane_vbox)
 
 	# 레인 이름
@@ -199,20 +199,32 @@ func _build_lane_widget(index: int) -> Dictionary:
 	header_lbl.custom_minimum_size  = Vector2(CARD_WIDTH, 0)
 	lane_vbox.add_child(header_lbl)
 
-	# 카드 자리
-	var card_holder := Control.new()
-	card_holder.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
-	lane_vbox.add_child(card_holder)
+	# 래퍼: 카드 + 구매 버튼 오버레이를 하나의 Control로 묶음
+	var wrapper := Control.new()
+	wrapper.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	lane_vbox.add_child(wrapper)
 
-	# 구매 버튼
+	# 카드가 들어갈 영역 (래퍼 전체)
+	var card_holder := Control.new()
+	card_holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	wrapper.add_child(card_holder)
+
+	# 구매 버튼 — 카드 하단에 딱 붙인 오버레이
+	# anchor top=1/bottom=1 → 래퍼 하단 기준, offset_top으로 높이 지정
 	var buy_btn := Button.new()
-	buy_btn.text = "구매"
+	buy_btn.anchor_left   = 0.0
+	buy_btn.anchor_right  = 1.0
+	buy_btn.anchor_top    = 1.0
+	buy_btn.anchor_bottom = 1.0
+	buy_btn.offset_left   = 0
+	buy_btn.offset_right  = 0
+	buy_btn.offset_top    = -36
+	buy_btn.offset_bottom = 0
 	buy_btn.add_theme_font_size_override("font_size", 15)
-	buy_btn.add_theme_color_override("font_color", Color(0.1, 0.08, 0.05, 1))
-	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 36)
+	buy_btn.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1))
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
 	_style_buy_button(buy_btn, meta["color"])
-	lane_vbox.add_child(buy_btn)
+	wrapper.add_child(buy_btn)  # 카드 위(z+1)에 렌더링
 
 	return {
 		"lane_vbox":   lane_vbox,
@@ -224,38 +236,45 @@ func _build_lane_widget(index: int) -> Dictionary:
 
 
 func _style_buy_button(btn: Button, lane_color: Color) -> void:
-	# Normal — 레인 색 기반 골드/채도 조정 배경
+	# Normal — 레인 색 기반, 하단만 둥근 모서리 (카드 하단과 자연스럽게 결합)
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = lane_color.darkened(0.35)
+	normal.bg_color = lane_color.darkened(0.3)
+	normal.bg_color.a = 0.92
 	normal.border_color = lane_color
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(4)
+	normal.set_border_width_all(0)
+	normal.border_width_top = 1
+	normal.corner_radius_bottom_left  = 6
+	normal.corner_radius_bottom_right = 6
 	btn.add_theme_stylebox_override("normal", normal)
 
 	# Hover — 밝게
 	var hover := StyleBoxFlat.new()
-	hover.bg_color = lane_color.darkened(0.15)
-	hover.border_color = lane_color.lightened(0.2)
-	hover.set_border_width_all(2)
-	hover.set_corner_radius_all(4)
+	hover.bg_color = lane_color.darkened(0.1)
+	hover.bg_color.a = 0.96
+	hover.border_color = lane_color.lightened(0.25)
+	hover.set_border_width_all(0)
+	hover.border_width_top = 1
+	hover.corner_radius_bottom_left  = 6
+	hover.corner_radius_bottom_right = 6
 	btn.add_theme_stylebox_override("hover", hover)
 
-	# Pressed — 살짝 어둡게
+	# Pressed
 	var pressed := StyleBoxFlat.new()
 	pressed.bg_color = lane_color.darkened(0.5)
-	pressed.border_color = lane_color
-	pressed.set_border_width_all(2)
-	pressed.set_corner_radius_all(4)
+	pressed.bg_color.a = 1.0
+	pressed.set_border_width_all(0)
+	pressed.corner_radius_bottom_left  = 6
+	pressed.corner_radius_bottom_right = 6
 	btn.add_theme_stylebox_override("pressed", pressed)
 
-	# Disabled — 회색
+	# Disabled — 어두운 반투명
 	var disabled := StyleBoxFlat.new()
-	disabled.bg_color = Color(0.2, 0.2, 0.2, 0.6)
-	disabled.border_color = Color(0.35, 0.35, 0.35, 1)
-	disabled.set_border_width_all(1)
-	disabled.set_corner_radius_all(4)
+	disabled.bg_color = Color(0.1, 0.1, 0.1, 0.75)
+	disabled.set_border_width_all(0)
+	disabled.corner_radius_bottom_left  = 6
+	disabled.corner_radius_bottom_right = 6
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_disabled_color", Color(0.45, 0.45, 0.45, 1))
+	btn.add_theme_color_override("font_disabled_color", Color(0.4, 0.4, 0.4, 1))
 
 
 # === 렌더링 ===
