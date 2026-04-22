@@ -187,7 +187,7 @@ func _build_lane_widget(index: int) -> Dictionary:
 	var lane_vbox := VBoxContainer.new()
 	lane_vbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	lane_vbox.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
-	lane_vbox.add_theme_constant_override("separation", 4)
+	lane_vbox.add_theme_constant_override("separation", 0)  # 카드-버튼 간격 없음
 	_slots_hbox.add_child(lane_vbox)
 
 	# 레인 이름
@@ -199,32 +199,19 @@ func _build_lane_widget(index: int) -> Dictionary:
 	header_lbl.custom_minimum_size  = Vector2(CARD_WIDTH, 0)
 	lane_vbox.add_child(header_lbl)
 
-	# 래퍼: 카드 + 구매 버튼 오버레이를 하나의 Control로 묶음
-	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
-	lane_vbox.add_child(wrapper)
-
-	# 카드가 들어갈 영역 (래퍼 전체)
+	# 카드 자리
 	var card_holder := Control.new()
-	card_holder.set_anchors_preset(Control.PRESET_FULL_RECT)
-	wrapper.add_child(card_holder)
+	card_holder.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	lane_vbox.add_child(card_holder)
 
-	# 구매 버튼 — 카드 하단에 딱 붙인 오버레이
-	# anchor top=1/bottom=1 → 래퍼 하단 기준, offset_top으로 높이 지정
+	# 구매 버튼 — 카드 바로 아래 (separation=0으로 밀착)
 	var buy_btn := Button.new()
-	buy_btn.anchor_left   = 0.0
-	buy_btn.anchor_right  = 1.0
-	buy_btn.anchor_top    = 1.0
-	buy_btn.anchor_bottom = 1.0
-	buy_btn.offset_left   = 0
-	buy_btn.offset_right  = 0
-	buy_btn.offset_top    = -36
-	buy_btn.offset_bottom = 0
+	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 36)
 	buy_btn.add_theme_font_size_override("font_size", 15)
 	buy_btn.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1))
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
 	_style_buy_button(buy_btn, meta["color"])
-	wrapper.add_child(buy_btn)  # 카드 위(z+1)에 렌더링
+	lane_vbox.add_child(buy_btn)
 
 	return {
 		"lane_vbox":   lane_vbox,
