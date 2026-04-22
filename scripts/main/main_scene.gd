@@ -111,6 +111,13 @@ var current_turn: int = 0
 var turn_order: Array[String] = []
 var turn_slot_labels: Array[Label] = []
 
+# === HP 바 / 데미지 팝업 / 화면 흔들림 ===
+var _player_hp_fill: ColorRect = null   # 플레이어 HP 바 채움 rect
+var _boss_hp_fill:   ColorRect = null   # 보스 HP 바 채움 rect
+var _prev_player_hp: int = -1           # 이전 HP (데미지 팝업 계산용)
+var _prev_boss_hp:   int = -1
+var _shake_tween: Tween = null          # 화면 흔들림 Tween (중복 방지)
+
 
 func _ready() -> void:
 	_setup_game_context()
@@ -158,6 +165,10 @@ func _setup_game_context() -> void:
 	phase_system.phase_changed.connect(_on_phase_changed)
 	_apply_phase_label(phase_system.current_phase)
 
+	# HP 바 생성 (레이블 아래에 삽입)
+	_player_hp_fill = _create_hp_bar(hp_label)
+	_boss_hp_fill   = _create_hp_bar(boss_hp_label)
+
 	# 보스 덱 시스템 (에이언즈 엔드 방식 — 티어 블록 FIFO, 파워 카운트다운)
 	boss_deck_system = BossDeckSystem.new(game_ctx)
 	boss_deck_system.deck_changed.connect(_on_boss_deck_changed)
@@ -171,6 +182,15 @@ func _setup_game_context() -> void:
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	hp_label.text = "HP %d/%d" % [current, max_hp]
+	_update_hp_bar(_player_hp_fill, current, max_hp)
+	if _prev_player_hp > 0 and current < _prev_player_hp:
+		var dmg := _prev_player_hp - current
+		DamagePopup.spawn(self, hp_label.get_global_rect().get_center(), dmg, false)
+		_shake_screen(7.0, 0.28)
+	elif _prev_player_hp >= 0 and current > _prev_player_hp:
+		var heal := current - _prev_player_hp
+		DamagePopup.spawn(self, hp_label.get_global_rect().get_center(), heal, true)
+	_prev_player_hp = current
 	if current <= 0 and not game_over:
 		_trigger_game_over(false)
 
@@ -179,6 +199,11 @@ func _on_player_block_changed(block: int) -> void:
 
 func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	boss_hp_label.text = "보스 체력\nHP %d/%d" % [current, max_hp]
+	_update_hp_bar(_boss_hp_fill, current, max_hp)
+	if _prev_boss_hp > 0 and current < _prev_boss_hp:
+		var dmg := _prev_boss_hp - current
+		DamagePopup.spawn(self, boss_hp_label.get_global_rect().get_center(), dmg, false)
+	_prev_boss_hp = current
 	if phase_system:
 		phase_system.check_hp_trigger()
 	if current <= 0 and not game_over:
@@ -768,6 +793,68 @@ func _apply_phase_label(phase: int) -> void:
 	phase_label.text = "페이즈 %d" % phase
 	var color: Color = PHASE_COLORS.get(phase, Color.WHITE)
 	phase_label.add_theme_color_override("font_color", color)
+
+
+# === HP 바 ===
+
+# 레이블 부모 VBox에 HP 바를 레이블 바로 아래 삽입, fill ColorRect 반환
+func _create_hp_bar(label: Label) -> ColorRect:
+	var parent := label.get_parent()
+
+	var container := Control.new()
+	container.custom_minimum_size = Vector2(0, 9)
+	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(container)
+	parent.move_child(container, label.get_index() + 1)
+
+	# 배경
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.12, 0.04, 0.04, 0.9)
+	container.add_child(bg)
+
+	# 채움 (anchor_right로 비율 표현)
+	var fill := ColorRect.new()
+	fill.anchor_left   = 0.0
+	fill.anchor_right  = 1.0
+	fill.anchor_top    = 0.0
+	fill.anchor_bottom = 1.0
+	fill.color = Color(0.15, 0.82, 0.2, 1)
+	container.add_child(fill)
+
+	return fill
+
+
+func _update_hp_bar(fill: ColorRect, current: int, max_hp: int) -> void:
+	if fill == null:
+		return
+	var ratio := clampf(float(current) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 0.0
+	fill.anchor_right = ratio
+	if ratio > 0.6:
+		fill.color = Color(0.15, 0.82, 0.2,  1)   # 초록
+	elif ratio > 0.3:
+		fill.color = Color(0.95, 0.78, 0.08, 1)   # 노랑
+	else:
+		fill.color = Color(0.95, 0.2,  0.1,  1)   # 빨강
+
+
+# === 화면 흔들림 ===
+
+func _shake_screen(intensity: float = 7.0, duration: float = 0.25) -> void:
+	# 진행 중인 흔들림이 있으면 중단 후 위치 초기화
+	if _shake_tween and _shake_tween.is_running():
+		_shake_tween.kill()
+		position = Vector2.ZERO
+
+	_shake_tween = create_tween()
+	var steps := maxi(int(duration / 0.04), 3)
+	for i in steps:
+		var off := Vector2(
+			randf_range(-intensity, intensity),
+			randf_range(-intensity * 0.5, intensity * 0.5)
+		)
+		_shake_tween.tween_property(self, "position", off, 0.04)
+	_shake_tween.tween_property(self, "position", Vector2.ZERO, 0.04)
 
 
 # === 게임 종료 ===
