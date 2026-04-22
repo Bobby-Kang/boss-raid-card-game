@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" uid="uid://c323gvneknc4m" path="res://scripts/cards/effects/damage_effect.gd" id="3_damage"]
+
+[sub_resource type="Resource" id="Effect_damage"]
+script = ExtResource("3_damage")
+value = 7
+
+[resource]
+script = ExtResource("1_script")
+card_name = "혼신의 일격"
+cost = 2
+gold_cost = 4
+tier = 1
+description = "보스에게 7 피해"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_damage")])

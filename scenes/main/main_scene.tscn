@@ -16,6 +16,13 @@
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/tier2/market_iron_will.tres" id="12_m_iron_will"]
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/tier2/market_swift_blow.tres" id="13_m_swift_blow"]
 [ext_resource type="Resource" path="res://resources/cards/warrior/market/tier2/market_regroup.tres" id="14_m_regroup"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_loot.tres" id="16_m_loot"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_heavy_strike.tres" id="17_m_heavy_strike"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_momentum.tres" id="18_m_momentum"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_ironwall.tres" id="19_m_ironwall"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_shield_bash.tres" id="20_m_shield_bash"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_unyielding.tres" id="21_m_unyielding"]
+[ext_resource type="Resource" path="res://resources/cards/warrior/market/market_iron_armor.tres" id="22_m_iron_armor"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_active"]
 bg_color = Color(0.08, 0.12, 0.2, 0.85)
@@ -295,7 +302,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.5
 script = ExtResource("6_market")
-card_pool = Array[ExtResource("6b_card_data")]([ExtResource("7_m_strike"), ExtResource("8_m_bulwark"), ExtResource("9_m_charge"), ExtResource("10_m_meditation"), ExtResource("11_m_cleave"), ExtResource("12_m_iron_will"), ExtResource("13_m_swift_blow"), ExtResource("14_m_regroup")])
+card_pool = Array[ExtResource("6b_card_data")]([ExtResource("7_m_strike"), ExtResource("8_m_bulwark"), ExtResource("9_m_charge"), ExtResource("10_m_meditation"), ExtResource("11_m_cleave"), ExtResource("12_m_iron_will"), ExtResource("13_m_swift_blow"), ExtResource("14_m_regroup"), ExtResource("16_m_loot"), ExtResource("17_m_heavy_strike"), ExtResource("18_m_momentum"), ExtResource("19_m_ironwall"), ExtResource("20_m_shield_bash"), ExtResource("21_m_unyielding"), ExtResource("22_m_iron_armor")])
 
 [node name="ActionLogPanel" type="PanelContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=1286874714]
 layout_mode = 2

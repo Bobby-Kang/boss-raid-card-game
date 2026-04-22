@@ -131,6 +131,7 @@ func _setup_game_context() -> void:
 	game_ctx.ap_manager = resource_bar.ap_manager
 	game_ctx.draw_cards = _draw_extra_cards
 	game_ctx.discard_cards = _discard_cards_with_selection
+	game_ctx.exile_cards = _exile_cards_from_hand
 	game_ctx.player_hp_changed.connect(_on_player_hp_changed)
 	game_ctx.player_block_changed.connect(_on_player_block_changed)
 	game_ctx.boss_hp_changed.connect(_on_boss_hp_changed)
@@ -405,6 +406,23 @@ func _discard_cards_with_selection(count: int) -> void:
 	is_discarding_from_effect = false
 
 
+# === 카드 소멸 (영구, 파이프로 복귀 안 함) ===
+
+func _exile_cards_from_hand(count: int) -> void:
+	if hand_cards.is_empty():
+		return
+	is_discarding_from_effect = true
+	var actual := mini(count, hand_cards.size())
+	end_turn_overlay.show_overlay_select(hand_cards.duplicate(), actual)
+	var selected: Array[Control] = await end_turn_overlay.order_confirmed
+	for card in selected:
+		hand_cards.erase(card)
+		card.queue_free()
+	is_discarding_from_effect = false
+	_update_hand_display()
+	_rebuild_pipe_ui()
+
+
 # === 카드 사용 ===
 
 func _play_card(card: Control) -> void:
@@ -477,6 +495,11 @@ func _advance_turn() -> void:
 
 func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
+
+	# 장착된 모듈의 플레이어 턴 시작 훅 실행
+	for card in active_cards:
+		if card and card.data and card.data.module_ability:
+			card.data.module_ability.on_player_turn_start(game_ctx)
 
 	var messages: Array[String] = ["플레이어 차례입니다"]
 	phase_banner.show_sequence(messages)

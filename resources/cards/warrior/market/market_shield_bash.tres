@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" uid="uid://cvxpcm6la08sn" path="res://scripts/cards/effects/block_effect.gd" id="3_block"]
+[ext_resource type="Script" path="res://scripts/cards/effects/block_damage_effect.gd" id="4_block_dmg"]
+
+[sub_resource type="Resource" id="Effect_block"]
+script = ExtResource("3_block")
+value = 3
+
+[sub_resource type="Resource" id="Effect_block_dmg"]
+script = ExtResource("4_block_dmg")
+
+[resource]
+script = ExtResource("1_script")
+card_name = "방패 밀치기"
+cost = 1
+gold_cost = 4
+tier = 1
+description = "방어도 +3, 현재 방어도만큼 보스에게 피해"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_block"), SubResource("Effect_block_dmg")])

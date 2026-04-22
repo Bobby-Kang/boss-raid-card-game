@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/characters/warrior/iron_armor_ability.gd" id="3_ability"]
+
+[sub_resource type="Resource" id="Ability_iron_armor"]
+script = ExtResource("3_ability")
+module_id = "iron_armor"
+
+[resource]
+script = ExtResource("1_script")
+card_name = "견고한 갑옷"
+cost = 2
+gold_cost = 6
+tier = 1
+description = "매 플레이어 턴 시작 시 방어도 +2"
+card_type = 3
+module_ability = SubResource("Ability_iron_armor")

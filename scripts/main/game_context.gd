@@ -10,8 +10,9 @@ var gold_manager: GoldManager
 var ap_manager: ApManager
 
 # 카드 조작 Callable (main_scene에서 등록)
-var draw_cards: Callable   # func(count: int) -> void
+var draw_cards: Callable    # func(count: int) -> void
 var discard_cards: Callable # func(count: int) -> void (선택 UI 포함)
+var exile_cards: Callable   # func(count: int) -> void (영구 소멸, 파이프로 복귀 안 함)
 
 var player_hp: int = 50
 var player_max_hp: int = 50
