@@ -16,11 +16,11 @@ const REROLL_GOLD_COST := 3
 const CARD_WIDTH  := 120
 const CARD_HEIGHT := 170
 
-# 레인별 카드 풀 (씬에서 익스포트)
-@export var attack_pool:  Array[CardData] = []   # ⚔ 공격
-@export var defense_pool: Array[CardData] = []   # 🛡 방어
-@export var special_pool: Array[CardData] = []   # ✨ 특수 (드로우·모듈)
-@export var gold_pool:    Array[CardData] = []   # 💰 골드·경제
+# 레인별 카드 디렉토리 경로 (씬에서 오버라이드 가능, 기본값은 전사)
+@export var attack_dir:  String = "res://resources/cards/warrior/market/attack"
+@export var defense_dir: String = "res://resources/cards/warrior/market/defense"
+@export var special_dir: String = "res://resources/cards/warrior/market/special"
+@export var gold_dir:    String = "res://resources/cards/warrior/market/gold"
 
 # 레인 표시 메타
 const LANE_META := [
@@ -43,6 +43,12 @@ var lane_cards:   Array = [null, null, null, null]  # CardData or null (레인�
 var is_player_turn: bool = false
 var current_phase:  int  = 1
 
+# 런타임에 디렉토리 스캔으로 채워지는 내부 풀 (씬 설정 불필요)
+var _attack_pool:  Array[CardData] = []
+var _defense_pool: Array[CardData] = []
+var _special_pool: Array[CardData] = []
+var _gold_pool:    Array[CardData] = []
+
 var _root_vbox:        VBoxContainer
 var _slots_hbox:       HBoxContainer
 var _reroll_ap_button: Button
@@ -51,7 +57,32 @@ var _lane_widgets: Array = []  # Array of dicts per lane
 
 
 func _ready() -> void:
+	_attack_pool  = _load_pool(attack_dir)
+	_defense_pool = _load_pool(defense_dir)
+	_special_pool = _load_pool(special_dir)
+	_gold_pool    = _load_pool(gold_dir)
 	_build_ui()
+
+
+# 디렉토리 안의 .tres 파일을 모두 로드해 CardData 배열로 반환
+func _load_pool(dir_path: String) -> Array[CardData]:
+	var result: Array[CardData] = []
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		push_warning("MarketPanel: 디렉토리를 열 수 없음 — %s" % dir_path)
+		return result
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if not dir.current_is_dir() and fname.ends_with(".tres"):
+			var res := load(dir_path + "/" + fname)
+			if res is CardData:
+				result.append(res as CardData)
+			else:
+				push_warning("MarketPanel: CardData가 아닌 파일 무시 — %s" % fname)
+		fname = dir.get_next()
+	dir.list_dir_end()
+	return result
 
 
 func setup(ap_mgr: ApManager, gold_mgr: GoldManager) -> void:
@@ -66,7 +97,7 @@ func setup(ap_mgr: ApManager, gold_mgr: GoldManager) -> void:
 # 라운드 시작 시 각 레인에서 1장씩 추첨
 func refresh_slots() -> void:
 	var weights: Dictionary = TIER_WEIGHTS.get(current_phase, TIER_WEIGHTS[1])
-	var pools: Array = [attack_pool, defense_pool, special_pool, gold_pool]
+	var pools: Array = [_attack_pool, _defense_pool, _special_pool, _gold_pool]
 	for i in range(LANE_COUNT):
 		var pool: Array = pools[i]
 		lane_cards[i] = _weighted_pick(pool, weights) if not pool.is_empty() else null
