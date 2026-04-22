@@ -58,10 +58,10 @@
 - **액티브 슬롯** (`%ActiveSlot1`, `%ActiveSlot2`): MODULE 타입 카드 장착. 슬롯1은 시작 시 반격 태세 기본 장착
 
 ### 라운드 마켓
-- `MarketPanel` (`scripts/ui/market_panel.gd`): MiddleArea 가운데 패널. 라운드 시작 시 `card_pool`에서 3장 무작위 진열
+- `MarketPanel` (`scripts/ui/market_panel.gd`): MiddleArea 가운데 패널. **4-레인** (공격·방어·특수·골드), 라운드 시작 시 각 레인에서 1장씩 추첨
+- `_load_pool(dir)`: `DirAccess`로 레인 디렉토리 스캔 → 풀 자동 빌드 (씬 파일에 카드 개별 등록 불필요)
 - 카드별 고정 골드 가격(`CardData.gold_cost`). 구매 시 골드 차감 + `card_purchased` 시그널 → `main_scene._on_market_card_purchased`가 파이프 맨 뒤에 추가
-- 리롤: AP 3 또는 골드 3 (플레이어 턴 한정, 횟수 제한 없음)
-- 풀: 직업별 `resources/cards/<job>/market/*.tres` + `tier2/*.tres` (전사 T1: 강타·굳건한 방패·돌격·명상, T2: 참격·강철 의지·속공·재정비)
+- 리롤: AP 3 또는 골드 3 (플레이어 턴 한정, 횟수 제한 없음, 4레인 전체 동시 재추첨)
 - 추첨: 페이즈별 가중치 기반 (`_weighted_pick`). 페이즈가 올라가면 상위 티어가 주력으로 등장
 - 보스 턴/턴 종료 시 `set_player_turn(false)` 호출로 모든 버튼 비활성
 
@@ -94,6 +94,7 @@ scripts/
     warrior/
       rage_system.gd           # 전사 투기 스택 + 발산 로직
       counter_stance_ability.gd  # 전사 "반격 태세" 모듈 구현
+      iron_armor_ability.gd      # 전사 "견고한 갑옷" 모듈 구현
   bosses/                      # 보스 시스템 루트
     boss_phase_system.gd       # 3단계 페이즈 (HP 임계 트리거, 단방향)
   ui/
@@ -101,7 +102,8 @@ scripts/
     resource_bar.gd            # AP + 골드 UI
     ap_manager.gd              # AP 상태 관리
     gold_manager.gd            # 골드 상태 관리
-    market_panel.gd            # 라운드 마켓 (3슬롯 + 리롤)
+    market_panel.gd            # 4-레인 마켓 (공격·방어·특수·골드, DirAccess 자동 스캔)
+    damage_popup.gd            # 피해·회복 숫자 팝업 (Tween 애니메이션)
 
 scenes/
   main/main_scene.tscn
@@ -112,16 +114,11 @@ resources/
     starter_*.tres             # 모든 직업 공용 스타터 카드 (4종)
     warrior/                   # 전사 고유 카드/모듈 리소스
       module_counter_stance.tres
-      market/                  # 전사 마켓 Tier 1 카드 풀
-        market_strike.tres
-        market_bulwark.tres
-        market_charge.tres
-        market_meditation.tres
-        tier2/                 # 전사 마켓 Tier 2 카드 풀
-          market_cleave.tres
-          market_iron_will.tres
-          market_swift_blow.tres
-          market_regroup.tres
+      market/                  # 전사 마켓 카드 풀 (레인별 디렉토리)
+        attack/                # ⚔ 공격 레인 (7장: T1 5종 + T2 2종)
+        defense/               # 🛡 방어 레인 (4장: T1 3종 + T2 1종)
+        special/               # ✨ 특수 레인 (3장: T1 2종 + T2 1종)
+        gold/                  # 💰 골드 레인 (4장: T1 3종 + T2 1종)
 ```
 
 ### 새 직업 추가 가이드
