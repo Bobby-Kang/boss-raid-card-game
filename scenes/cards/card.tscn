@@ -75,8 +75,10 @@ size_flags_stretch_ratio = 0.7
 unique_name_in_owner = true
 texture_filter = 1
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 expand_mode = 1
-stretch_mode = 6
+stretch_mode = 5
 
 [node name="InfoPanel" type="PanelContainer" parent="CardFront/VBox" unique_id=355422576]
 layout_mode = 2
