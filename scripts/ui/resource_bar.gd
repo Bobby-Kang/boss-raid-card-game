@@ -21,10 +21,10 @@ func _ready() -> void:
 	add_child(ap_manager)
 	gold_manager.gold_changed.connect(_on_gold_changed)
 	ap_manager.ap_changed.connect(_on_ap_changed)
-	_create_orbs(gold_orbs, GoldManager.MAX_GOLD)
-	_create_orbs(ap_orbs, ApManager.MAX_AP)
-	_update_orbs(gold_orbs, 0, GoldManager.MAX_GOLD, GOLD_COLOR)
-	_update_orbs(ap_orbs, 0, ApManager.MAX_AP, AP_COLOR)
+	_create_orbs(gold_orbs, GameBalance.GOLD_MAX)
+	_create_orbs(ap_orbs, GameBalance.AP_MAX)
+	_update_orbs(gold_orbs, 0, GameBalance.GOLD_MAX, GOLD_COLOR)
+	_update_orbs(ap_orbs, 0, GameBalance.AP_MAX, AP_COLOR)
 
 
 func _create_orbs(container: HBoxContainer, count: int) -> void:
