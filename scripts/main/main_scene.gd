@@ -2,7 +2,7 @@ extends Control
 
 const CardScene := preload("res://scenes/cards/card.tscn")
 const DRAW_COUNT := 5
-const TURNS_PER_ROUND := 5
+const TURNS_PER_ROUND := 4
 
 # 카드 종류 (공용 스타터 4종)
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
@@ -185,11 +185,11 @@ func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	_update_hp_bar(_player_hp_fill, current, max_hp)
 	if _prev_player_hp > 0 and current < _prev_player_hp:
 		var dmg := _prev_player_hp - current
-		DamagePopup.spawn(self, hp_label.get_global_rect().get_center(), dmg, false)
+		DamagePopup.spawn(self, to_local(hp_label.get_global_rect().get_center()), dmg, false)
 		_shake_screen(7.0, 0.28)
 	elif _prev_player_hp >= 0 and current > _prev_player_hp:
 		var heal := current - _prev_player_hp
-		DamagePopup.spawn(self, hp_label.get_global_rect().get_center(), heal, true)
+		DamagePopup.spawn(self, to_local(hp_label.get_global_rect().get_center()), heal, true)
 	_prev_player_hp = current
 	if current <= 0 and not game_over:
 		_trigger_game_over(false)
@@ -202,7 +202,7 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	_update_hp_bar(_boss_hp_fill, current, max_hp)
 	if _prev_boss_hp > 0 and current < _prev_boss_hp:
 		var dmg := _prev_boss_hp - current
-		DamagePopup.spawn(self, boss_hp_label.get_global_rect().get_center(), dmg, false)
+		DamagePopup.spawn(self, to_local(boss_hp_label.get_global_rect().get_center()), dmg, false)
 	_prev_boss_hp = current
 	if phase_system:
 		phase_system.check_hp_trigger()
@@ -476,25 +476,8 @@ func _start_round() -> void:
 
 func _build_turn_order() -> void:
 	turn_order.clear()
-	turn_order = ["player", "player", "boss", "boss"]
-	for _attempt in range(100):
-		turn_order.shuffle()
-		if _validate_turn_order():
-			break
-
-
-func _validate_turn_order() -> bool:
-	var full_order: Array[String] = ["player"]
-	full_order.append_array(turn_order)
-	var consecutive_boss := 0
-	for who in full_order:
-		if who == "boss":
-			consecutive_boss += 1
-			if consecutive_boss > 2:
-				return false
-		else:
-			consecutive_boss = 0
-	return true
+	# 고정 교대 순서: 플레이어 → 보스 → 플레이어 → 보스
+	turn_order = ["player", "boss", "player", "boss"]
 
 
 func _advance_turn() -> void:
@@ -508,14 +491,11 @@ func _advance_turn() -> void:
 		_start_round()
 		return
 	_update_turn_order_ui()
-	if current_turn == 1:
+	var who: String = turn_order[current_turn - 1]
+	if who == "player":
 		_begin_player_turn()
 	else:
-		var who: String = turn_order[current_turn - 2]
-		if who == "player":
-			_begin_player_turn()
-		else:
-			_begin_boss_turn()
+		_begin_boss_turn()
 
 
 func _begin_player_turn() -> void:
@@ -663,22 +643,16 @@ func _update_turn_order_ui() -> void:
 			turn_slots_container.add_child(slot)
 			turn_slot_labels.append(lbl)
 
+	# 고정 교대 순서이므로 처음부터 전부 공개
 	for i in range(TURNS_PER_ROUND):
 		var lbl := turn_slot_labels[i]
 		var slot: PanelContainer = lbl.get_parent()
 		var turn_num := i + 1
+		var who: String = turn_order[i]
 
-		if turn_num == 1:
-			lbl.text = "T1\n플레이어"
-			lbl.add_theme_color_override("font_color", Color(0.3, 0.5, 1.0))
-		elif turn_num <= current_turn:
-			var who: String = turn_order[i - 1]
-			lbl.text = "T%d\n%s" % [turn_num, "플레이어" if who == "player" else "보스"]
-			lbl.add_theme_color_override("font_color",
-				Color(0.3, 0.5, 1.0) if who == "player" else Color(0.9, 0.25, 0.25))
-		else:
-			lbl.text = "T%d\n???" % turn_num
-			lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		lbl.text = "T%d\n%s" % [turn_num, "플레이어" if who == "player" else "보스"]
+		lbl.add_theme_color_override("font_color",
+			Color(0.3, 0.5, 1.0) if who == "player" else Color(0.9, 0.25, 0.25))
 
 		if turn_num == current_turn:
 			slot.modulate = Color(1, 1, 1, 1)
@@ -797,15 +771,20 @@ func _apply_phase_label(phase: int) -> void:
 
 # === HP 바 ===
 
-# 레이블 부모 VBox에 HP 바를 레이블 바로 아래 삽입, fill ColorRect 반환
+# 레이블 아래에 HP 바를 삽입, fill ColorRect 반환
+# PanelContainer는 다중 자식을 지원 안 하므로 조부모 레벨에 삽입
 func _create_hp_bar(label: Label) -> ColorRect:
-	var parent := label.get_parent()
+	var insert_parent := label.get_parent()
+	var insert_index  := label.get_index() + 1
+	if insert_parent is PanelContainer:
+		insert_index  = insert_parent.get_index() + 1
+		insert_parent = insert_parent.get_parent()
 
 	var container := Control.new()
 	container.custom_minimum_size = Vector2(0, 9)
 	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	parent.add_child(container)
-	parent.move_child(container, label.get_index() + 1)
+	insert_parent.add_child(container)
+	insert_parent.move_child(container, insert_index)
 
 	# 배경
 	var bg := ColorRect.new()

@@ -441,12 +441,12 @@ vertical_alignment = 1
 
 [node name="ActiveSlot1" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow" unique_id=1989959366]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 40)
+custom_minimum_size = Vector2(120, 170)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 mouse_filter = 1
 script = ExtResource("5_dropzone")
-zone_type = 3
+zone_type = 2
 
 [node name="ActiveSlot1Label" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot1" unique_id=708144504]
 layout_mode = 2
@@ -458,12 +458,12 @@ vertical_alignment = 1
 
 [node name="ActiveSlot2" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow" unique_id=2032636891]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 40)
+custom_minimum_size = Vector2(120, 170)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 mouse_filter = 1
 script = ExtResource("5_dropzone")
-zone_type = 3
+zone_type = 2
 
 [node name="ActiveSlot2Label" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot2" unique_id=1770147521]
 layout_mode = 2
