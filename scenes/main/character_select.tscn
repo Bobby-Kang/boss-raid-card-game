@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://character_select_main"]
 
 [ext_resource type="Script" path="res://scripts/main/character_select.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://b1cx8sk18qgmv" path="res://assets/art/gemini_image/warrior_face.png" id="2_warrior_face"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
 bg_color = Color(0.1, 0.1, 0.14, 0.95)
@@ -229,14 +230,15 @@ horizontal_alignment = 1
 [node name="PlayerFacePanel" type="PanelContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
 layout_mode = 2
 size_flags_vertical = 0
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 160)
 
-[node name="PlayerFaceLabel" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerFacePanel"]
+[node name="PlayerFaceTexture" type="TextureRect" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerFacePanel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 52
-text = "🗡️"
-horizontal_alignment = 1
-vertical_alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("2_warrior_face")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="PlayerSeparator" type="HSeparator" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
 layout_mode = 2
