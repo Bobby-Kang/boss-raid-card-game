@@ -3,21 +3,21 @@ extends Node
 
 signal ap_changed(current: int, max_value: int)
 
-const MAX_AP := 3
+## 최대 AP는 scripts/data/game_balance.gd → GameBalance.AP_MAX 에서 수정하세요.
 
 var current: int = 0
 
 
 func add(amount: int) -> void:
-	current = mini(current + amount, MAX_AP)
-	ap_changed.emit(current, MAX_AP)
+	current = mini(current + amount, GameBalance.AP_MAX)
+	ap_changed.emit(current, GameBalance.AP_MAX)
 
 
 func spend(amount: int) -> bool:
 	if current < amount:
 		return false
 	current -= amount
-	ap_changed.emit(current, MAX_AP)
+	ap_changed.emit(current, GameBalance.AP_MAX)
 	return true
 
 
@@ -27,9 +27,9 @@ func has(amount: int) -> bool:
 
 func reset() -> void:
 	current = 0
-	ap_changed.emit(current, MAX_AP)
+	ap_changed.emit(current, GameBalance.AP_MAX)
 
 
 func set_to(value: int) -> void:
-	current = clampi(value, 0, MAX_AP)
-	ap_changed.emit(current, MAX_AP)
+	current = clampi(value, 0, GameBalance.AP_MAX)
+	ap_changed.emit(current, GameBalance.AP_MAX)

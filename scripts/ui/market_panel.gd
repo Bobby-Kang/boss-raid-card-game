@@ -10,9 +10,10 @@ extends PanelContainer
 signal card_purchased(card_data: CardData)
 
 const CardScene := preload("res://scenes/cards/card.tscn")
-const LANE_COUNT    := 4
-const REROLL_AP_COST   := 3
-const REROLL_GOLD_COST := 3
+const LANE_COUNT := 4
+## 리롤 비용은 scripts/data/game_balance.gd 에서 수정하세요.
+const REROLL_AP_COST   := GameBalance.MARKET_REROLL_AP
+const REROLL_GOLD_COST := GameBalance.MARKET_REROLL_GOLD
 const CARD_WIDTH  := 120
 const CARD_HEIGHT := 170
 

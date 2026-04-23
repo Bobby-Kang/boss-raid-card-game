@@ -14,13 +14,13 @@ var draw_cards: Callable    # func(count: int) -> void
 var discard_cards: Callable # func(count: int) -> void (선택 UI 포함)
 var exile_cards: Callable   # func(count: int) -> void (영구 소멸, 파이프로 복귀 안 함)
 
-var player_hp: int = 50
-var player_max_hp: int = 50
-var player_block: int = 0
+var player_hp: int     = GameBalance.PLAYER_MAX_HP
+var player_max_hp: int = GameBalance.PLAYER_MAX_HP
+var player_block: int  = 0
 
-var boss_hp: int = 100
-var boss_max_hp: int = 100
-var boss_block: int = 0
+var boss_hp: int     = GameBalance.BOSS_MAX_HP
+var boss_max_hp: int = GameBalance.BOSS_MAX_HP
+var boss_block: int  = 0
 
 
 func deal_damage_to_boss(amount: int) -> void:

@@ -1,8 +1,9 @@
 extends Control
 
 const CardScene := preload("res://scenes/cards/card.tscn")
-const DRAW_COUNT := 5
-const TURNS_PER_ROUND := 4
+## 수치 조정은 scripts/data/game_balance.gd 에서 하세요.
+const DRAW_COUNT      := GameBalance.PLAYER_DRAW_COUNT
+const TURNS_PER_ROUND := GameBalance.TURNS_PER_ROUND
 
 # 카드 종류 (공용 스타터 4종)
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
@@ -151,9 +152,9 @@ func _setup_game_context() -> void:
 	# 전사 전용 — 투기 발산 시스템
 	rage_system = WarriorRageSystem.new(game_ctx)
 	rage_system.rage_changed.connect(_on_rage_changed)
-	_create_rage_orbs(WarriorRageSystem.MAX_RAGE)
+	_create_rage_orbs(GameBalance.RAGE_MAX_STACKS)
 	rage_button.pressed.connect(_on_rage_button_pressed)
-	_on_rage_changed(rage_system.stacks, WarriorRageSystem.MAX_RAGE)
+	_on_rage_changed(rage_system.stacks, GameBalance.RAGE_MAX_STACKS)
 
 	# 라운드 마켓
 	market_panel.setup(resource_bar.ap_manager, resource_bar.gold_manager)
@@ -185,11 +186,11 @@ func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	_update_hp_bar(_player_hp_fill, current, max_hp)
 	if _prev_player_hp > 0 and current < _prev_player_hp:
 		var dmg := _prev_player_hp - current
-		DamagePopup.spawn(self, to_local(hp_label.get_global_rect().get_center()), dmg, false)
+		DamagePopup.spawn(self, hp_label.get_global_rect().get_center() - global_position, dmg, false)
 		_shake_screen(7.0, 0.28)
 	elif _prev_player_hp >= 0 and current > _prev_player_hp:
 		var heal := current - _prev_player_hp
-		DamagePopup.spawn(self, to_local(hp_label.get_global_rect().get_center()), heal, true)
+		DamagePopup.spawn(self, hp_label.get_global_rect().get_center() - global_position, heal, true)
 	_prev_player_hp = current
 	if current <= 0 and not game_over:
 		_trigger_game_over(false)
@@ -202,7 +203,7 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	_update_hp_bar(_boss_hp_fill, current, max_hp)
 	if _prev_boss_hp > 0 and current < _prev_boss_hp:
 		var dmg := _prev_boss_hp - current
-		DamagePopup.spawn(self, to_local(boss_hp_label.get_global_rect().get_center()), dmg, false)
+		DamagePopup.spawn(self, boss_hp_label.get_global_rect().get_center() - global_position, dmg, false)
 	_prev_boss_hp = current
 	if phase_system:
 		phase_system.check_hp_trigger()

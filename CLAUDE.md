@@ -80,13 +80,15 @@
 ## 디렉토리 구조
 ```
 scripts/
+  data/
+    game_balance.gd            # ★ 밸런스 수치 모음 (HP·AP·골드·투기·마켓 비용 등)
+                               #   초보자가 수치를 바꾸려면 이 파일만 보면 됩니다
   main/
     main_scene.gd              # 게임 루프, 턴 관리, 드롭 핸들러
     game_context.gd            # 공유 상태 (HP, 블록, Callable). 직업 고유 상태 금지
   cards/
     card.gd                    # 카드 노드 (드래그&드롭, 플레이어용)
     card_data.gd               # CardData Resource (effects, module_ability)
-    boss_card_display.gd       # 보스 카드 표시 위젯 (읽기 전용, 드래그 없음)
     effects/                   # [공유] 카드 효과 클래스 계층 (CardEffect 상속)
     modules/
       module_ability.gd        # [공유] 모듈 능력 베이스 클래스 (훅 인터페이스)
@@ -97,6 +99,7 @@ scripts/
       iron_armor_ability.gd      # 전사 "견고한 갑옷" 모듈 구현
   bosses/                      # 보스 시스템 루트
     boss_phase_system.gd       # 3단계 페이즈 (HP 임계 트리거, 단방향)
+    boss_card_display.gd       # 보스 카드 표시 위젯 (읽기 전용, 드래그 없음)
   ui/
     drop_zone.gd               # 드롭 존 (PLAY/DISCARD/ACTIVE)
     resource_bar.gd            # AP + 골드 UI
