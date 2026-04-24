@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="BossCardData" format=3]
+[gd_resource type="Resource" script_class="BossCardData" format=3 uid="uid://i4lv4le1lt0x"]
 
-[ext_resource type="Script" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_force_discard_effect.gd" id="3_discard"]
+[ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" uid="uid://11wbulx06bfo" path="res://scripts/bosses/effects/boss_force_discard_effect.gd" id="3_discard"]
 
 [sub_resource type="Resource" id="Effect_discard"]
 script = ExtResource("3_discard")
@@ -11,7 +11,6 @@ value = 2
 [resource]
 script = ExtResource("1_script")
 card_name = "절망의 포효"
-card_type = 0
 intent_icon = "💀"
 description = "플레이어 카드 2장 강제 버리기"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_discard")])

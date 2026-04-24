@@ -1,7 +1,8 @@
-[gd_scene format=3 uid="uid://character_select_main"]
+[gd_scene format=3 uid="uid://dwdkmf7hnq0j0"]
 
-[ext_resource type="Script" path="res://scripts/main/character_select.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://b1cx8sk18qgmv" path="res://assets/art/gemini_image/warrior_face.png" id="2_warrior_face"]
+[ext_resource type="Script" uid="uid://8im432gyigvl" path="res://scripts/main/character_select.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://byh1dv6cnfh1r" path="res://assets/art/gemini_image/warrior_face.png" id="2_warrior_face"]
+[ext_resource type="Texture2D" uid="uid://bew2oqp2bi26g" path="res://assets/art/gemini_image/bugbear_face.png" id="3_bugbear_face"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
 bg_color = Color(0.1, 0.1, 0.14, 0.95)
@@ -39,7 +40,7 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[node name="CharacterSelect" type="Control"]
+[node name="CharacterSelect" type="Control" unique_id=461457535]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -48,7 +49,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1702218906]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -57,7 +58,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.08, 0.08, 0.1, 1)
 
-[node name="RootVBox" type="VBoxContainer" parent="."]
+[node name="RootVBox" type="VBoxContainer" parent="." unique_id=2009935759]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -66,133 +67,129 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="Header" type="PanelContainer" parent="RootVBox"]
+[node name="Header" type="PanelContainer" parent="RootVBox" unique_id=1929603888]
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_styles/panel = SubResource("StyleBox_panel")
 
-[node name="HeaderLabel" type="Label" parent="RootVBox/Header"]
+[node name="HeaderLabel" type="Label" parent="RootVBox/Header" unique_id=1653535697]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 22
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
 text = "전투 준비"
 horizontal_alignment = 1
 
-[node name="MainArea" type="HBoxContainer" parent="RootVBox"]
+[node name="MainArea" type="HBoxContainer" parent="RootVBox" unique_id=803850857]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="BossPanel" type="PanelContainer" parent="RootVBox/MainArea"]
+[node name="BossPanel" type="PanelContainer" parent="RootVBox/MainArea" unique_id=1471744413]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBox_boss")
 
-[node name="BossVBox" type="VBoxContainer" parent="RootVBox/MainArea/BossPanel"]
+[node name="BossVBox" type="VBoxContainer" parent="RootVBox/MainArea/BossPanel" unique_id=618020605]
 layout_mode = 2
 theme_override_constants/separation = 14
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_bottom = 28
 
-[node name="BossTag" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+[node name="BossTag" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox" unique_id=1973847944]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.35, 0.35, 1)
 theme_override_font_sizes/font_size = 14
 text = "BOSS"
 horizontal_alignment = 1
 
-[node name="BossName" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+[node name="BossName" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox" unique_id=1485215788]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 48
 text = "버그베어"
 horizontal_alignment = 1
 
-[node name="BossFacePanel" type="PanelContainer" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+[node name="BossFacePanel" type="PanelContainer" parent="RootVBox/MainArea/BossPanel/BossVBox" unique_id=2067088947]
+clip_contents = true
 layout_mode = 2
-size_flags_vertical = 0
-custom_minimum_size = Vector2(0, 100)
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="BossFaceLabel" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossFacePanel"]
+[node name="BossFaceTexture" type="TextureRect" parent="RootVBox/MainArea/BossPanel/BossVBox/BossFacePanel" unique_id=1088842805]
 layout_mode = 2
-theme_override_font_sizes/font_size = 52
-text = "👹"
-horizontal_alignment = 1
-vertical_alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("3_bugbear_face")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="BossSeparator" type="HSeparator" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+[node name="BossSeparator" type="HSeparator" parent="RootVBox/MainArea/BossPanel/BossVBox" unique_id=12195562]
 layout_mode = 2
 
-[node name="BossStatVBox" type="VBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+[node name="BossStatVBox" type="VBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox" unique_id=54985381]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="BossHpRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox"]
+[node name="BossHpRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox" unique_id=886561314]
 layout_mode = 2
 
-[node name="BossHpIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossHpRow"]
-layout_mode = 2
+[node name="BossHpIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossHpRow" unique_id=419733012]
 custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "HP"
 
-[node name="BossHpVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossHpRow"]
+[node name="BossHpVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossHpRow" unique_id=1969278684]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "100"
 
-[node name="BossAtkRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox"]
+[node name="BossAtkRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox" unique_id=750995181]
 layout_mode = 2
 
-[node name="BossAtkIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossAtkRow"]
-layout_mode = 2
+[node name="BossAtkIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossAtkRow" unique_id=1926996145]
 custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "기본 공격"
 
-[node name="BossAtkVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossAtkRow"]
+[node name="BossAtkVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossAtkRow" unique_id=63094938]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "매 턴 5 피해"
 
-[node name="BossPhaseRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox"]
+[node name="BossPhaseRow" type="HBoxContainer" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox" unique_id=902112081]
 layout_mode = 2
 
-[node name="BossPhaseIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossPhaseRow"]
-layout_mode = 2
+[node name="BossPhaseIcon" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossPhaseRow" unique_id=69772734]
 custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "페이즈"
 
-[node name="BossPhaseVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossPhaseRow"]
+[node name="BossPhaseVal" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox/BossStatVBox/BossPhaseRow" unique_id=22780590]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "3단계 (HP / 라운드 진행)"
 
-[node name="BossFlavorLabel" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox"]
+[node name="BossFlavorLabel" type="Label" parent="RootVBox/MainArea/BossPanel/BossVBox" unique_id=942660378]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.45, 0.45, 1)
 theme_override_font_sizes/font_size = 14
 text = "\"으르렁...\""
 horizontal_alignment = 1
 
-[node name="VsDivider" type="PanelContainer" parent="RootVBox/MainArea"]
+[node name="VsDivider" type="PanelContainer" parent="RootVBox/MainArea" unique_id=1123464175]
+custom_minimum_size = Vector2(64, 0)
 layout_mode = 2
 size_flags_horizontal = 0
-custom_minimum_size = Vector2(64, 0)
 theme_override_styles/panel = SubResource("StyleBox_panel")
 
-[node name="VsLabel" type="Label" parent="RootVBox/MainArea/VsDivider"]
+[node name="VsLabel" type="Label" parent="RootVBox/MainArea/VsDivider" unique_id=1238095023]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 26
@@ -200,152 +197,142 @@ text = "VS"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PlayerPanel" type="PanelContainer" parent="RootVBox/MainArea"]
+[node name="PlayerPanel" type="PanelContainer" parent="RootVBox/MainArea" unique_id=651566273]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBox_player")
 
-[node name="PlayerVBox" type="VBoxContainer" parent="RootVBox/MainArea/PlayerPanel"]
+[node name="PlayerVBox" type="VBoxContainer" parent="RootVBox/MainArea/PlayerPanel" unique_id=433549285]
 layout_mode = 2
 theme_override_constants/separation = 14
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_bottom = 28
 
-[node name="PlayerTag" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+[node name="PlayerTag" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox" unique_id=1026596962]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.7, 1.0, 1)
+theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
 theme_override_font_sizes/font_size = 14
 text = "PLAYER"
 horizontal_alignment = 1
 
-[node name="PlayerName" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+[node name="PlayerName" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox" unique_id=2108187761]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_colors/font_color = Color(0.6, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 48
 text = "전사"
 horizontal_alignment = 1
 
-[node name="PlayerFacePanel" type="PanelContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+[node name="PlayerFacePanel" type="PanelContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox" unique_id=203984186]
+clip_contents = true
 layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 0
-custom_minimum_size = Vector2(160, 200)
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="PlayerFaceTexture" type="TextureRect" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerFacePanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="PlayerFaceTexture" type="TextureRect" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerFacePanel" unique_id=973388091]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 texture = ExtResource("2_warrior_face")
-stretch_mode = 5
+expand_mode = 1
+stretch_mode = 6
 
-[node name="PlayerSeparator" type="HSeparator" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+[node name="PlayerSeparator" type="HSeparator" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox" unique_id=1433146279]
 layout_mode = 2
 
-[node name="PlayerStatVBox" type="VBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+[node name="PlayerStatVBox" type="VBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox" unique_id=326508025]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PlayerHpRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+[node name="PlayerHpRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox" unique_id=1614387883]
 layout_mode = 2
 
-[node name="PlayerHpIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerHpRow"]
-layout_mode = 2
+[node name="PlayerHpIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerHpRow" unique_id=1596760977]
 custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "HP"
 
-[node name="PlayerHpVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerHpRow"]
+[node name="PlayerHpVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerHpRow" unique_id=1777191087]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_colors/font_color = Color(0.6, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "50"
 
-[node name="PlayerApRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+[node name="PlayerApRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox" unique_id=1477071593]
 layout_mode = 2
 
-[node name="PlayerApIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerApRow"]
-layout_mode = 2
+[node name="PlayerApIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerApRow" unique_id=520273461]
 custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "AP"
 
-[node name="PlayerApVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerApRow"]
+[node name="PlayerApVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerApRow" unique_id=1237118684]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_colors/font_color = Color(0.6, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "3 (매 플레이어 턴 리셋)"
 
-[node name="PlayerDeckRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+[node name="PlayerDeckRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox" unique_id=687814225]
 layout_mode = 2
 
-[node name="PlayerDeckIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerDeckRow"]
-layout_mode = 2
+[node name="PlayerDeckIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerDeckRow" unique_id=2145134742]
 custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "스타터 덱"
 
-[node name="PlayerDeckVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerDeckRow"]
+[node name="PlayerDeckVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerDeckRow" unique_id=1231757302]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_colors/font_color = Color(0.6, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "10장"
 
-[node name="PlayerAbilityRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox"]
+[node name="PlayerAbilityRow" type="HBoxContainer" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox" unique_id=2086422562]
 layout_mode = 2
 
-[node name="PlayerAbilityIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerAbilityRow"]
-layout_mode = 2
+[node name="PlayerAbilityIcon" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerAbilityRow" unique_id=1212922892]
 custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 17
 text = "고유 능력"
 
-[node name="PlayerAbilityVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerAbilityRow"]
+[node name="PlayerAbilityVal" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox/PlayerStatVBox/PlayerAbilityRow" unique_id=2071014700]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.85, 1.0, 1)
+theme_override_colors/font_color = Color(0.6, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "투기 발산 / 반격 태세"
 
-[node name="PlayerFlavorLabel" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox"]
+[node name="PlayerFlavorLabel" type="Label" parent="RootVBox/MainArea/PlayerPanel/PlayerVBox" unique_id=236389669]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.5, 0.6, 1)
 theme_override_font_sizes/font_size = 14
 text = "\"타임라인을 설계하라.\""
 horizontal_alignment = 1
 
-[node name="Footer" type="PanelContainer" parent="RootVBox"]
+[node name="Footer" type="PanelContainer" parent="RootVBox" unique_id=771226146]
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_styles/panel = SubResource("StyleBox_panel")
 
-[node name="FooterHBox" type="HBoxContainer" parent="RootVBox/Footer"]
+[node name="FooterHBox" type="HBoxContainer" parent="RootVBox/Footer" unique_id=610408808]
 layout_mode = 2
 theme_override_constants/separation = 12
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
 alignment = 2
 
-[node name="BackButton" type="Button" parent="RootVBox/Footer/FooterHBox"]
+[node name="BackButton" type="Button" parent="RootVBox/Footer/FooterHBox" unique_id=985028560]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(130, 42)
+layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "← 타이틀"
 
-[node name="FightButton" type="Button" parent="RootVBox/Footer/FooterHBox"]
+[node name="FightButton" type="Button" parent="RootVBox/Footer/FooterHBox" unique_id=1587094904]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 42)
-theme_override_font_sizes/font_size = 20
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 20
 text = "전투 시작!"

@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="BossCardData" format=3]
+[gd_resource type="Resource" script_class="BossCardData" format=3 uid="uid://dbjf1deixqiqv"]
 
-[ext_resource type="Script" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
+[ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")

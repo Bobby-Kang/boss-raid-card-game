@@ -13,5 +13,5 @@ value = 1
 script = ExtResource("1_script")
 card_name = "골드 카드"
 card_type = 1
-effects = Array[ExtResource("2_base")]([SubResource("Effect_gold")])
 artwork = ExtResource("4_art")
+effects = Array[ExtResource("2_base")]([SubResource("Effect_gold")])
