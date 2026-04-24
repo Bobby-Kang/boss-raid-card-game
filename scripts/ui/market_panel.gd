@@ -150,14 +150,16 @@ func _build_ui() -> void:
 	header.add_child(title)
 
 	_reroll_ap_button = Button.new()
-	_reroll_ap_button.text = "리롤 (3 AP)"
-	_reroll_ap_button.add_theme_font_size_override("font_size", 14)
+	_reroll_ap_button.text = "↻ 3⚡"
+	_reroll_ap_button.tooltip_text = "AP 3을 소모해 마켓 전체를 재추첨"
+	_reroll_ap_button.add_theme_font_size_override("font_size", 13)
 	_reroll_ap_button.pressed.connect(_on_reroll_ap_pressed)
 	header.add_child(_reroll_ap_button)
 
 	_reroll_gold_button = Button.new()
-	_reroll_gold_button.text = "리롤 (3 G)"
-	_reroll_gold_button.add_theme_font_size_override("font_size", 14)
+	_reroll_gold_button.text = "↻ 3💰"
+	_reroll_gold_button.tooltip_text = "골드 3을 소모해 마켓 전체를 재추첨"
+	_reroll_gold_button.add_theme_font_size_override("font_size", 13)
 	_reroll_gold_button.pressed.connect(_on_reroll_gold_pressed)
 	header.add_child(_reroll_gold_button)
 

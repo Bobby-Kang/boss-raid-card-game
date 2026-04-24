@@ -182,7 +182,7 @@ func _setup_game_context() -> void:
 
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
-	hp_label.text = "HP %d/%d" % [current, max_hp]
+	hp_label.text = "❤ %d / %d" % [current, max_hp]
 	_update_hp_bar(_player_hp_fill, current, max_hp)
 	if _prev_player_hp > 0 and current < _prev_player_hp:
 		var dmg := _prev_player_hp - current
@@ -196,7 +196,8 @@ func _on_player_hp_changed(current: int, max_hp: int) -> void:
 		_trigger_game_over(false)
 
 func _on_player_block_changed(block: int) -> void:
-	block_label.text = "방어력 %d" % block
+	block_label.text = "🛡 %d" % block
+	block_label.visible = block > 0
 
 func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	boss_hp_label.text = "❤ %d / %d" % [current, max_hp]
@@ -630,7 +631,7 @@ func _show_boss_empty_label(container: Control) -> void:
 # === 턴 오더 UI ===
 
 func _update_round_label() -> void:
-	round_label.text = "라운드 %d" % current_round
+	round_label.text = "R%d" % current_round
 
 
 func _update_turn_order_ui() -> void:
@@ -641,28 +642,29 @@ func _update_turn_order_ui() -> void:
 			var lbl := Label.new()
 			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			lbl.add_theme_font_size_override("font_size", 13)
+			lbl.add_theme_font_size_override("font_size", 20)
 			slot.add_child(lbl)
 			turn_slots_container.add_child(slot)
 			turn_slot_labels.append(lbl)
 
-	# 고정 교대 순서이므로 처음부터 전부 공개
+	# 고정 교대 순서이므로 처음부터 전부 공개. 압축 표기: P/B 단일 글자
 	for i in range(TURNS_PER_ROUND):
 		var lbl := turn_slot_labels[i]
 		var slot: PanelContainer = lbl.get_parent()
 		var turn_num := i + 1
 		var who: String = turn_order[i]
 
-		lbl.text = "T%d\n%s" % [turn_num, "플레이어" if who == "player" else "보스"]
+		lbl.text = "P" if who == "player" else "B"
+		lbl.tooltip_text = "T%d — %s" % [turn_num, "플레이어 턴" if who == "player" else "보스 턴"]
 		lbl.add_theme_color_override("font_color",
 			Color(0.3, 0.5, 1.0) if who == "player" else Color(0.9, 0.25, 0.25))
 
 		if turn_num == current_turn:
 			slot.modulate = Color(1, 1, 1, 1)
 		elif turn_num < current_turn:
-			slot.modulate = Color(1, 1, 1, 0.4)
+			slot.modulate = Color(1, 1, 1, 0.35)
 		else:
-			slot.modulate = Color(1, 1, 1, 0.7)
+			slot.modulate = Color(1, 1, 1, 0.65)
 
 
 # === 턴 종료 ===
@@ -724,7 +726,7 @@ func _create_rage_orbs(count: int) -> void:
 
 
 func _on_rage_changed(stacks: int, max_stacks: int) -> void:
-	rage_label.text = "투기 %d/%d" % [stacks, max_stacks]
+	rage_label.text = "🔥 %d/%d" % [stacks, max_stacks]
 	var orbs := rage_orbs.get_children()
 	for i in range(orbs.size()):
 		orbs[i].color = RAGE_COLOR if i < stacks else RAGE_EMPTY_COLOR

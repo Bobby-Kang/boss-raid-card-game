@@ -279,6 +279,11 @@ size_flags_stretch_ratio = 0.25
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 1
+tooltip_text = "현재 라운드"
+theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
+theme_override_font_sizes/font_size = 14
+text = "R1"
+horizontal_alignment = 1
 
 [node name="TurnSlotsContainer" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel" unique_id=2091243094]
 unique_name_in_owner = true
@@ -340,11 +345,11 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="GoldLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar/VBox/GoldRow" unique_id=1943263245]
-custom_minimum_size = Vector2(80, 0)
+custom_minimum_size = Vector2(70, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.1, 1)
-theme_override_font_sizes/font_size = 16
-text = "골드 0/10"
+theme_override_font_sizes/font_size = 18
+text = "💰 0/10"
 vertical_alignment = 1
 
 [node name="GoldOrbs" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar/VBox/GoldRow" unique_id=1916256545]
@@ -356,11 +361,11 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="ApLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar/VBox/ApRow" unique_id=564892214]
-custom_minimum_size = Vector2(80, 0)
+custom_minimum_size = Vector2(70, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 0.8, 0.3, 1)
-theme_override_font_sizes/font_size = 16
-text = "AP 0/3"
+theme_override_colors/font_color = Color(0.2, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 18
+text = "⚡ 0/3"
 vertical_alignment = 1
 
 [node name="ApOrbs" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar/VBox/ApRow" unique_id=1290086436]
@@ -379,8 +384,8 @@ theme_override_constants/separation = 2
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.55, 0.15, 1)
-theme_override_font_sizes/font_size = 16
-text = "투기 0/10"
+theme_override_font_sizes/font_size = 18
+text = "🔥 0/10"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -411,25 +416,21 @@ size_flags_stretch_ratio = 0.4
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AbilityLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox" unique_id=988331304]
-layout_mode = 2
-text = "플레이어 능력"
-horizontal_alignment = 1
-
 [node name="HpLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox" unique_id=1371073863]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.25, 0.25, 1)
-theme_override_font_sizes/font_size = 20
-text = "HP 50/50"
+theme_override_colors/font_color = Color(0.95, 0.35, 0.35, 1)
+theme_override_font_sizes/font_size = 22
+text = "❤ 50 / 50"
 horizontal_alignment = 1
 
 [node name="BlockLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox" unique_id=416586922]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.7, 0.9, 1)
-theme_override_font_sizes/font_size = 16
-text = "방어력 0"
+theme_override_colors/font_color = Color(0.45, 0.75, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "🛡 0"
 horizontal_alignment = 1
 
 [node name="ActiveRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox" unique_id=2028098073]
@@ -437,6 +438,7 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="ActiveLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow" unique_id=1110172409]
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "모듈"

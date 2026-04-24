@@ -42,10 +42,10 @@ func _update_orbs(container: HBoxContainer, current: int, _max_value: int, activ
 
 
 func _on_gold_changed(current: int, max_value: int) -> void:
-	gold_label.text = "골드 %d/%d" % [current, max_value]
+	gold_label.text = "💰 %d/%d" % [current, max_value]
 	_update_orbs(gold_orbs, current, max_value, GOLD_COLOR)
 
 
 func _on_ap_changed(current: int, max_value: int) -> void:
-	ap_label.text = "AP %d/%d" % [current, max_value]
+	ap_label.text = "⚡ %d/%d" % [current, max_value]
 	_update_orbs(ap_orbs, current, max_value, AP_COLOR)
