@@ -199,7 +199,7 @@ func _on_player_block_changed(block: int) -> void:
 	block_label.text = "방어력 %d" % block
 
 func _on_boss_hp_changed(current: int, max_hp: int) -> void:
-	boss_hp_label.text = "보스 체력\nHP %d/%d" % [current, max_hp]
+	boss_hp_label.text = "❤ %d / %d" % [current, max_hp]
 	_update_hp_bar(_boss_hp_fill, current, max_hp)
 	if _prev_boss_hp > 0 and current < _prev_boss_hp:
 		var dmg := _prev_boss_hp - current
@@ -211,7 +211,8 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 		_trigger_game_over(true)
 
 func _on_boss_block_changed(block: int) -> void:
-	boss_block_label.text = "보스 상태\n방어력 %d" % block
+	boss_block_label.text = "🛡 %d" % block
+	boss_block_label.visible = block > 0
 
 
 # === 드롭 존 설정 ===
@@ -558,15 +559,16 @@ func _begin_boss_turn() -> void:
 # === 보스 덱 UI 핸들러 ===
 
 func _on_boss_deck_changed(_remaining: int) -> void:
-	# 덱 카드 목록 갱신
+	# 덱 카드 목록 갱신 — 본문은 장수만, 전체 목록은 툴팁
 	var names := boss_deck_system.get_remaining_names_sorted()
+	boss_deck_count_label.text = "🂠 %d" % names.size()
 	if names.is_empty():
-		boss_deck_count_label.text = "덱 (0장)\n—"
+		boss_deck_count_label.tooltip_text = "덱이 비어 있습니다"
 	else:
-		var lines: PackedStringArray = ["덱 (%d장)" % names.size()]
+		var lines: PackedStringArray = ["남은 카드 (%d장)" % names.size()]
 		for name in names:
 			lines.append("· " + name)
-		boss_deck_count_label.text = "\n".join(lines)
+		boss_deck_count_label.tooltip_text = "\n".join(lines)
 	# 다음 카드 미리보기 갱신
 	_refresh_boss_next_card_preview()
 
@@ -593,7 +595,7 @@ func _refresh_boss_next_card_preview() -> void:
 		display.modulate = Color(1, 1, 1, 0.60)  # 반투명으로 "예고" 느낌 표현
 
 func _on_boss_card_discarded(_card: BossCardData) -> void:
-	boss_discard_label.text = "버린 카드\n%d장" % boss_deck_system.get_discard_count()
+	boss_discard_label.text = "🗑 %d" % boss_deck_system.get_discard_count()
 
 func _on_boss_power_zone_updated(active_powers: Array) -> void:
 	_clear_boss_card_container(boss_power_zone)
