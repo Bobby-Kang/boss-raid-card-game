@@ -98,7 +98,6 @@
 | `BlockDamageEffect` | 현재 플레이어 방어도만큼 보스에게 피해 (value 미사용) |
 | `GainGoldEffect(amount)` | 골드 +`amount` |
 | `DrawEffect(amount)` | 파이프 앞에서 `amount`장 즉시 손패로 |
-| `DiscardEffect(amount)` | 손패에서 `amount`장 선택해 파이프 맨 뒤로 |
 | `ExileEffect(amount)` | 손패에서 `amount`장 선택해 **영구 소멸** (파이프 미복귀) |
 
 ### 5.3 스타터 덱 (10장)

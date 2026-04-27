@@ -39,7 +39,7 @@ Godot 4.6.2 에디터에서 프로젝트를 열고 실행하면 타이틀 화면
 
 ### 카드 시스템
 - `CardData` Resource + `CardEffect` 상속 구조
-- 효과 클래스: `DamageEffect`, `BlockEffect`, `GainGoldEffect`, `DrawEffect`, `DiscardEffect`, `BlockDamageEffect`, `ExileEffect`
+- 효과 클래스: `DamageEffect`, `BlockEffect`, `BlockDamageEffect`, `GainGoldEffect`, `DrawEffect`, `ExileEffect`
 - 카드 타입: `ATTACK`, `SKILL`, `POWER`, `MODULE`
 - `tier: int` 필드 — 마켓 가중치 추첨 등급 (1=기본 / 2=중급 / 3=고급)
 - **카드 비주얼** — 아트워크를 카드 전체 배경으로 깔고 이름·설명·타입은 반투명 오버레이 (Slay the Spire 스타일)
@@ -91,6 +91,18 @@ Godot 4.6.2 에디터에서 프로젝트를 열고 실행하면 타이틀 화면
 - Gemini 생성 이미지 적용: 전사·버그베어 초상화, 스타터 4종(베기·막기·집중·골드), 반격 태세 모듈
 - 메인 씬 상단에 버그베어 풀커버 초상화, 캐릭터 선택 화면은 양쪽 초상화 영역 꽉 채움
 
+### UX 보조 시스템
+- **드롭존 가시화**: 카드 드래그 시작 시 모든 드롭존에 라벨 + 색 오버레이 표시 (수용 가능 청색 펄스 / 불가 빨강 디밍)
+- **카드 호버 프리뷰**: 손패 카드 위에 커서를 올리면 효과를 분석해 보스 HP/플레이어 블록 옆에 부동 라벨로 미리보기 (`−N` / `+N 🛡` / `+N 드로우` / `+N 💰`)
+- **턴 인디케이터**: 화면 상단에 현재 턴 + 보스 카드명 상시 표기
+- **컨텍스트 디밍**: 보스 턴 동안 손패/마켓을 어둡게 표시해 입력 불가 상태를 시각화
+
+### 오디오 시스템
+- `AudioManager` Autoload + `SfxLibrary` 매핑 구조 — 에셋 미배치 시 조용히 스킵
+- BGM 자동 루프 (`.ogg`/`.mp3`/`.wav` 형식별 루프 속성 자동 설정)
+- 페이즈 전환 시 BGM 크로스페이드 연출 지원 (현재는 단일 트랙)
+- SFX 훅: 카드 드로우/사용, 피격(플레이어/보스), 마켓 구매, 페이즈 전환, 턴 종료 등
+
 ## 기술 스택
 
 - **엔진**: Godot 4.6.2 (D3D12, Mobile Renderer, 1920×1080)
@@ -107,10 +119,9 @@ resources/
   cards/
     starter_*.tres           # 스타터 덱 카드 (4종)
     warrior/
-      module_counter_stance.tres
-      module_iron_armor.tres
+      module_counter_stance.tres   # 시작 시 슬롯1 기본 장착
       market/
-        attack/ defense/ special/ gold/  # 4-레인, T1·T2 카드
+        attack/ defense/ special/ gold/  # 4-레인, T1·T2 카드 (견고한 갑옷 모듈은 special/market_iron_armor.tres)
 scenes/
   main/
     title_screen.tscn        # 타이틀 화면 (메인 씬)
@@ -145,15 +156,41 @@ scripts/
     effects/
     modules/
   ui/
-    drop_zone.gd
+    drop_zone.gd             # 드래그 시 라벨 오버레이 + accept/reject 시각화
     resource_bar.gd
     ap_manager.gd
     gold_manager.gd
     market_panel.gd          # 4-레인 가중치 추첨
     damage_popup.gd
     game_result_screen.gd
+  audio/
+    audio_manager.gd         # Autoload — BGM/SFX 라우팅 + 루프 자동
+    sfx_library.gd           # SFX 키 → 경로 매핑 + BGM 상수
+assets/
+  audio/
+    Pixel-City-Cruising.ogg  # 메인 BGM
+    kenny_audio/             # Kenney SFX 4팩 (CC0)
 ```
 
 ## 기획서
 
 자세한 기획 내용은 [GDD.md](GDD.md) 및 [GDD_warrior.md](GDD_warrior.md)를 참고하세요.
+
+## 크레딧 (Credits)
+
+### 음악 (Music)
+- **"Pixel City Cruising"** by Eric Matyas — [soundimage.org](https://soundimage.org/action-4/)
+  - Licensed under Creative Commons: By Attribution 4.0
+  - https://creativecommons.org/licenses/by/4.0/
+
+### 효과음 (Sound Effects)
+- **Kenney Audio Packs** by Kenney — [kenney.nl](https://kenney.nl/)
+  - UI Audio / Casino Audio / Impact Sounds / RPG Audio
+  - Licensed under CC0 1.0 Universal (Public Domain)
+  - https://creativecommons.org/publicdomain/zero/1.0/
+
+### 아트워크 (Artwork)
+- 캐릭터 초상화·카드 일러스트: Google Gemini 생성 이미지
+
+### 엔진
+- [Godot Engine](https://godotengine.org/) 4.6.2 — MIT License

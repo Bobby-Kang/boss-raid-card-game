@@ -17,7 +17,7 @@
 
 ### 카드 시스템
 - `CardData` Resource (`scripts/cards/card_data.gd`): 카드 데이터. `effects: Array[CardEffect]` + `module_ability: ModuleAbility` + `gold_cost: int`(마켓 가격) + `tier: int`(마켓 추첨 가중치 등급, 1=기본/2=중/3=고)
-- `CardEffect` 계층 (`scripts/cards/effects/`): `DamageEffect`, `BlockEffect`, `GainGoldEffect`, `DrawEffect`, `DiscardEffect`
+- `CardEffect` 계층 (`scripts/cards/effects/`): `DamageEffect`, `BlockEffect`, `BlockDamageEffect`, `GainGoldEffect`, `DrawEffect`, `ExileEffect`
 - `ModuleAbility` 계층 (`scripts/cards/modules/`): 모듈 카드의 패시브 훅 베이스 (`on_boss_turn_end` 등)
 - `GameContext` (`scripts/main/game_context.gd`): 공유 상태(HP, 방어도) + Callable (`draw_cards`, `discard_cards`)
 - 드래그&드롭: `DropZone` (`scripts/ui/drop_zone.gd`) — `PLAY` / `DISCARD` / `ACTIVE`
@@ -70,6 +70,20 @@
 - **반격 태세 모듈** (`CounterStanceAbility`): 보스 턴 종료 시 방어도 1+ 남으면 보스 2 피해
 - UI: `BuffBar` 패널 내부에 `%RageLabel` + `%RageOrbs` + `%RageButton`
 
+### 오디오 시스템
+- `AudioManager` (`scripts/audio/audio_manager.gd`, **Autoload**): BGM 단일 플레이어 + SFX 풀(8슬롯) 관리. 에셋 미배치 시 조용히 스킵
+- `SfxLibrary` (`scripts/audio/sfx_library.gd`, RefCounted): SFX 키 → 파일 경로 매핑 + BGM 경로 상수. 새 SFX는 `PATHS` 딕셔너리에 추가
+- **루프 자동 활성화** (`_enable_loop`): `.ogg`/`.mp3`/`.wav` 형식별로 BGM 재생 시 루프 속성 자동 설정
+- 호출 위치: 카드 드로우/사용/구매, 플레이어/보스 피격, 회복, 페이즈 전환(+ BGM 크로스페이드), 턴 종료
+- 볼륨 API: `master_volume` / `bgm_volume` / `sfx_volume` (0.0~1.0)
+- 에셋: `assets/audio/Pixel-City-Cruising.ogg` (BGM), `assets/audio/kenny_audio/` (SFX 4팩)
+
+### UX 보조 시스템
+- **드롭존 가시화** (`scripts/ui/drop_zone.gd`): 드래그 시작(`NOTIFICATION_DRAG_BEGIN`) 시 `accept_filter` 평가 → 수용 가능 청색 펄스 / 불가 빨강 디밍. 라벨 텍스트는 `drag_label_text` export로 씬에서 설정
+- **카드 호버 프리뷰**: `Card.hover_changed(card, entered)` 시그널 → `main_scene._on_card_hover_changed`가 효과 분석(스크립트 경로 매칭) → 보스 HP/플레이어 블록 옆 부동 라벨 (`−N` / `+N 🛡` / `+N 드로우` / `+N 💰`) 스폰
+- **턴 인디케이터** (`%TurnIndicatorLabel` + `%TurnHintLabel`): 화면 상단 패널. 내 턴=청색 `🔵 내 턴`, 보스 턴=빨강 `🔴 보스 턴 — {보스 카드명}`
+- **컨텍스트 디밍** (`_set_turn_focus`): 보스 턴 동안 `hand_belt` + `market_panel` modulate alpha 0.55, 내 턴 1.0 복귀
+
 ## 코딩 규칙
 - `unique_name_in_owner = true` + `%NodeName` 접근 패턴 사용
 - 신호(Signal) 기반 UI 업데이트
@@ -101,12 +115,15 @@ scripts/
     boss_phase_system.gd       # 3단계 페이즈 (HP 임계 트리거, 단방향)
     boss_card_display.gd       # 보스 카드 표시 위젯 (읽기 전용, 드래그 없음)
   ui/
-    drop_zone.gd               # 드롭 존 (PLAY/DISCARD/ACTIVE)
+    drop_zone.gd               # 드롭 존 (PLAY/DISCARD/ACTIVE) + 드래그 시 라벨 오버레이
     resource_bar.gd            # AP + 골드 UI
     ap_manager.gd              # AP 상태 관리
     gold_manager.gd            # 골드 상태 관리
     market_panel.gd            # 4-레인 마켓 (공격·방어·특수·골드, DirAccess 자동 스캔)
     damage_popup.gd            # 피해·회복 숫자 팝업 (Tween 애니메이션)
+  audio/
+    audio_manager.gd           # ★ Autoload — BGM/SFX 라우팅, 루프 자동 활성화
+    sfx_library.gd             # SFX 키 → 파일 경로 매핑 + BGM 경로 상수
 
 scenes/
   main/main_scene.tscn
@@ -120,8 +137,22 @@ resources/
       market/                  # 전사 마켓 카드 풀 (레인별 디렉토리)
         attack/                # ⚔ 공격 레인 (7장: T1 5종 + T2 2종)
         defense/               # 🛡 방어 레인 (4장: T1 3종 + T2 1종)
-        special/               # ✨ 특수 레인 (3장: T1 2종 + T2 1종)
+        special/               # ✨ 특수 레인 (3장: T1 2종 + T2 1종, market_iron_armor 포함)
         gold/                  # 💰 골드 레인 (4장: T1 3종 + T2 1종)
+
+assets/
+  art/
+    gemini_image/              # 캐릭터/카드 일러스트 (사용 중)
+    cardBacks.png              # 카드 뒷면 텍스처 (card.tscn)
+    cardRIPfx/, cardSHEENfx/   # 카드 이펙트 스프라이트 (추후 활용)
+    pixelCardAssest*.png       # 픽셀 테마 카드 프레임 (추후 활용)
+  audio/
+    Pixel-City-Cruising.ogg    # 메인 BGM (Eric Matyas, CC BY 4.0)
+    kenny_audio/               # SFX 4팩 (CC0)
+      kenney_ui-audio/
+      kenney_casino-audio/
+      kenney_impact-sounds/
+      kenney_rpg-audio/
 ```
 
 ### 새 직업 추가 가이드

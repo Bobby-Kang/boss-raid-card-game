@@ -303,7 +303,6 @@ size_flags_stretch_ratio = 0.25
 
 [node name="PlayDropZone" type="PanelContainer" parent="BattleField/VBoxLayout/MiddleWrapper" unique_id=417705396]
 unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0)
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -318,6 +317,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("5_dropzone")
 pass_through_when_idle = true
+drag_label_text = "⚔ 사용 / 보스 공격"
 
 [node name="BottomArea" type="VBoxContainer" parent="BattleField/VBoxLayout" unique_id=488632899]
 layout_mode = 2
@@ -452,6 +452,7 @@ size_flags_horizontal = 0
 mouse_filter = 1
 script = ExtResource("5_dropzone")
 zone_type = 2
+drag_label_text = "🔮 모듈 장착"
 
 [node name="ActiveSlot1Label" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot1" unique_id=708144504]
 layout_mode = 2
@@ -469,6 +470,7 @@ size_flags_horizontal = 0
 mouse_filter = 1
 script = ExtResource("5_dropzone")
 zone_type = 2
+drag_label_text = "🔮 모듈 장착"
 
 [node name="ActiveSlot2Label" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot2" unique_id=1770147521]
 layout_mode = 2
@@ -519,6 +521,7 @@ size_flags_stretch_ratio = 1.2
 mouse_filter = 1
 script = ExtResource("5_dropzone")
 zone_type = 1
+drag_label_text = "🗑 버리기 (파이프 뒤로)"
 
 [node name="PipeVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel" unique_id=1660471541]
 layout_mode = 2
@@ -556,6 +559,43 @@ unique_name_in_owner = true
 
 [node name="PhaseBanner" parent="." unique_id=814868930 instance=ExtResource("4_banner")]
 unique_name_in_owner = true
+
+[node name="TurnIndicator" type="PanelContainer" parent="." unique_id=2200000001]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -220.0
+offset_top = 6.0
+offset_right = 220.0
+offset_bottom = 50.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="TurnIndicatorVBox" type="VBoxContainer" parent="TurnIndicator" unique_id=2200000002]
+layout_mode = 2
+theme_override_constants/separation = 0
+mouse_filter = 2
+
+[node name="TurnIndicatorLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=2200000003]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.5, 0.75, 1.0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 22
+text = "🔵 내 턴"
+horizontal_alignment = 1
+
+[node name="TurnHintLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=2200000004]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "카드를 드래그하거나 턴 종료"
+horizontal_alignment = 1
 
 [node name="GameResultScreen" parent="." unique_id=923847651 instance=ExtResource("15_result")]
 unique_name_in_owner = true

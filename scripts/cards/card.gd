@@ -1,5 +1,7 @@
 extends Control
 
+signal hover_changed(card: Control, entered: bool)
+
 @onready var card_back: TextureRect = $CardBack
 @onready var card_front: Control = $CardFront
 
@@ -19,6 +21,9 @@ func _ready() -> void:
 	# 드래그 이벤트가 Card 루트까지 도달하도록 함
 	_set_children_mouse_ignore(self)
 
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+
 	if data != null:
 		_apply_data()
 
@@ -26,6 +31,15 @@ func _ready() -> void:
 		_show_front()
 	else:
 		_show_back()
+
+
+func _on_mouse_entered() -> void:
+	if is_face_up and is_active:
+		hover_changed.emit(self, true)
+
+
+func _on_mouse_exited() -> void:
+	hover_changed.emit(self, false)
 
 
 func _set_children_mouse_ignore(node: Node) -> void:
@@ -104,27 +118,7 @@ func _notification(what: int) -> void:
 		modulate.a = 1.0
 
 
-# --- 뒤집기 애니메이션 ---
-
-func flip_to_front() -> void:
-	if is_face_up:
-		return
-	is_face_up = true
-	var tween := create_tween()
-	tween.tween_property(self, "scale:x", 0.0, 0.15)
-	tween.tween_callback(_show_front)
-	tween.tween_property(self, "scale:x", 1.0, 0.15)
-
-
-func flip_to_back() -> void:
-	if not is_face_up:
-		return
-	is_face_up = false
-	var tween := create_tween()
-	tween.tween_property(self, "scale:x", 0.0, 0.15)
-	tween.tween_callback(_show_back)
-	tween.tween_property(self, "scale:x", 1.0, 0.15)
-
+# --- 앞/뒷면 표시 ---
 
 func _show_front() -> void:
 	if card_back: card_back.visible = false

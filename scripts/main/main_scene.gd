@@ -63,6 +63,8 @@ const STARTER_DECK: Array = [
 @onready var block_label: Label = %BlockLabel
 @onready var boss_hp_label: Label = %BossHpLabel
 @onready var boss_block_label: Label = %BossBlockLabel
+@onready var turn_indicator_label: Label = %TurnIndicatorLabel
+@onready var turn_hint_label: Label = %TurnHintLabel
 @onready var end_turn_button: Button = %EndTurnButton
 @onready var end_turn_overlay: CanvasLayer = %EndTurnOverlay
 @onready var phase_banner: CanvasLayer = %PhaseBanner
@@ -119,6 +121,10 @@ var _prev_player_hp: int = -1           # 이전 HP (데미지 팝업 계산용)
 var _prev_boss_hp:   int = -1
 var _shake_tween: Tween = null          # 화면 흔들림 Tween (중복 방지)
 
+# === 카드 호버 프리뷰 ===
+var _hover_preview_labels: Array[Label] = []   # 보스/플레이어 등 위치별 미리보기 라벨
+var _hover_card: Control = null
+
 
 func _ready() -> void:
 	_setup_game_context()
@@ -129,6 +135,8 @@ func _ready() -> void:
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	end_turn_overlay.order_confirmed.connect(_on_end_turn_order_confirmed)
 	end_turn_overlay.cancelled.connect(_on_end_turn_cancelled)
+	# Phase 1 BGM 시작
+	AudioManager.play_bgm(SfxLibrary.BGM_PHASE_1, 1.0)
 
 
 # === 게임 컨텍스트 ===
@@ -188,9 +196,11 @@ func _on_player_hp_changed(current: int, max_hp: int) -> void:
 		var dmg := _prev_player_hp - current
 		DamagePopup.spawn(self, hp_label.get_global_rect().get_center() - global_position, dmg, false)
 		_shake_screen(7.0, 0.28)
+		AudioManager.play_sfx("combat.hit_player", 0.0, 0.05)
 	elif _prev_player_hp >= 0 and current > _prev_player_hp:
 		var heal := current - _prev_player_hp
 		DamagePopup.spawn(self, hp_label.get_global_rect().get_center() - global_position, heal, true)
+		AudioManager.play_sfx("combat.heal")
 	_prev_player_hp = current
 	if current <= 0 and not game_over:
 		_trigger_game_over(false)
@@ -205,6 +215,7 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	if _prev_boss_hp > 0 and current < _prev_boss_hp:
 		var dmg := _prev_boss_hp - current
 		DamagePopup.spawn(self, boss_hp_label.get_global_rect().get_center() - global_position, dmg, false)
+		AudioManager.play_sfx("combat.hit_boss", 0.0, 0.05)
 	_prev_boss_hp = current
 	if phase_system:
 		phase_system.check_hp_trigger()
@@ -280,12 +291,19 @@ func _equip_module(card: Control, slot_index: int) -> void:
 
 # === 덱 초기화 ===
 
+func _make_card(cdata: CardData, face_up: bool = true) -> Control:
+	var c: Control = CardScene.instantiate()
+	c.data = cdata.duplicate()
+	c.is_face_up = face_up
+	if c.has_signal("hover_changed"):
+		c.hover_changed.connect(_on_card_hover_changed)
+	return c
+
+
 func _init_starter_deck() -> void:
 	_clear_cards()
 	for card_data: CardData in STARTER_DECK:
-		var card: Control = CardScene.instantiate()
-		card.data = card_data.duplicate()
-		card.is_face_up = true
+		var card: Control = _make_card(card_data, true)
 		queue_card_holder.add_child(card)
 		queue_cards.append(card)
 	_rebuild_pipe_ui()
@@ -295,9 +313,7 @@ func _init_starter_deck() -> void:
 
 func _equip_warrior_modules() -> void:
 	# 반격 태세를 액티브 슬롯 1에 기본 장착 (파이프/손패와 별개)
-	var card: Control = CardScene.instantiate()
-	card.data = MODULE_COUNTER_STANCE.duplicate()
-	card.is_face_up = true
+	var card: Control = _make_card(MODULE_COUNTER_STANCE, true)
 	active_slot_1.add_child(card)
 	card.position = Vector2.ZERO
 	active_cards[0] = card
@@ -314,6 +330,8 @@ func _draw_hand() -> void:
 		card.reparent(hand_belt)
 		card.set_active(true)
 		hand_cards.append(card)
+	if count > 0:
+		AudioManager.play_sfx("card.draw", 0.0, 0.05)
 	_update_hand_display()
 	_rebuild_pipe_ui()
 
@@ -460,6 +478,7 @@ func _play_card(card: Control) -> void:
 	if not resource_bar.ap_manager.has(cost):
 		return
 	resource_bar.ap_manager.spend(cost)
+	AudioManager.play_sfx("card.play", 0.0, 0.08)
 	_send_to_pipe_back(card)
 	for effect in card.data.effects:
 		effect.execute(game_ctx)
@@ -503,6 +522,8 @@ func _advance_turn() -> void:
 
 func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
+	_set_turn_focus(true)
+	_update_turn_indicator(true, "")
 
 	# 장착된 모듈의 플레이어 턴 시작 훅 실행
 	for card in active_cards:
@@ -520,6 +541,7 @@ func _begin_player_turn() -> void:
 func _begin_boss_turn() -> void:
 	if market_panel:
 		market_panel.set_player_turn(false)
+	_set_turn_focus(false)
 
 	# 1. 파워 카운트다운 틱 (0이 된 파워 카드 즉시 발동)
 	var triggered: Array[BossCardData] = boss_deck_system.tick_powers()
@@ -536,6 +558,9 @@ func _begin_boss_turn() -> void:
 		messages.append(drawn.get_intent_text())
 		if drawn.card_type == BossCardData.BossCardType.POWER:
 			messages.append("⏳ 파워 존에 배치됩니다")
+	# 턴 인디케이터 — 보스 카드명 표시
+	var indicator_hint := drawn.card_name if drawn else ""
+	_update_turn_indicator(false, indicator_hint)
 
 	phase_banner.show_sequence(messages)
 	await phase_banner.banner_finished
@@ -691,6 +716,7 @@ func _on_end_turn_cancelled() -> void:
 
 
 func _finish_turn() -> void:
+	AudioManager.play_sfx("ui.turn_end")
 	# 남은 AP를 투기 스택으로 치환 (플레이어 턴 종료 시)
 	rage_system.add(resource_bar.ap_manager.current)
 	# 골드는 턴 종료 시 증발, 방어도는 라운드 종료까지 유지
@@ -737,12 +763,11 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 
 func _on_market_card_purchased(card_data: CardData) -> void:
 	# 구매한 카드는 파이프 맨 뒤에 추가됨
-	var card: Control = CardScene.instantiate()
-	card.data = card_data.duplicate()
-	card.is_face_up = true
+	var card: Control = _make_card(card_data, true)
 	queue_card_holder.add_child(card)
 	card.set_active(false)
 	queue_cards.append(card)
+	AudioManager.play_sfx("ui.market_buy")
 	_rebuild_pipe_ui()
 
 
@@ -761,6 +786,11 @@ func _on_phase_changed(new_phase: int, _old_phase: int) -> void:
 	if market_panel:
 		market_panel.set_phase(new_phase)
 	_apply_phase_label(new_phase)
+	AudioManager.play_sfx("boss.phase_change")
+	# 페이즈별 BGM 크로스페이드
+	match new_phase:
+		2: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_2, 1.5)
+		3: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_3, 1.5)
 	if phase_banner:
 		var messages: Array[String] = ["페이즈 %d 진입!" % new_phase]
 		phase_banner.show_sequence(messages)
@@ -853,3 +883,106 @@ func _trigger_game_over(is_win: bool) -> void:
 	if phase_banner and phase_banner.visible:
 		await phase_banner.banner_finished
 	game_result_screen.show_result(is_win)
+
+
+# === 턴 인디케이터 + 컨텍스트 디밍 ===
+
+func _update_turn_indicator(is_player: bool, hint: String) -> void:
+	if turn_indicator_label:
+		if is_player:
+			turn_indicator_label.text = "🔵 내 턴"
+			turn_indicator_label.add_theme_color_override("font_color", Color(0.35, 0.65, 1.0, 1))
+		else:
+			turn_indicator_label.text = "🔴 보스 턴"
+			turn_indicator_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35, 1))
+	if turn_hint_label:
+		if is_player:
+			turn_hint_label.text = "카드를 드래그하거나 턴 종료"
+		elif hint != "":
+			turn_hint_label.text = "보스 행동: %s" % hint
+		else:
+			turn_hint_label.text = "보스가 행동합니다…"
+
+
+func _set_turn_focus(is_player_turn: bool) -> void:
+	# 컨텍스트 디밍: 보스 턴엔 손패/마켓을 흐리게, 내 턴엔 보스 영역을 살짝 흐리게
+	var active_alpha := 1.0
+	var inactive_alpha := 0.55
+	if hand_belt:
+		hand_belt.modulate.a = active_alpha if is_player_turn else inactive_alpha
+	if market_panel:
+		market_panel.modulate.a = active_alpha if is_player_turn else inactive_alpha
+
+
+# === 카드 호버 프리뷰 (효과 미리보기) ===
+
+func _on_card_hover_changed(card: Control, entered: bool) -> void:
+	if entered:
+		_hover_card = card
+		_show_hover_preview(card)
+	else:
+		if _hover_card == card:
+			_hover_card = null
+			_clear_hover_preview()
+
+
+func _show_hover_preview(card: Control) -> void:
+	_clear_hover_preview()
+	if not card.data or card.data.effects == null:
+		return
+	# 효과를 분류해 보스 HP / 플레이어 블록 위에 부동 라벨로 표시
+	var dmg_total := 0
+	var block_total := 0
+	var draw_total := 0
+	var gold_total := 0
+	for eff in card.data.effects:
+		if eff == null:
+			continue
+		var script: Script = eff.get_script()
+		if script == null:
+			continue
+		var sname: String = str(script.resource_path).to_lower()
+		if "damage" in sname and "value" in eff:
+			dmg_total += int(eff.value)
+		elif "block" in sname and "value" in eff:
+			block_total += int(eff.value)
+		elif "draw" in sname and "amount" in eff:
+			draw_total += int(eff.amount)
+		elif "gold" in sname and "amount" in eff:
+			gold_total += int(eff.amount)
+	if dmg_total > 0:
+		_spawn_preview_label("−%d" % dmg_total, Color(1.0, 0.4, 0.4, 1), boss_hp_label)
+	if block_total > 0:
+		_spawn_preview_label("+%d 🛡" % block_total, Color(0.5, 0.85, 1.0, 1), block_label)
+	if draw_total > 0:
+		_spawn_preview_label("+%d 드로우" % draw_total, Color(0.85, 0.85, 0.5, 1), hp_label)
+	if gold_total > 0:
+		_spawn_preview_label("+%d 💰" % gold_total, Color(1.0, 0.85, 0.3, 1), hp_label)
+
+
+func _spawn_preview_label(text: String, color: Color, anchor: Control) -> void:
+	if anchor == null:
+		return
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	lbl.add_theme_constant_override("outline_size", 4)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.z_index = 100
+	add_child(lbl)
+	var anchor_rect := anchor.get_global_rect()
+	lbl.global_position = anchor_rect.position + Vector2(anchor_rect.size.x + 8, -6)
+	# 살짝 띄우는 모션
+	var tween := create_tween()
+	tween.tween_property(lbl, "position:y", lbl.position.y - 6, 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_hover_preview_labels.append(lbl)
+
+
+func _clear_hover_preview() -> void:
+	for lbl in _hover_preview_labels:
+		if is_instance_valid(lbl):
+			lbl.queue_free()
+	_hover_preview_labels.clear()

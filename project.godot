@@ -15,6 +15,10 @@ run/main_scene="res://scenes/main/title_screen.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+AudioManager="*res://scripts/audio/audio_manager.gd"
+
 [display]
 
 window/size/viewport_width=1920
@@ -22,8 +26,6 @@ window/size/viewport_height=1080
 window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
-window/stretch/scale_mode="fractional"
 
 [physics]
 
