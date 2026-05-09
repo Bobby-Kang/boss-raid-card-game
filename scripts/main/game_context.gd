@@ -13,6 +13,7 @@ var ap_manager: ApManager
 var draw_cards: Callable    # func(count: int) -> void
 var discard_cards: Callable # func(count: int) -> void (선택 UI 포함)
 var exile_cards: Callable   # func(count: int) -> void (영구 소멸, 파이프로 복귀 안 함)
+var request_card_removal: Callable  # func() -> void (손패+파이프에서 1장 영구 제거 선택)
 
 var player_hp: int     = GameBalance.PLAYER_MAX_HP
 var player_max_hp: int = GameBalance.PLAYER_MAX_HP

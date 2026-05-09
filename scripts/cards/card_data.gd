@@ -15,6 +15,7 @@ enum CardType { ATTACK, SKILL, POWER, MODULE }
 @export var artwork: Texture2D = null
 @export var effects: Array[CardEffect] = []
 @export var module_ability: ModuleAbility = null
+@export var consume: bool = false   ## true면 사용 시 파이프로 돌아가지 않고 영구 소멸
 
 
 func get_description_text() -> String:

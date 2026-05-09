@@ -11,3 +11,6 @@ func execute(ctx: GameContext) -> void:
 
 func get_description() -> String:
 	return "패의 카드 %d장 소멸" % value
+
+func get_preview_summary() -> Dictionary:
+	return {"target": "self", "kind": "exile", "amount": value}

@@ -11,3 +11,7 @@ func execute(ctx: GameContext) -> void:
 
 func get_description() -> String:
 	return "현재 방어도만큼 보스에게 피해"
+
+func get_preview_summary() -> Dictionary:
+	# amount는 컨텍스트별로 동적 계산되어야 하므로 -1 마커
+	return {"target": "boss", "kind": "block_damage", "amount": -1}

@@ -90,9 +90,15 @@ const STARTER_DECK: Array = [
 # 보스 카드 UI
 @onready var boss_deck_count_label: Label = %BossDeckCountLabel
 @onready var boss_discard_label: Label = %BossDiscardLabel
-@onready var boss_current_card_container: Control = %BossCurrentCardContainer
 @onready var boss_next_card_container: Control = %BossNextCardContainer
-@onready var boss_power_zone: HBoxContainer = %BossPowerZone
+@onready var boss_power_zone: VBoxContainer = %BossPowerZone
+
+# 캐릭터 아바타 (배틀 연출용)
+@onready var boss_face: PanelContainer = %BossFace
+@onready var boss_face_texture: TextureRect = %BossFaceTexture
+@onready var boss_intent_label: Label = %BossIntentLabel
+@onready var player_face: PanelContainer = %PlayerFace
+@onready var player_face_texture: TextureRect = %PlayerFaceTexture
 
 # 카드 배열
 var hand_cards: Array[Control] = []    # 손패 (최대 5장, 사용 가능)
@@ -105,6 +111,15 @@ var boss_deck_system: BossDeckSystem
 var is_discarding_from_effect: bool = false
 var game_over: bool = false
 
+# === Scene 헬퍼 (분리된 책임) ===
+var combat_fx: CombatFeedback           # 플래시·셰이크·Hit-stop
+var card_hover: CardHoverPreview        # 호버 효과 라벨 + 파이프 카드 프리뷰
+var exile_animator: ExileAnimator       # 카드 영구 소멸 연출
+
+# === 페이즈 보상 큐 (시그널 콜백 도중 await race 회피) ===
+# 각 항목은 _grant_card_removal_reward에 넘길 reason_lines: Array[String]
+var _pending_rewards: Array = []
+
 # 액티브 슬롯
 var active_cards: Array[Control] = [null, null]
 
@@ -114,19 +129,15 @@ var current_turn: int = 0
 var turn_order: Array[String] = []
 var turn_slot_labels: Array[Label] = []
 
-# === HP 바 / 데미지 팝업 / 화면 흔들림 ===
+# === HP 바 / 데미지 팝업 ===
 var _player_hp_fill: ColorRect = null   # 플레이어 HP 바 채움 rect
 var _boss_hp_fill:   ColorRect = null   # 보스 HP 바 채움 rect
 var _prev_player_hp: int = -1           # 이전 HP (데미지 팝업 계산용)
 var _prev_boss_hp:   int = -1
-var _shake_tween: Tween = null          # 화면 흔들림 Tween (중복 방지)
-
-# === 카드 호버 프리뷰 ===
-var _hover_preview_labels: Array[Label] = []   # 보스/플레이어 등 위치별 미리보기 라벨
-var _hover_card: Control = null
 
 
 func _ready() -> void:
+	_setup_helpers()
 	_setup_game_context()
 	_setup_drop_zones()
 	_init_starter_deck()
@@ -139,6 +150,22 @@ func _ready() -> void:
 	AudioManager.play_bgm(SfxLibrary.BGM_PHASE_1, 1.0)
 
 
+# === 헬퍼 노드 (분리된 책임) ===
+
+func _setup_helpers() -> void:
+	combat_fx = CombatFeedback.new()
+	add_child(combat_fx)
+	combat_fx.setup(self)
+
+	card_hover = CardHoverPreview.new()
+	add_child(card_hover)
+	# game_ctx + 앵커는 _setup_game_context 끝에서 setup
+
+	exile_animator = ExileAnimator.new()
+	add_child(exile_animator)
+	exile_animator.setup(self)
+
+
 # === 게임 컨텍스트 ===
 
 func _setup_game_context() -> void:
@@ -148,6 +175,7 @@ func _setup_game_context() -> void:
 	game_ctx.draw_cards = _draw_extra_cards
 	game_ctx.discard_cards = _discard_cards_with_selection
 	game_ctx.exile_cards = _exile_cards_from_hand
+	game_ctx.request_card_removal = _on_request_card_removal_from_effect
 	game_ctx.player_hp_changed.connect(_on_player_hp_changed)
 	game_ctx.player_block_changed.connect(_on_player_block_changed)
 	game_ctx.boss_hp_changed.connect(_on_boss_hp_changed)
@@ -178,6 +206,9 @@ func _setup_game_context() -> void:
 	_player_hp_fill = _create_hp_bar(hp_label)
 	_boss_hp_fill   = _create_hp_bar(boss_hp_label)
 
+	# 카드 호버 프리뷰 — game_ctx + 앵커 라벨 주입
+	card_hover.setup(self, CardScene, game_ctx, boss_hp_label, block_label, hp_label)
+
 	# 보스 덱 시스템 (에이언즈 엔드 방식 — 티어 블록 FIFO, 파워 카운트다운)
 	boss_deck_system = BossDeckSystem.new(game_ctx)
 	boss_deck_system.deck_changed.connect(_on_boss_deck_changed)
@@ -186,7 +217,6 @@ func _setup_game_context() -> void:
 	boss_deck_system.setup(BUGBEAR_PHASE1, BUGBEAR_PHASE2, BUGBEAR_PHASE3)
 	_on_boss_deck_changed(boss_deck_system.get_remaining_count())
 	_on_boss_power_zone_updated([])
-	_show_boss_empty_label(boss_current_card_container)
 
 
 func _on_player_hp_changed(current: int, max_hp: int) -> void:
@@ -195,8 +225,10 @@ func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	if _prev_player_hp > 0 and current < _prev_player_hp:
 		var dmg := _prev_player_hp - current
 		DamagePopup.spawn(self, hp_label.get_global_rect().get_center() - global_position, dmg, false)
-		_shake_screen(7.0, 0.28)
+		combat_fx.shake_screen(7.0, 0.28)
 		AudioManager.play_sfx("combat.hit_player", 0.0, 0.05)
+		combat_fx.flash_recoil(player_face_texture, -22.0)
+		combat_fx.hit_stop()
 	elif _prev_player_hp >= 0 and current > _prev_player_hp:
 		var heal := current - _prev_player_hp
 		DamagePopup.spawn(self, hp_label.get_global_rect().get_center() - global_position, heal, true)
@@ -216,6 +248,8 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 		var dmg := _prev_boss_hp - current
 		DamagePopup.spawn(self, boss_hp_label.get_global_rect().get_center() - global_position, dmg, false)
 		AudioManager.play_sfx("combat.hit_boss", 0.0, 0.05)
+		combat_fx.flash_recoil(boss_face_texture, 22.0)
+		combat_fx.hit_stop()
 	_prev_boss_hp = current
 	if phase_system:
 		phase_system.check_hp_trigger()
@@ -295,8 +329,8 @@ func _make_card(cdata: CardData, face_up: bool = true) -> Control:
 	var c: Control = CardScene.instantiate()
 	c.data = cdata.duplicate()
 	c.is_face_up = face_up
-	if c.has_signal("hover_changed"):
-		c.hover_changed.connect(_on_card_hover_changed)
+	if c.has_signal("hover_changed") and card_hover:
+		c.hover_changed.connect(card_hover.on_card_hover_changed)
 	return c
 
 
@@ -380,7 +414,9 @@ func _update_hand_display() -> void:
 # === 파이프 UI 재빌드 ===
 
 func _rebuild_pipe_ui() -> void:
-	# 기존 UI 행 제거
+	# 기존 UI 행 제거 + 떠있던 카드 프리뷰 정리
+	if card_hover:
+		card_hover.clear_pipe_card_preview()
 	for child in pipe_queue.get_children():
 		child.queue_free()
 
@@ -408,6 +444,17 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 	var mini := PanelContainer.new()
 	mini.custom_minimum_size = Vector2(0, 28)
 	mini.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 호버 활성화 — 효과 프리뷰 + 풀사이즈 카드 프리뷰 + 툴팁
+	mini.mouse_filter = Control.MOUSE_FILTER_STOP
+	if card.data:
+		mini.tooltip_text = "%s\n비용: %d AP\n%s" % [
+			card.data.card_name,
+			card.data.cost,
+			card.data.get_description_text(),
+		]
+	if card_hover:
+		mini.mouse_entered.connect(card_hover.on_pipe_row_hover.bind(card, mini, true))
+		mini.mouse_exited.connect(card_hover.on_pipe_row_hover.bind(card, mini, false))
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.22, 0.20, 0.18, 0.9)
@@ -479,9 +526,16 @@ func _play_card(card: Control) -> void:
 		return
 	resource_bar.ap_manager.spend(cost)
 	AudioManager.play_sfx("card.play", 0.0, 0.08)
-	_send_to_pipe_back(card)
+	# 소비(consume) 카드는 파이프로 안 돌아가고 효과 실행 후 영구 소멸
+	if card.data.consume:
+		hand_cards.erase(card)
+		_update_hand_display()
+	else:
+		_send_to_pipe_back(card)
 	for effect in card.data.effects:
 		effect.execute(game_ctx)
+	if card.data.consume and is_instance_valid(card):
+		card.queue_free()
 
 
 # === 라운드/턴 시스템 ===
@@ -524,6 +578,12 @@ func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
 	_set_turn_focus(true)
 	_update_turn_indicator(true, "")
+	# 보스 머리 위 인텐트 갱신 (다음 행동 예고)
+	if boss_deck_system:
+		_update_boss_intent(boss_deck_system.peek_next(), true)
+
+	# 누적된 페이즈 보상 (보스 턴 도중 발생한 것) 처리
+	await _drain_pending_rewards()
 
 	# 장착된 모듈의 플레이어 턴 시작 훅 실행
 	for card in active_cards:
@@ -561,19 +621,14 @@ func _begin_boss_turn() -> void:
 	# 턴 인디케이터 — 보스 카드명 표시
 	var indicator_hint := drawn.card_name if drawn else ""
 	_update_turn_indicator(false, indicator_hint)
+	_update_boss_intent(drawn, false)
 
 	phase_banner.show_sequence(messages)
 	await phase_banner.banner_finished
 
-	# 4. 카드 실행 + 현재 카드 UI 업데이트
-	_clear_boss_card_container(boss_current_card_container)
+	# 4. 카드 실행 — UI는 보스 머리 위 인텐트 라벨 + 파워 존이 대신 표시
 	if drawn:
-		var display := BossCardDisplay.new()
-		boss_current_card_container.add_child(display)
-		display.setup(drawn, drawn.countdown)
 		boss_deck_system.play_card(drawn)
-	else:
-		_show_boss_empty_label(boss_current_card_container)
 
 	# 5. 장착된 모듈의 보스 턴 종료 훅 실행
 	for card in active_cards:
@@ -599,26 +654,25 @@ func _on_boss_deck_changed(_remaining: int) -> void:
 	_refresh_boss_next_card_preview()
 
 
-# 다음 예고 패널 갱신 — deck_changed 시마다 호출
+# 다음 예고 패널 갱신 — 텍스트 라벨로 컴팩트 표시
 func _refresh_boss_next_card_preview() -> void:
 	_clear_boss_card_container(boss_next_card_container)
 	var next_card := boss_deck_system.peek_next()
+	var lbl := Label.new()
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	lbl.add_theme_font_size_override("font_size", 13)
 	if next_card == null:
-		# 덱 소진 → 버린 카드 더미 재편성 예정임을 표시
-		var lbl := Label.new()
 		lbl.text = "재편성"
 		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
-		lbl.add_theme_font_size_override("font_size", 13)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		boss_next_card_container.add_child(lbl)
 	else:
-		var display := BossCardDisplay.new()
-		boss_next_card_container.add_child(display)
-		display.setup(next_card)
-		display.modulate = Color(1, 1, 1, 0.60)  # 반투명으로 "예고" 느낌 표현
+		lbl.text = "%s %s" % [next_card.intent_icon, next_card.card_name]
+		lbl.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0, 0.95))
+		lbl.tooltip_text = "%s\n%s" % [next_card.card_name, next_card.description]
+	boss_next_card_container.add_child(lbl)
 
 func _on_boss_card_discarded(_card: BossCardData) -> void:
 	boss_discard_label.text = "🗑 %d" % boss_deck_system.get_discard_count()
@@ -629,9 +683,14 @@ func _on_boss_power_zone_updated(active_powers: Array) -> void:
 		_show_boss_empty_label(boss_power_zone)
 	else:
 		for entry in active_powers:
-			var display := BossCardDisplay.new()
-			boss_power_zone.add_child(display)
-			display.setup(entry.card, entry.tokens)
+			var lbl := Label.new()
+			lbl.text = "%s %s (%d턴)" % [entry.card.intent_icon, entry.card.card_name, entry.tokens]
+			lbl.add_theme_font_size_override("font_size", 13)
+			lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.25, 1))
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lbl.tooltip_text = "%s\n%s" % [entry.card.card_name, entry.card.description]
+			boss_power_zone.add_child(lbl)
 
 
 # 컨테이너 자식을 모두 제거
@@ -794,6 +853,12 @@ func _on_phase_changed(new_phase: int, _old_phase: int) -> void:
 	if phase_banner:
 		var messages: Array[String] = ["페이즈 %d 진입!" % new_phase]
 		phase_banner.show_sequence(messages)
+	# 페이즈 전환 보상 — 카드 1장 영구 제거 기회 (큐잉, 안전 시점에 처리)
+	var reward_lines: Array[String] = [
+		"🌟 전사의 깨달음",
+		"보스의 약점이 보인다 — 카드 1장을 영구 제거할 수 있다",
+	]
+	_pending_rewards.append(reward_lines)
 
 
 func _apply_phase_label(phase: int) -> void:
@@ -852,25 +917,6 @@ func _update_hp_bar(fill: ColorRect, current: int, max_hp: int) -> void:
 		fill.color = Color(0.95, 0.2,  0.1,  1)   # 빨강
 
 
-# === 화면 흔들림 ===
-
-func _shake_screen(intensity: float = 7.0, duration: float = 0.25) -> void:
-	# 진행 중인 흔들림이 있으면 중단 후 위치 초기화
-	if _shake_tween and _shake_tween.is_running():
-		_shake_tween.kill()
-		position = Vector2.ZERO
-
-	_shake_tween = create_tween()
-	var steps := maxi(int(duration / 0.04), 3)
-	for i in steps:
-		var off := Vector2(
-			randf_range(-intensity, intensity),
-			randf_range(-intensity * 0.5, intensity * 0.5)
-		)
-		_shake_tween.tween_property(self, "position", off, 0.04)
-	_shake_tween.tween_property(self, "position", Vector2.ZERO, 0.04)
-
-
 # === 게임 종료 ===
 
 func _trigger_game_over(is_win: bool) -> void:
@@ -914,75 +960,88 @@ func _set_turn_focus(is_player_turn: bool) -> void:
 		market_panel.modulate.a = active_alpha if is_player_turn else inactive_alpha
 
 
-# === 카드 호버 프리뷰 (효과 미리보기) ===
+# === 보스 머리 위 인텐트 라벨 ===
 
-func _on_card_hover_changed(card: Control, entered: bool) -> void:
-	if entered:
-		_hover_card = card
-		_show_hover_preview(card)
-	else:
-		if _hover_card == card:
-			_hover_card = null
-			_clear_hover_preview()
+var _intent_tween: Tween = null
 
-
-func _show_hover_preview(card: Control) -> void:
-	_clear_hover_preview()
-	if not card.data or card.data.effects == null:
+func _update_boss_intent(card: BossCardData, is_preview: bool) -> void:
+	if boss_intent_label == null:
 		return
-	# 효과를 분류해 보스 HP / 플레이어 블록 위에 부동 라벨로 표시
-	var dmg_total := 0
-	var block_total := 0
-	var draw_total := 0
-	var gold_total := 0
-	for eff in card.data.effects:
-		if eff == null:
-			continue
-		var script: Script = eff.get_script()
-		if script == null:
-			continue
-		var sname: String = str(script.resource_path).to_lower()
-		if "damage" in sname and "value" in eff:
-			dmg_total += int(eff.value)
-		elif "block" in sname and "value" in eff:
-			block_total += int(eff.value)
-		elif "draw" in sname and "amount" in eff:
-			draw_total += int(eff.amount)
-		elif "gold" in sname and "amount" in eff:
-			gold_total += int(eff.amount)
-	if dmg_total > 0:
-		_spawn_preview_label("−%d" % dmg_total, Color(1.0, 0.4, 0.4, 1), boss_hp_label)
-	if block_total > 0:
-		_spawn_preview_label("+%d 🛡" % block_total, Color(0.5, 0.85, 1.0, 1), block_label)
-	if draw_total > 0:
-		_spawn_preview_label("+%d 드로우" % draw_total, Color(0.85, 0.85, 0.5, 1), hp_label)
-	if gold_total > 0:
-		_spawn_preview_label("+%d 💰" % gold_total, Color(1.0, 0.85, 0.3, 1), hp_label)
-
-
-func _spawn_preview_label(text: String, color: Color, anchor: Control) -> void:
-	if anchor == null:
+	if card == null:
+		boss_intent_label.text = ""
 		return
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", 22)
-	lbl.add_theme_color_override("font_color", color)
-	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	lbl.add_theme_constant_override("outline_size", 4)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.z_index = 100
-	add_child(lbl)
-	var anchor_rect := anchor.get_global_rect()
-	lbl.global_position = anchor_rect.position + Vector2(anchor_rect.size.x + 8, -6)
-	# 살짝 띄우는 모션
-	var tween := create_tween()
-	tween.tween_property(lbl, "position:y", lbl.position.y - 6, 0.25)\
-		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	_hover_preview_labels.append(lbl)
+	var prefix := "다음 " if is_preview else "이번 턴 "
+	boss_intent_label.text = "%s%s %s" % [prefix, card.intent_icon, card.card_name]
+	if is_preview:
+		boss_intent_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0, 0.95))
+		return
+	# 행동 직전 — 강조 펄스 (이전 트윈 살아있으면 정리)
+	boss_intent_label.add_theme_color_override("font_color", Color(1.0, 0.75, 0.3, 1))
+	if _intent_tween and _intent_tween.is_running():
+		_intent_tween.kill()
+	boss_intent_label.scale = Vector2(1.25, 1.25)
+	boss_intent_label.pivot_offset = boss_intent_label.size / 2.0
+	_intent_tween = create_tween()
+	_intent_tween.tween_property(boss_intent_label, "scale", Vector2.ONE, 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 
-func _clear_hover_preview() -> void:
-	for lbl in _hover_preview_labels:
-		if is_instance_valid(lbl):
-			lbl.queue_free()
-	_hover_preview_labels.clear()
+# === 보상형 카드 영구 제거 ===
+# 페이즈 전환 보상 / 마켓 "각인의 의식" 카드 효과 모두 사용.
+# 손패+파이프 통합 선택 UI, 1장 선택 또는 스킵 가능.
+
+# 마켓 효과(RemoveCardEffect)에서 호출됨
+func _on_request_card_removal_from_effect() -> void:
+	var lines: Array[String] = ["✨ 각인의 의식", "카드 1장을 영구 제거하라"]
+	_grant_card_removal_reward(lines)
+
+
+func _grant_card_removal_reward(reason_lines: Array[String]) -> void:
+	var all_cards: Array[Control] = []
+	all_cards.append_array(hand_cards)
+	all_cards.append_array(queue_cards)
+	if all_cards.is_empty():
+		return
+	if phase_banner and reason_lines.size() > 0:
+		phase_banner.show_sequence(reason_lines)
+		await phase_banner.banner_finished
+	is_discarding_from_effect = true
+	end_turn_overlay.show_overlay_select(all_cards, 1)
+	# confirm 또는 cancel 둘 중 무엇이든 풀림
+	var resolved: Array = [false]
+	var picked: Array[Control] = []
+	var on_confirm := func(cards: Array) -> void:
+		if resolved[0]: return
+		resolved[0] = true
+		for c in cards: picked.append(c)
+	var on_cancel := func() -> void:
+		if resolved[0]: return
+		resolved[0] = true
+	end_turn_overlay.order_confirmed.connect(on_confirm, CONNECT_ONE_SHOT)
+	end_turn_overlay.cancelled.connect(on_cancel, CONNECT_ONE_SHOT)
+	while not resolved[0]:
+		await get_tree().process_frame
+	is_discarding_from_effect = false
+	if picked.is_empty():
+		return
+	var chosen: Control = picked[0]
+	if chosen in hand_cards:
+		hand_cards.erase(chosen)
+	elif chosen in queue_cards:
+		queue_cards.erase(chosen)
+	await exile_animator.play(chosen)
+	if is_instance_valid(chosen):
+		chosen.queue_free()
+	_update_hand_display()
+	_rebuild_pipe_ui()
+
+
+# 페이즈 보상 큐 — 시그널 콜백 도중 await race 방지
+# _begin_player_turn 시작 시 안전하게 처리
+func _drain_pending_rewards() -> void:
+	while not _pending_rewards.is_empty():
+		var raw: Array = _pending_rewards.pop_front()
+		var lines: Array[String] = []
+		for l in raw:
+			lines.append(str(l))
+		await _grant_card_removal_reward(lines)

@@ -33,6 +33,11 @@
 - 보스 3연속 방지 검증 (`_validate_turn_order()`)
 - `main_scene.gd`: `_advance_turn()` → `_begin_player_turn()` / `_begin_boss_turn()`
 - 라운드 경계(`current_turn > TURNS_PER_ROUND`)에서 방어도 리셋
+- **보상형 카드 영구 제거**: 자동 소멸 대신 *보상*으로 카드 1장 제거 기회 제공. 두 트리거:
+  1. **페이즈 전환 시** (P1→2, P2→3) — `_on_phase_changed`에서 배너 후 `_grant_card_removal_reward` 호출, 손패+파이프 통합 선택 UI (`end_turn_overlay.show_overlay_select`), 스킵 가능
+  2. **마켓 *각인의 의식*** (`market_engraving.tres`, 5골드, T2, 특수 레인) — `RemoveCardEffect` + `consume=true`로 사용 시 카드 자체도 영구 소멸
+- 공통 흐름: 선택 시 `_play_exile_animation` 재사용 (찢어짐 + "✖ 영구 소멸" 텍스트 + "💀 {카드명} 사라졌다" 후속 라벨)
+- `GameContext.request_card_removal: Callable` — 효과가 main_scene 선택 UI를 트리거하기 위한 위임 콜러블
 
 ### 보스 카드덱 시스템 (에이언즈 엔드 방식)
 - `BossDeckSystem` (`scripts/bosses/boss_deck_system.gd`, RefCounted): 보스 카드 덱 관리

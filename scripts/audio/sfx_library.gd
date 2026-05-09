@@ -14,6 +14,7 @@ const PATHS := {
 	"card.discard":       KENNEY_DIR + "/kenney_casino-audio/Audio/card-shove-1.ogg",
 	"card.hover":         KENNEY_DIR + "/kenney_ui-audio/Audio/rollover1.ogg",
 	"card.shuffle":       KENNEY_DIR + "/kenney_casino-audio/Audio/card-shuffle.ogg",
+	"card.exile":         KENNEY_DIR + "/kenney_impact-sounds/Audio/impactGlass_heavy_002.ogg",
 
 	# === 전투 (Kenney Impact Sounds) ===
 	"combat.hit_player":  KENNEY_DIR + "/kenney_impact-sounds/Audio/impactPunch_medium_000.ogg",

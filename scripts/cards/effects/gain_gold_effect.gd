@@ -6,3 +6,6 @@ func execute(ctx: GameContext) -> void:
 
 func get_description() -> String:
 	return "금 %d 획득" % value
+
+func get_preview_summary() -> Dictionary:
+	return {"target": "player", "kind": "gold", "amount": value}

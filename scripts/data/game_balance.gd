@@ -40,3 +40,5 @@ const RAGE_BURST_BLOCK  := 10   ## 투기 발산 시 획득하는 방어도
 # ─── 마켓 ─────────────────────────────────────────────────────────
 const MARKET_REROLL_AP   := 3   ## 마켓 전체 리롤 AP 비용
 const MARKET_REROLL_GOLD := 3   ## 마켓 전체 리롤 골드 비용
+
+

@@ -7,3 +7,6 @@ func execute(ctx: GameContext) -> void:
 
 func get_description() -> String:
 	return "카드 %d장 드로우" % value
+
+func get_preview_summary() -> Dictionary:
+	return {"target": "player", "kind": "draw", "amount": value}

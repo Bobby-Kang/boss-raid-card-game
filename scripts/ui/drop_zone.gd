@@ -23,6 +23,7 @@ var _reject_overlay_style: StyleBoxFlat  # 드래그 시작·수용 불가
 
 var _drag_overlay: PanelContainer        # 드래그 중에만 보이는 라벨 패널
 var _drag_label: Label
+var _idle_self_modulate: Color = Color.WHITE  # 평소 self_modulate 보존
 
 
 func _ready() -> void:
@@ -48,6 +49,9 @@ func _ready() -> void:
 
 	if pass_through_when_idle:
 		mouse_filter = MOUSE_FILTER_IGNORE
+
+	# 평소 self_modulate를 기억 (드래그 종료 시 복원)
+	_idle_self_modulate = self_modulate
 
 	# 드래그 중 표시용 라벨 패널 (평소엔 숨김)
 	_build_drag_label()
@@ -112,6 +116,8 @@ func _notification(what: int) -> void:
 func _show_drag_overlay() -> void:
 	if _drag_overlay == null:
 		return
+	# 평소 투명한 드롭존도 드래그 중엔 stylebox가 보이도록 self_modulate 강제 복구
+	self_modulate = Color.WHITE
 	# 현재 드래그 중인 데이터를 검사해 accept/reject 결정
 	var data: Variant = get_viewport().gui_get_drag_data() if get_viewport() else null
 	var can_accept: bool = false
@@ -134,6 +140,8 @@ func _show_drag_overlay() -> void:
 func _hide_drag_overlay() -> void:
 	if _drag_overlay:
 		_drag_overlay.visible = false
+	# 평소 self_modulate 복원
+	self_modulate = _idle_self_modulate
 
 
 func _pulse_overlay() -> void:
