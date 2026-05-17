@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b1ragesgl00007"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/characters/warrior/rage_infusion_ability.gd" id="3_ability"]
+
+[sub_resource type="Resource" id="Ability_rage_sigil"]
+script = ExtResource("3_ability")
+module_id = "rage_sigil"
+
+[resource]
+script = ExtResource("1_script")
+card_name = "광기의 인장"
+cost = 1
+gold_cost = 8
+tier = 3
+description = "매 플레이어 턴 시작 시 투기 +1. 투기 5+ 시 보스 1 피해"
+card_type = 3
+module_ability = SubResource("Ability_rage_sigil")

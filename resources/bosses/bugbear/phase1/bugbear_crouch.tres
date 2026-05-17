@@ -3,14 +3,26 @@
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://b2dquw6gv76i6" path="res://scripts/bosses/effects/boss_block_effect.gd" id="3_block"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_reflect_damage_effect.gd" id="4_reflect"]
 
-[sub_resource type="Resource" id="Effect_block"]
+[sub_resource type="Resource" id="Effect_block_immediate"]
 script = ExtResource("3_block")
-value = 8
+value = 5
+
+[sub_resource type="Resource" id="Effect_block_tick"]
+script = ExtResource("3_block")
+value = 3
+
+[sub_resource type="Resource" id="Effect_reflect"]
+script = ExtResource("4_reflect")
 
 [resource]
 script = ExtResource("1_script")
 card_name = "웅크리기"
-intent_icon = "🛡️"
-description = "보스 방어도 +8"
-effects = Array[ExtResource("2_base")]([SubResource("Effect_block")])
+card_type = 1
+countdown = 3
+intent_icon = "🛡"
+description = "즉시 방어 +5 / 매턴 방어 +3 / 3턴 후: 방어도만큼 반사 피해"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_reflect")])
+on_draw_effects = Array[ExtResource("2_base")]([SubResource("Effect_block_immediate")])
+on_tick_effects = Array[ExtResource("2_base")]([SubResource("Effect_block_tick")])

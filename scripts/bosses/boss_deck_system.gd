@@ -64,12 +64,16 @@ func setup(
 
 
 # 보스 턴 시작 시 호출 — 파워 카운트다운 틱
+# 다단 효과: 카운트 -1 직전 on_tick_effects 실행, 카운트 0 시 effects 실행 후 버림
 # 반환값: 이번 틱에 발동된 카드 목록 (UI/배너용)
 func tick_powers() -> Array[BossCardData]:
 	var triggered: Array[BossCardData] = []
 	var remaining: Array = []
 
 	for entry in active_powers:
+		# 매턴 효과 (틱 직전)
+		for tick_eff in entry.card.on_tick_effects:
+			tick_eff.execute(ctx)
 		entry.tokens -= 1
 		if entry.tokens <= 0:
 			triggered.append(entry.card)
@@ -78,13 +82,34 @@ func tick_powers() -> Array[BossCardData]:
 
 	active_powers = remaining
 
-	# 발동된 파워: 효과 실행 후 버린 카드 더미로
+	# 발동된 파워: 카운트 0 효과 실행 후 버린 카드 더미로
 	for card in triggered:
 		for effect in card.effects:
 			effect.execute(ctx)
 		discard.append(card)
 		card_discarded.emit(card)
 
+	power_zone_updated.emit(active_powers.duplicate())
+	return triggered
+
+
+# *야수의 외침* 같은 카드용 — 모든 활성 POWER 카운트 -1.
+# 카운트 0 도달한 카드는 즉시 발동.
+func accelerate_all_powers() -> Array[BossCardData]:
+	var triggered: Array[BossCardData] = []
+	var remaining: Array = []
+	for entry in active_powers:
+		entry.tokens -= 1
+		if entry.tokens <= 0:
+			triggered.append(entry.card)
+		else:
+			remaining.append(entry)
+	active_powers = remaining
+	for card in triggered:
+		for effect in card.effects:
+			effect.execute(ctx)
+		discard.append(card)
+		card_discarded.emit(card)
 	power_zone_updated.emit(active_powers.duplicate())
 	return triggered
 
@@ -115,8 +140,18 @@ func play_card(card: BossCardData) -> void:
 			discard.append(card)
 			card_discarded.emit(card)
 		BossCardData.BossCardType.POWER:
+			# 다단 효과: 드로우 시 즉시 효과 실행
+			for draw_eff in card.on_draw_effects:
+				draw_eff.execute(ctx)
 			active_powers.append({card = card, tokens = card.countdown})
 			power_zone_updated.emit(active_powers.duplicate())
+
+
+## 효과 발동 없이 카드만 버린 카드 더미로 보냄 (불멸의 방패 등 무효화 시 사용).
+## POWER 카드도 파워 존 배치 없이 버려진다.
+func discard_without_play(card: BossCardData) -> void:
+	discard.append(card)
+	card_discarded.emit(card)
 
 
 # 덱 앞 카드를 제거하지 않고 참조 (의도 미리보기용)

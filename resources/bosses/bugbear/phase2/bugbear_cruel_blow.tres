@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BossCardData" format=3 uid="uid://b2bgcruel0003"]
+
+[ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_vulnerability_effect.gd" id="4_vuln"]
+
+[sub_resource type="Resource" id="Effect_dmg"]
+script = ExtResource("3_dmg")
+value = 6
+
+[sub_resource type="Resource" id="Effect_vuln"]
+script = ExtResource("4_vuln")
+value = 2
+
+[resource]
+script = ExtResource("1_script")
+card_name = "잔혹한 일격"
+intent_icon = "🩸"
+description = "6 피해 + 취약 2 (다음 2장 받는 피해 +50%)"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_vuln")])

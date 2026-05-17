@@ -111,15 +111,6 @@ size_flags_stretch_ratio = 0.38
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="PlayDropZone" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea" unique_id=417705396]
-unique_name_in_owner = true
-self_modulate = Color(1, 1, 1, 0)
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_dropzone")
-pass_through_when_idle = true
-drag_label_text = "⚔ 사용 / 보스 공격"
-
 [node name="TopRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox" unique_id=480433461]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
@@ -149,7 +140,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
 size_flags_stretch_ratio = 0.06
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0.3, 0.05, 0.05, 1)
 theme_override_constants/outline_size = 6
@@ -175,14 +165,11 @@ expand_mode = 3
 [node name="BossIntentLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossFace" unique_id=991000003]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 18
-text = ""
 horizontal_alignment = 1
-vertical_alignment = 0
 
 [node name="BossInfoRight" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow" unique_id=1375694362]
 layout_mode = 2
@@ -225,7 +212,6 @@ theme_override_font_sizes/font_size = 20
 text = "🛡 0"
 horizontal_alignment = 1
 vertical_alignment = 1
-vertical_alignment = 1
 
 [node name="BossDeckRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=991200001]
 layout_mode = 2
@@ -236,8 +222,8 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-mouse_filter = 1
 tooltip_text = "덱에 남은 카드 (마우스를 올리면 전체 목록)"
+mouse_filter = 1
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 18
 text = "🂠 0"
@@ -264,7 +250,6 @@ horizontal_alignment = 1
 
 [node name="BossNextCardContainer" type="CenterContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=5560004]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -278,11 +263,19 @@ horizontal_alignment = 1
 
 [node name="BossPowerZone" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=1169136594]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 2
+
+[node name="PlayDropZone" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea" unique_id=417705396]
+unique_name_in_owner = true
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_dropzone")
+pass_through_when_idle = true
+drag_label_text = "⚔ 사용 / 보스 공격"
 
 [node name="BottomArea" type="VBoxContainer" parent="BattleField/VBoxLayout" unique_id=488632899]
 layout_mode = 2
@@ -525,7 +518,7 @@ unique_name_in_owner = true
 [node name="PhaseBanner" parent="." unique_id=814868930 instance=ExtResource("4_banner")]
 unique_name_in_owner = true
 
-[node name="TurnIndicator" type="PanelContainer" parent="." unique_id=2200000001]
+[node name="TurnIndicator" type="PanelContainer" parent="." unique_id=-2094967295]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -537,26 +530,24 @@ offset_bottom = 50.0
 grow_horizontal = 2
 mouse_filter = 2
 
-[node name="TurnIndicatorVBox" type="VBoxContainer" parent="TurnIndicator" unique_id=2200000002]
+[node name="TurnIndicatorVBox" type="VBoxContainer" parent="TurnIndicator" unique_id=-2094967294]
 layout_mode = 2
-theme_override_constants/separation = 0
 mouse_filter = 2
+theme_override_constants/separation = 0
 
-[node name="TurnIndicatorLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=2200000003]
+[node name="TurnIndicatorLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=-2094967293]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.5, 0.75, 1.0, 1)
+theme_override_colors/font_color = Color(0.5, 0.75, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 22
 text = "🔵 내 턴"
 horizontal_alignment = 1
 
-[node name="TurnHintLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=2200000004]
+[node name="TurnHintLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=-2094967292]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 theme_override_font_sizes/font_size = 12
 text = "카드를 드래그하거나 턴 종료"

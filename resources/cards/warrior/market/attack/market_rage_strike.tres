@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b1ragestrk0001"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/consume_rage_effect.gd" id="3_consume"]
+[ext_resource type="Script" path="res://scripts/cards/effects/damage_effect.gd" id="4_damage"]
+
+[sub_resource type="Resource" id="Effect_consume"]
+script = ExtResource("3_consume")
+value = 5
+
+[sub_resource type="Resource" id="Effect_damage"]
+script = ExtResource("4_damage")
+value = 15
+
+[resource]
+script = ExtResource("1_script")
+card_name = "분노의 직격"
+cost = 0
+gold_cost = 6
+tier = 2
+description = "투기 5 소비, 보스에게 15 피해"
+card_type = 0
+effects = Array[ExtResource("2_base")]([SubResource("Effect_consume"), SubResource("Effect_damage")])

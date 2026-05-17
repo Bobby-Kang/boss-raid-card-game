@@ -6,14 +6,19 @@
 
 [sub_resource type="Resource" id="Effect_dmg1"]
 script = ExtResource("3_dmg")
-value = 4
+value = 3
 
 [sub_resource type="Resource" id="Effect_dmg2"]
 script = ExtResource("3_dmg")
-value = 4
+value = 3
+
+[sub_resource type="Resource" id="Effect_dmg3"]
+script = ExtResource("3_dmg")
+value = 3
 
 [resource]
 script = ExtResource("1_script")
 card_name = "연속 할퀴기"
-description = "4 피해 × 2회"
-effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg1"), SubResource("Effect_dmg2")])
+intent_icon = "🗡"
+description = "3 피해 × 3회 (다단 공격)"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg1"), SubResource("Effect_dmg2"), SubResource("Effect_dmg3")])

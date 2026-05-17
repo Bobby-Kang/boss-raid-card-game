@@ -65,10 +65,37 @@ func _show_effect_preview(card: Control) -> void:
 			continue
 		var kind: String = info.get("kind", "")
 		var amount: int = info.get("amount", 0)
-		# block_damage 같이 컨텍스트 의존 처리
-		if kind == "block_damage":
-			amount = _game_ctx.player_block if _game_ctx else 0
-			kind = "damage"
+		# 컨텍스트 의존 효과 — 실시간 계산
+		match kind:
+			"block_damage":
+				amount = _game_ctx.player_block if _game_ctx else 0
+				kind = "damage"
+			"rage_scale_damage":
+				var rage: int = _rage_stacks()
+				amount = int(info.get("base", 0)) + rage * int(info.get("mul", 1)) / maxi(int(info.get("div", 1)), 1)
+				kind = "damage"
+			"rage_scale_block":
+				var rage_b: int = _rage_stacks()
+				amount = int(info.get("base", 0)) + rage_b / maxi(int(info.get("div", 1)), 1)
+				kind = "block"
+			"execute_damage":
+				var ratio: float = float(_game_ctx.boss_hp) / float(maxi(_game_ctx.boss_max_hp, 1)) if _game_ctx else 1.0
+				var threshold: float = float(info.get("threshold", 0.3))
+				amount = int(info.get("high", 0)) if ratio <= threshold else int(info.get("low", 0))
+				kind = "damage"
+			"chain_damage":
+				# 미리보기: 이번 턴 사용된 공격 카드 수 기준 (이 카드 자신 제외 — 사용 *직후* 계산이라)
+				var prior: int = _game_ctx.attacks_this_turn if _game_ctx else 0
+				amount = int(info.get("base", 0)) + prior * int(info.get("per", 0))
+				kind = "damage"
+			"gold_scale_damage":
+				var gold: int = _game_ctx.gold_manager.current if _game_ctx and _game_ctx.gold_manager else 0
+				amount = int(info.get("base", 0)) + gold * int(info.get("mul", 1))
+				kind = "damage"
+			"rage_consume":
+				kind = "rage_consume"  # 별도 표시
+			"negate_boss":
+				kind = "negate_boss"
 		if kind == "damage":
 			# 보스 방어도 차감 반영
 			var blocked := mini(amount, _game_ctx.boss_block) if _game_ctx else 0
@@ -86,6 +113,17 @@ func _show_effect_preview(card: Control) -> void:
 		_spawn_label("+%d 💰" % totals["gold"], COLOR_GOLD, _anchor_player_hp)
 	if totals.get("remove", 0) > 0 or totals.get("exile", 0) > 0:
 		_spawn_label("✖ 카드 정리", COLOR_REMOVE, _anchor_player_hp)
+	if totals.get("rage_consume", 0) > 0:
+		_spawn_label("🔥 −%d" % totals["rage_consume"], Color(1.0, 0.55, 0.15, 1), _anchor_player_hp)
+	if totals.get("negate_boss", 0) > 0:
+		_spawn_label("🛡 보스 무효", COLOR_BLOCK, _anchor_boss_hp)
+
+
+# 게임 컨텍스트 통한 투기 스택 조회 — 직업 의존 안 함
+func _rage_stacks() -> int:
+	if _game_ctx and _game_ctx.rage_system:
+		return _game_ctx.rage_system.stacks
+	return 0
 
 
 func _spawn_label(text: String, color: Color, anchor: Control) -> void:

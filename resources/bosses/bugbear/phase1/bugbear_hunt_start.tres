@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BossCardData" format=3 uid="uid://b1bghunt00002"]
+
+[ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_blood_scent_effect.gd" id="3_blood"]
+
+[sub_resource type="Resource" id="Effect_blood"]
+script = ExtResource("3_blood")
+
+[resource]
+script = ExtResource("1_script")
+card_name = "사냥의 시작"
+card_type = 1
+countdown = 3
+intent_icon = "🐺"
+description = "3턴 후: 피 냄새 활성 (HP 50% 이하 시 공격 +30%)"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_blood")])

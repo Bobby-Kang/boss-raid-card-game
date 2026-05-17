@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b1zerker0002"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/rage_scale_damage_effect.gd" id="3_rage_dmg"]
+
+[sub_resource type="Resource" id="Effect_rage_dmg"]
+script = ExtResource("3_rage_dmg")
+base_damage = 6
+multiplier = 1
+divisor = 1
+
+[resource]
+script = ExtResource("1_script")
+card_name = "광폭의 검"
+cost = 2
+gold_cost = 9
+tier = 3
+description = "보스에게 (6 + 투기) 피해"
+card_type = 0
+effects = Array[ExtResource("2_base")]([SubResource("Effect_rage_dmg")])

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BossCardData" format=3 uid="uid://b3bgblch00006"]
+
+[ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_execute_damage_effect.gd" id="3_exec"]
+
+[sub_resource type="Resource" id="Effect_exec"]
+script = ExtResource("3_exec")
+hp_threshold = 0.3
+low_damage = 5
+high_damage = 15
+
+[resource]
+script = ExtResource("1_script")
+card_name = "피의 추격"
+intent_icon = "🩸"
+description = "플레이어 HP 30% 이하 → 15 피해, 아니면 5 피해"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_exec")])

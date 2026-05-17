@@ -11,7 +11,11 @@ enum BossCardType { ATTACK, POWER }
 @export var countdown: int = 0          # POWER 전용: 발동까지 남은 보스 턴 수
 @export var intent_icon: String = "⚔️"  # 배너 표시용 아이콘
 @export var description: String = ""
-@export var effects: Array[CardEffect] = []
+@export var effects: Array[CardEffect] = []  # ATTACK: 즉시 / POWER: 카운트 0 시 발동
+
+# === POWER 다단 효과 (선택) ===
+@export var on_draw_effects: Array[CardEffect] = []   # POWER 드로우 시 즉시 효과
+@export var on_tick_effects: Array[CardEffect] = []   # POWER 매 보스 턴 (카운트 -1 직전)
 
 
 func get_intent_text() -> String:

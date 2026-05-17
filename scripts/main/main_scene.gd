@@ -17,22 +17,27 @@ const MODULE_COUNTER_STANCE := preload("res://resources/cards/warrior/module_cou
 # 버그베어 보스 카드덱 (Phase별 티어 블록)
 const BUGBEAR_PHASE1: Array = [
 	preload("res://resources/bosses/bugbear/phase1/bugbear_scratch.tres"),
-	preload("res://resources/bosses/bugbear/phase1/bugbear_scratch_2.tres"),
 	preload("res://resources/bosses/bugbear/phase1/bugbear_growl.tres"),
 	preload("res://resources/bosses/bugbear/phase1/bugbear_crouch.tres"),
 	preload("res://resources/bosses/bugbear/phase1/bugbear_toxic_claw.tres"),
+	preload("res://resources/bosses/bugbear/phase1/bugbear_intimidate.tres"),
+	preload("res://resources/bosses/bugbear/phase1/bugbear_hunt_start.tres"),
 ]
 const BUGBEAR_PHASE2: Array = [
 	preload("res://resources/bosses/bugbear/phase2/bugbear_heavy_strike.tres"),
 	preload("res://resources/bosses/bugbear/phase2/bugbear_rage_roar.tres"),
 	preload("res://resources/bosses/bugbear/phase2/bugbear_iron_wall.tres"),
 	preload("res://resources/bosses/bugbear/phase2/bugbear_combo_scratch.tres"),
+	preload("res://resources/bosses/bugbear/phase2/bugbear_cruel_blow.tres"),
+	preload("res://resources/bosses/bugbear/phase2/bugbear_beast_cry.tres"),
 ]
 const BUGBEAR_PHASE3: Array = [
 	preload("res://resources/bosses/bugbear/phase3/bugbear_frenzy.tres"),
 	preload("res://resources/bosses/bugbear/phase3/bugbear_crush.tres"),
 	preload("res://resources/bosses/bugbear/phase3/bugbear_despair_roar.tres"),
 	preload("res://resources/bosses/bugbear/phase3/bugbear_last_stand.tres"),
+	preload("res://resources/bosses/bugbear/phase3/bugbear_mad_charge.tres"),
+	preload("res://resources/bosses/bugbear/phase3/bugbear_blood_chase.tres"),
 ]
 
 # Rage UI
@@ -187,6 +192,7 @@ func _setup_game_context() -> void:
 
 	# 전사 전용 — 투기 발산 시스템
 	rage_system = WarriorRageSystem.new(game_ctx)
+	game_ctx.rage_system = rage_system  # 효과가 투기 접근하기 위함
 	rage_system.rage_changed.connect(_on_rage_changed)
 	_create_rage_orbs(GameBalance.RAGE_MAX_STACKS)
 	rage_button.pressed.connect(_on_rage_button_pressed)
@@ -211,6 +217,7 @@ func _setup_game_context() -> void:
 
 	# 보스 덱 시스템 (에이언즈 엔드 방식 — 티어 블록 FIFO, 파워 카운트다운)
 	boss_deck_system = BossDeckSystem.new(game_ctx)
+	game_ctx.boss_deck_system = boss_deck_system   # 보스 효과(야수의 외침)가 접근하기 위함
 	boss_deck_system.deck_changed.connect(_on_boss_deck_changed)
 	boss_deck_system.power_zone_updated.connect(_on_boss_power_zone_updated)
 	boss_deck_system.card_discarded.connect(_on_boss_card_discarded)
@@ -357,8 +364,10 @@ func _equip_warrior_modules() -> void:
 # === 손패 드로우 ===
 
 func _draw_hand() -> void:
-	# 파이프 앞에서 DRAW_COUNT장 꺼내 손패로
-	var count := mini(DRAW_COUNT, queue_cards.size())
+	# 파이프 앞에서 DRAW_COUNT장 꺼내 손패로. 드로우 봉인 N이면 -N장.
+	var lock: int = game_ctx.consume_draw_lock() if game_ctx else 0
+	var target: int = maxi(DRAW_COUNT - lock, 0)
+	var count := mini(target, queue_cards.size())
 	for i in count:
 		var card: Control = queue_cards.pop_front()
 		card.reparent(hand_belt)
@@ -366,6 +375,10 @@ func _draw_hand() -> void:
 		hand_cards.append(card)
 	if count > 0:
 		AudioManager.play_sfx("card.draw", 0.0, 0.05)
+	# 봉인으로 인해 덜 드로우한 경우 배너 안내
+	if lock > 0 and phase_banner:
+		phase_banner.show_sequence(["🔒 드로우 봉인 발동", "%d장만 드로우 (–%d)" % [count, lock]])
+		await phase_banner.banner_finished
 	_update_hand_display()
 	_rebuild_pipe_ui()
 
@@ -526,6 +539,9 @@ func _play_card(card: Control) -> void:
 		return
 	resource_bar.ap_manager.spend(cost)
 	AudioManager.play_sfx("card.play", 0.0, 0.08)
+	# 콤보 트래커 — ATTACK 카드 사용 시 카운트 (연환격 등에서 참조)
+	if card.data.card_type == CardData.CardType.ATTACK:
+		game_ctx.attacks_this_turn += 1
 	# 소비(consume) 카드는 파이프로 안 돌아가고 효과 실행 후 영구 소멸
 	if card.data.consume:
 		hand_cards.erase(card)
@@ -576,6 +592,7 @@ func _advance_turn() -> void:
 
 func _begin_player_turn() -> void:
 	resource_bar.ap_manager.set_to(3)
+	game_ctx.attacks_this_turn = 0   # 연환격 등 콤보 카드용 트래커 초기화
 	_set_turn_focus(true)
 	_update_turn_indicator(true, "")
 	# 보스 머리 위 인텐트 갱신 (다음 행동 예고)
@@ -626,8 +643,14 @@ func _begin_boss_turn() -> void:
 	phase_banner.show_sequence(messages)
 	await phase_banner.banner_finished
 
-	# 4. 카드 실행 — UI는 보스 머리 위 인텐트 라벨 + 파워 존이 대신 표시
-	if drawn:
+	# 4. 카드 실행 — *불멸의 방패* 등으로 무효화된 경우 스킵
+	if game_ctx.negate_next_boss_action:
+		game_ctx.negate_next_boss_action = false
+		if drawn and phase_banner:
+			phase_banner.show_sequence(["🛡 보스 행동 무효화!", "%s 가 막혔다" % drawn.card_name])
+			await phase_banner.banner_finished
+			boss_deck_system.discard_without_play(drawn)
+	elif drawn:
 		boss_deck_system.play_card(drawn)
 
 	# 5. 장착된 모듈의 보스 턴 종료 훅 실행
@@ -663,7 +686,9 @@ func _refresh_boss_next_card_preview() -> void:
 	lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	# Korean ICU word boundary는 음절 단위라 AUTOWRAP_WORD/ARBITRARY 모두 글자 줄바꿈됨 → OFF
+	lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lbl.clip_text = false
 	lbl.add_theme_font_size_override("font_size", 13)
 	if next_card == null:
 		lbl.text = "재편성"
@@ -689,6 +714,8 @@ func _on_boss_power_zone_updated(active_powers: Array) -> void:
 			lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.25, 1))
 			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+			lbl.clip_text = false
 			lbl.tooltip_text = "%s\n%s" % [entry.card.card_name, entry.card.description]
 			boss_power_zone.add_child(lbl)
 

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b1exec000003"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/execute_damage_effect.gd" id="3_exec"]
+
+[sub_resource type="Resource" id="Effect_exec"]
+script = ExtResource("3_exec")
+hp_threshold = 0.3
+low_damage = 8
+high_damage = 25
+
+[resource]
+script = ExtResource("1_script")
+card_name = "처형의 일격"
+cost = 3
+gold_cost = 10
+tier = 3
+description = "보스 HP 30% 이하면 25 피해, 아니면 8 피해"
+card_type = 0
+effects = Array[ExtResource("2_base")]([SubResource("Effect_exec")])

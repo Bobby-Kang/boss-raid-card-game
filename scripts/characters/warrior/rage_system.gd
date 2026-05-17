@@ -31,6 +31,16 @@ func can_consume() -> bool:
 	return stacks >= GameBalance.RAGE_MAX_STACKS
 
 
+# 능동 소비 — 분노의 직격 등 콤보 카드에서 사용. 가능한 만큼 소비하고 실제 소비량 반환.
+func spend(amount: int) -> int:
+	if amount <= 0:
+		return 0
+	var actual: int = mini(amount, stacks)
+	stacks -= actual
+	rage_changed.emit(stacks, GameBalance.RAGE_MAX_STACKS)
+	return actual
+
+
 func consume() -> bool:
 	if not can_consume():
 		return false
