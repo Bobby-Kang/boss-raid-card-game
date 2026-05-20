@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://c323gvneknc4m" path="res://scripts/cards/effects/damage_effect.gd" id="3_damage"]
 [ext_resource type="Script" uid="uid://cvxpcm6la08sn" path="res://scripts/cards/effects/block_effect.gd" id="4_block"]
+[ext_resource type="Texture2D" uid="uid://eogxwdmnrm3j" path="res://assets/art/gemini_image/market_charge.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_damage"]
 script = ExtResource("3_damage")
@@ -15,6 +16,7 @@ value = 2
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "돌격"
 cost = 1
 gold_cost = 4

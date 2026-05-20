@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/cards/effects/exile_effect.gd" id="3_exile"]
 [ext_resource type="Script" uid="uid://cvxpcm6la08sn" path="res://scripts/cards/effects/block_effect.gd" id="4_block"]
+[ext_resource type="Texture2D" uid="uid://d0tb7gb66bgic" path="res://assets/art/gemini_image/market_unyielding.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_exile"]
 script = ExtResource("3_exile")
@@ -15,6 +16,7 @@ value = 4
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "불굴의 의지"
 cost = 1
 gold_cost = 5

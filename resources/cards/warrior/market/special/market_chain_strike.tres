@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/cards/effects/chain_attack_damage_effect.gd" id="3_chain"]
+[ext_resource type="Texture2D" uid="uid://ds6w56qllgqng" path="res://assets/art/gemini_image/market_chain_strike.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_chain"]
 script = ExtResource("3_chain")
@@ -11,6 +12,7 @@ per_attack_bonus = 3
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "연환격"
 cost = 1
 gold_cost = 7

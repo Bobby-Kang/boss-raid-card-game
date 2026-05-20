@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/cards/effects/execute_damage_effect.gd" id="3_exec"]
+[ext_resource type="Texture2D" uid="uid://er7a18snjvff" path="res://assets/art/gemini_image/market_execute.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_exec"]
 script = ExtResource("3_exec")
@@ -12,6 +13,7 @@ high_damage = 25
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "처형의 일격"
 cost = 3
 gold_cost = 10

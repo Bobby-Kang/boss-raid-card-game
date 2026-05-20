@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://c323gvneknc4m" path="res://scripts/cards/effects/damage_effect.gd" id="3_damage"]
 [ext_resource type="Script" uid="uid://bylcx1jvg5n37" path="res://scripts/cards/effects/draw_effect.gd" id="4_draw"]
+[ext_resource type="Texture2D" uid="uid://b5dcmgltgrd2t" path="res://assets/art/gemini_image/market_swift_blow.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_damage"]
 script = ExtResource("3_damage")
@@ -15,6 +16,7 @@ value = 1
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "속공"
 cost = 1
 gold_cost = 6

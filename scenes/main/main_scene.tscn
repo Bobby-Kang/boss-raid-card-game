@@ -127,6 +127,7 @@ size_flags_stretch_ratio = 0.45
 
 [node name="PlayerFaceTexture" type="TextureRect" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/PlayerFace" unique_id=991000002]
 unique_name_in_owner = true
+texture_filter = 4
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -156,6 +157,7 @@ size_flags_stretch_ratio = 0.45
 
 [node name="BossFaceTexture" type="TextureRect" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossFace" unique_id=280594896]
 unique_name_in_owner = true
+texture_filter = 4
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

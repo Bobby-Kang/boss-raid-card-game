@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/cards/effects/consume_rage_effect.gd" id="3_consume"]
 [ext_resource type="Script" path="res://scripts/cards/effects/damage_effect.gd" id="4_damage"]
+[ext_resource type="Texture2D" uid="uid://4qq60u6f0rkg" path="res://assets/art/gemini_image/market_rage_strike.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_consume"]
 script = ExtResource("3_consume")
@@ -15,6 +16,7 @@ value = 15
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "분노의 직격"
 cost = 0
 gold_cost = 6

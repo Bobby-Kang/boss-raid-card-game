@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://bylcx1jvg5n37" path="res://scripts/cards/effects/draw_effect.gd" id="3_draw"]
+[ext_resource type="Texture2D" uid="uid://cxsk076eadxbx" path="res://assets/art/gemini_image/market_meditation.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_draw"]
 script = ExtResource("3_draw")
@@ -10,6 +11,7 @@ value = 2
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "명상"
 gold_cost = 4
 tier = 1

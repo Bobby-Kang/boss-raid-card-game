@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/cards/effects/gain_gold_effect.gd" id="3_gold"]
 [ext_resource type="Script" path="res://scripts/cards/effects/gold_scale_damage_effect.gd" id="4_gold_dmg"]
+[ext_resource type="Texture2D" uid="uid://d3mbf1h8tt74r" path="res://assets/art/gemini_image/market_merchants_proverb.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_gold"]
 script = ExtResource("3_gold")
@@ -16,6 +17,7 @@ multiplier = 1
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "상인의 격언"
 cost = 0
 gold_cost = 6

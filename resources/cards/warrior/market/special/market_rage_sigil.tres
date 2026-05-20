@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/characters/warrior/rage_infusion_ability.gd" id="3_ability"]
+[ext_resource type="Texture2D" uid="uid://bi51bo7q1ywd8" path="res://assets/art/gemini_image/market_rage_sigil.png" id="9_art"]
 
 [sub_resource type="Resource" id="Ability_rage_sigil"]
 script = ExtResource("3_ability")
@@ -10,6 +11,7 @@ module_id = "rage_sigil"
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "광기의 인장"
 cost = 1
 gold_cost = 8

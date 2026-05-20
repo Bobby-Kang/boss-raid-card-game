@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/cards/effects/gain_gold_effect.gd" id="3_gold"]
 [ext_resource type="Script" path="res://scripts/cards/effects/draw_effect.gd" id="4_draw"]
+[ext_resource type="Texture2D" uid="uid://btax1wsr7nd3c" path="res://assets/art/gemini_image/market_final_treasure.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_gold"]
 script = ExtResource("3_gold")
@@ -15,6 +16,7 @@ value = 1
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "마지막 보물"
 cost = 0
 gold_cost = 7
