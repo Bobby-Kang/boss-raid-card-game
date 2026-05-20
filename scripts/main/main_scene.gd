@@ -604,6 +604,8 @@ func _play_card(card: Control) -> void:
 	# 콤보 트래커 — ATTACK 카드 사용 시 카운트 (연환격 등에서 참조)
 	if card.data.card_type == CardData.CardType.ATTACK:
 		game_ctx.attacks_this_turn += 1
+	# 카드 사용 임팩트 이펙트 (효과 종류 기반 — 슬래시/방어 쉬머)
+	_play_card_impact(card)
 	# 소비(consume) 카드는 파이프로 안 돌아가고 효과 실행 후 영구 소멸
 	if card.data.consume:
 		hand_cards.erase(card)
@@ -944,6 +946,12 @@ func _on_rage_button_pressed() -> void:
 		return
 	if not rage_system.can_consume():
 		return
+	# 투기 발산 — 화면 전체 분노 플래시 + 보스 슬래시 + 강한 셰이크
+	if combat_fx:
+		combat_fx.screen_flash(Color(1.0, 0.45, 0.1), 0.5, 0.55)
+		combat_fx.shake_screen(11.0, 0.35)
+	_spawn_slash_fx(boss_face_texture)
+	AudioManager.play_sfx("rage.consume", 2.0, 0.05)
 	rage_system.consume()
 
 
@@ -1127,6 +1135,59 @@ func _on_boss_attack_buffed(new_bonus: int) -> void:
 	if boss_intent_label:
 		_spawn_floating_text("⚔ 공격력 +%d!" % new_bonus, Color(1.0, 0.6, 0.2, 1),
 			boss_face_texture if boss_face_texture else boss_intent_label)
+
+
+# === 카드 사용 임팩트 이펙트 ===
+
+const _DAMAGE_KINDS := [
+	"damage", "rage_scale_damage", "execute_damage",
+	"chain_damage", "gold_scale_damage", "block_damage",
+]
+
+
+# 카드 효과 종류에 따라 적절한 임팩트 연출 분기
+func _play_card_impact(card: Control) -> void:
+	if not card.data:
+		return
+	var has_damage := false
+	var has_block := false
+	for eff in card.data.effects:
+		if eff == null:
+			continue
+		var kind: String = eff.get_preview_summary().get("kind", "")
+		if kind in _DAMAGE_KINDS:
+			has_damage = true
+		elif kind == "block" or kind == "rage_scale_block":
+			has_block = true
+	if has_damage:
+		_spawn_slash_fx(boss_face_texture)
+	if has_block and combat_fx:
+		combat_fx.flash_buff(player_face_texture, Color(0.5, 0.85, 1.4, 1))
+
+
+# 보스 얼굴을 가로지르는 대각선 슬래시 연출
+func _spawn_slash_fx(target: Control) -> void:
+	if target == null:
+		return
+	var rect := target.get_global_rect()
+	var center := rect.get_center() - global_position
+	var half := rect.size * 0.42
+	var line := Line2D.new()
+	line.width = 7.0
+	line.default_color = Color(1, 1, 1, 0.95)
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.z_index = 150
+	line.add_point(center + Vector2(-half.x, -half.y))
+	line.add_point(center + Vector2(half.x, half.y))
+	add_child(line)
+	# 짧게 번쩍였다 사라짐
+	line.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(line, "modulate:a", 1.0, 0.05)
+	tween.tween_property(line, "modulate:a", 0.0, 0.22).set_ease(Tween.EASE_IN)
+	tween.tween_callback(line.queue_free)
+	AudioManager.play_sfx("combat.hit_boss", -3.0, 0.1)
 
 
 # 앵커 노드 위에 잠깐 떠올랐다 사라지는 강조 텍스트 (공통 헬퍼)

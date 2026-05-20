@@ -66,3 +66,28 @@ func shake_screen(intensity: float = 7.0, duration: float = 0.25) -> void:
 		)
 		_shake_tween.tween_property(_shake_target, "position", off, 0.04)
 	_shake_tween.tween_property(_shake_target, "position", Vector2.ZERO, 0.04)
+
+
+# 버프 플래시 — 방어/강화 시 캐릭터를 잠깐 색 변화 (recoil 없음)
+func flash_buff(target: Control, color: Color) -> void:
+	if target == null:
+		return
+	var tween := create_tween()
+	target.modulate = color
+	tween.tween_property(target, "modulate", Color.WHITE, 0.35).set_ease(Tween.EASE_OUT)
+
+
+# 화면 전체 색 플래시 — 투기 발산 등 큰 순간 (페이드 인/아웃)
+func screen_flash(color: Color, peak_alpha: float = 0.45, duration: float = 0.5) -> void:
+	if _shake_target == null:
+		return
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.color = Color(color.r, color.g, color.b, 0.0)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.z_index = 140
+	_shake_target.add_child(rect)
+	var tween := create_tween()
+	tween.tween_property(rect, "color:a", peak_alpha, duration * 0.3)
+	tween.tween_property(rect, "color:a", 0.0, duration * 0.7)
+	tween.tween_callback(rect.queue_free)
