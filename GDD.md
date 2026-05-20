@@ -113,8 +113,8 @@
 
 | 카드명 | 타입 | AP 비용 | 효과 | 수량 |
 |--------|------|---------|------|------|
-| 골드 카드 | SKILL | 0 | 골드 +1 | 5 |
-| 베기 | ATTACK | 1 | 보스 피해 2 | 2 |
+| 골드 카드 | SKILL | 0 | 골드 +2 | 5 |
+| 베기 | ATTACK | 1 | 보스 피해 3 | 2 |
 | 막기 | SKILL | 1 | 방어력 +3 | 2 |
 | 집중 | SKILL | 0 | 카드 드로우 1 | 1 |
 
@@ -126,17 +126,17 @@
 
 | 항목 | 수치 |
 |------|------|
-| 최대 HP | 50 |
-| 시작 HP | 50 |
+| 최대 HP | 60 |
+| 시작 HP | 60 |
 | AP | 3 (매 플레이어 턴 리셋) |
 
 ### 6.2 보스 (기본 보스)
 
 | 항목 | 수치 |
 |------|------|
-| 최대 HP | 100 |
-| 시작 HP | 100 |
-| 기본 공격 | 매 보스 턴 플레이어에게 5 피해 |
+| 최대 HP | 70 |
+| 시작 HP | 70 |
+| 공격 | 카드 기반 (Phase별 다양, BGD 7.6 참조) |
 | 페이즈 | 3단계 (HP 임계 트리거, 단방향) |
 
 ### 6.4 보스 페이즈
@@ -669,6 +669,7 @@ var boss_deck_system: BossDeckSystem = null
 ## 12. 변경 이력
 
 | 날짜 | 변경 내용 |
+| 2026-05-10 | **밸런스 패치 (1차 플레이테스트 기반)** — 보스 HP 100→70, 플레이어 HP 50→60, 베기 2→3, 골드 카드 +1→+2. 보스 회복 너프 (위협 흡혈 5→3, 강철벽 회복 8 제거→방어로 전환). Phase 3 스파이크 완화 (최후의 발악 25→16, 광란 12→10, 광기의 돌진 14→11). 피 냄새 배율 ×1.3→×1.2. *"못 깰 것 같은"* 난이도 → *"빡빡하지만 가능"* 으로 조정 |
 |------|----------|
 | 2026-05-10 | **버그베어 카드 풀 리디자인 — 13 → 18장**. 신규 디버프 *드로우 봉인* + *취약*, POWER 다단 효과 시스템 (`on_draw_effects` / `on_tick_effects`), 피 냄새 정체성 (HP 50% 이하 공격 ×1.3). 보스 효과 클래스 11종 신규 (BossDrawLock, BossVulnerability, BossSelfDamage, BossHeal, BossDrain, BossAttackBuff, BossBloodScent, BossPercent, BossReflect, BossExecute, BossPowerSpeedup). 강제 버리기 → 드로우 봉인 전환 (보스 턴 버리기는 효과 X 문제 해결). 중복 카드 발톱 할퀴기 ×2 → 1장으로 정리 |
 | 2026-05-10 | **전사 카드 풀 확장 — 18 → 27장** (콤보·시너지 9장 신규). 빌드 분기 3종(광폭/연환/황금처형). 신규 효과 7종(ConsumeRage, RageScaleDamage, RageScaleBlock, ExecuteDamage, ChainAttackDamage, GoldScaleDamage, NegateNextBoss) + 모듈 1종(RageInfusion). GameContext에 attacks_this_turn/negate_next_boss_action/rage_system 트래커 추가. 호버 프리뷰가 동적 계산 효과 실시간 보정 |

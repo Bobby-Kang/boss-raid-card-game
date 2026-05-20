@@ -6,7 +6,7 @@
 
 [sub_resource type="Resource" id="Effect_drain"]
 script = ExtResource("3_drain")
-value = 5
+value = 3
 
 [resource]
 script = ExtResource("1_script")
@@ -14,5 +14,5 @@ card_name = "위협"
 card_type = 1
 countdown = 2
 intent_icon = "🩸"
-description = "2턴 후: 5 피해 + 보스 HP 5 회복 (흡혈)"
+description = "2턴 후: 3 피해 + 보스 HP 3 회복 (흡혈)"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_drain")])

@@ -88,7 +88,7 @@ func activate_blood_scent() -> void:
 func get_boss_attack_modifier(base_damage: int) -> int:
 	var total: int = base_damage + boss_attack_bonus
 	if blood_scent_active and boss_hp <= boss_max_hp / 2:
-		total = int(total * 1.3)
+		total = int(total * 1.2)
 	return total
 
 
