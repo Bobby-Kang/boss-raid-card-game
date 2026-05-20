@@ -170,6 +170,55 @@ func _setup_helpers() -> void:
 	add_child(exile_animator)
 	exile_animator.setup(self)
 
+	_setup_status_indicators()
+
+
+# === 상태 인디케이터 (드로우 봉인 / 취약 / 피 냄새) ===
+
+var _draw_lock_label: Label = null
+var _vuln_label: Label = null
+var _blood_vignette: TextureRect = null
+var _blood_pulse_tween: Tween = null
+
+
+func _make_status_label(font_color: Color) -> Label:
+	var lbl := Label.new()
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", font_color)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	lbl.add_theme_constant_override("outline_size", 4)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.z_index = 90
+	lbl.visible = false
+	add_child(lbl)
+	return lbl
+
+
+func _setup_status_indicators() -> void:
+	# 드로우 봉인 — 손패 영역 상단
+	_draw_lock_label = _make_status_label(Color(0.7, 0.85, 1.0, 1))
+	# 취약 — 플레이어 HP 라벨 옆
+	_vuln_label = _make_status_label(Color(1.0, 0.45, 0.55, 1))
+
+	# 피 냄새 — 화면 가장자리 핏빛 비네팅 (radial gradient)
+	var grad := GradientTexture2D.new()
+	grad.fill = GradientTexture2D.FILL_RADIAL
+	grad.fill_from = Vector2(0.5, 0.5)
+	grad.fill_to = Vector2(1.0, 0.5)
+	var g := Gradient.new()
+	g.set_color(0, Color(0.6, 0.0, 0.0, 0.0))   # 중앙 투명
+	g.set_color(1, Color(0.6, 0.0, 0.0, 0.5))   # 가장자리 핏빛
+	grad.gradient = g
+	_blood_vignette = TextureRect.new()
+	_blood_vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blood_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blood_vignette.z_index = 80
+	_blood_vignette.visible = false
+	_blood_vignette.texture = grad
+	_blood_vignette.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_blood_vignette.stretch_mode = TextureRect.STRETCH_SCALE
+	add_child(_blood_vignette)
+
 
 # === 게임 컨텍스트 ===
 
@@ -185,6 +234,11 @@ func _setup_game_context() -> void:
 	game_ctx.player_block_changed.connect(_on_player_block_changed)
 	game_ctx.boss_hp_changed.connect(_on_boss_hp_changed)
 	game_ctx.boss_block_changed.connect(_on_boss_block_changed)
+	# 신규 디버프·상태 가시화
+	game_ctx.draw_lock_changed.connect(_on_draw_lock_changed)
+	game_ctx.vulnerability_changed.connect(_on_vulnerability_changed)
+	game_ctx.blood_scent_changed.connect(_on_blood_scent_changed)
+	game_ctx.boss_attack_buffed.connect(_on_boss_attack_buffed)
 	_on_player_hp_changed(game_ctx.player_hp, game_ctx.player_max_hp)
 	_on_player_block_changed(game_ctx.player_block)
 	_on_boss_hp_changed(game_ctx.boss_hp, game_ctx.boss_max_hp)
@@ -232,7 +286,13 @@ func _on_player_hp_changed(current: int, max_hp: int) -> void:
 	if _prev_player_hp > 0 and current < _prev_player_hp:
 		var dmg := _prev_player_hp - current
 		DamagePopup.spawn(self, hp_label.get_global_rect().get_center() - global_position, dmg, false)
-		combat_fx.shake_screen(7.0, 0.28)
+		# 취약 강화 피격이면 강조 텍스트
+		if game_ctx and game_ctx.last_hit_vulnerable:
+			_spawn_floating_text("🩸 취약! ×1.5", Color(1.0, 0.4, 0.5, 1), hp_label)
+			game_ctx.last_hit_vulnerable = false
+			combat_fx.shake_screen(10.0, 0.32)   # 더 큰 흔들림
+		else:
+			combat_fx.shake_screen(7.0, 0.28)
 		AudioManager.play_sfx("combat.hit_player", 0.0, 0.05)
 		combat_fx.flash_recoil(player_face_texture, -22.0)
 		combat_fx.hit_stop()
@@ -260,6 +320,7 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	_prev_boss_hp = current
 	if phase_system:
 		phase_system.check_hp_trigger()
+	_update_blood_vignette()   # 피 냄새 — HP 50% 임계 진입/이탈 반영
 	if current <= 0 and not game_over:
 		_trigger_game_over(true)
 
@@ -377,7 +438,8 @@ func _draw_hand() -> void:
 		AudioManager.play_sfx("card.draw", 0.0, 0.05)
 	# 봉인으로 인해 덜 드로우한 경우 배너 안내
 	if lock > 0 and phase_banner:
-		phase_banner.show_sequence(["🔒 드로우 봉인 발동", "%d장만 드로우 (–%d)" % [count, lock]])
+		var lock_msgs: Array[String] = ["🔒 드로우 봉인 발동", "%d장만 드로우 (–%d)" % [count, lock]]
+		phase_banner.show_sequence(lock_msgs)
 		await phase_banner.banner_finished
 	_update_hand_display()
 	_rebuild_pipe_ui()
@@ -647,7 +709,8 @@ func _begin_boss_turn() -> void:
 	if game_ctx.negate_next_boss_action:
 		game_ctx.negate_next_boss_action = false
 		if drawn and phase_banner:
-			phase_banner.show_sequence(["🛡 보스 행동 무효화!", "%s 가 막혔다" % drawn.card_name])
+			var negate_msgs: Array[String] = ["🛡 보스 행동 무효화!", "%s 가 막혔다" % drawn.card_name]
+			phase_banner.show_sequence(negate_msgs)
 			await phase_banner.banner_finished
 			boss_deck_system.discard_without_play(drawn)
 	elif drawn:
@@ -677,8 +740,10 @@ func _on_boss_deck_changed(_remaining: int) -> void:
 	_refresh_boss_next_card_preview()
 
 
-# 다음 예고 패널 갱신 — 텍스트 라벨로 컴팩트 표시
+# 다음 예고 패널 갱신 — 텍스트 라벨로 컴팩트 표시 + 호버 시 풀사이즈 카드 프리뷰
 func _refresh_boss_next_card_preview() -> void:
+	# 갱신 직전 떠있던 프리뷰 정리 (라벨이 free되면 mouse_exited 누락 가능)
+	_clear_boss_card_preview()
 	_clear_boss_card_container(boss_next_card_container)
 	var next_card := boss_deck_system.peek_next()
 	var lbl := Label.new()
@@ -697,12 +762,17 @@ func _refresh_boss_next_card_preview() -> void:
 		lbl.text = "%s %s" % [next_card.intent_icon, next_card.card_name]
 		lbl.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0, 0.95))
 		lbl.tooltip_text = "%s\n%s" % [next_card.card_name, next_card.description]
+		# 호버 시 풀사이즈 보스 카드 프리뷰 (반투명 — "다음 예고" 톤)
+		lbl.mouse_filter = Control.MOUSE_FILTER_STOP
+		lbl.mouse_entered.connect(_on_boss_card_label_hover.bind(next_card, lbl, 0, true))
+		lbl.mouse_exited.connect(_on_boss_card_label_hover.bind(next_card, lbl, 0, false))
 	boss_next_card_container.add_child(lbl)
 
 func _on_boss_card_discarded(_card: BossCardData) -> void:
 	boss_discard_label.text = "🗑 %d" % boss_deck_system.get_discard_count()
 
 func _on_boss_power_zone_updated(active_powers: Array) -> void:
+	_clear_boss_card_preview()
 	_clear_boss_card_container(boss_power_zone)
 	if active_powers.is_empty():
 		_show_boss_empty_label(boss_power_zone)
@@ -711,12 +781,23 @@ func _on_boss_power_zone_updated(active_powers: Array) -> void:
 			var lbl := Label.new()
 			lbl.text = "%s %s (%d턴)" % [entry.card.intent_icon, entry.card.card_name, entry.tokens]
 			lbl.add_theme_font_size_override("font_size", 13)
-			lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.25, 1))
 			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
 			lbl.clip_text = false
 			lbl.tooltip_text = "%s\n%s" % [entry.card.card_name, entry.card.description]
+			# 카운트 1턴 남으면 임박 경고 — 빨간색 + 깜빡임 / 그 외 오렌지
+			if entry.tokens <= 1:
+				lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.25, 1))
+				var blink := lbl.create_tween().set_loops()
+				blink.tween_property(lbl, "modulate:a", 0.4, 0.45).set_trans(Tween.TRANS_SINE)
+				blink.tween_property(lbl, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
+			else:
+				lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.25, 1))
+			# 호버 시 풀사이즈 보스 카드 프리뷰 + 카운트다운 표시
+			lbl.mouse_filter = Control.MOUSE_FILTER_STOP
+			lbl.mouse_entered.connect(_on_boss_card_label_hover.bind(entry.card, lbl, entry.tokens, true))
+			lbl.mouse_exited.connect(_on_boss_card_label_hover.bind(entry.card, lbl, entry.tokens, false))
 			boss_power_zone.add_child(lbl)
 
 
@@ -985,6 +1066,166 @@ func _set_turn_focus(is_player_turn: bool) -> void:
 		hand_belt.modulate.a = active_alpha if is_player_turn else inactive_alpha
 	if market_panel:
 		market_panel.modulate.a = active_alpha if is_player_turn else inactive_alpha
+
+
+# === 신규 상태 가시화 핸들러 ===
+
+func _on_draw_lock_changed(stacks: int) -> void:
+	if _draw_lock_label == null:
+		return
+	if stacks <= 0:
+		_draw_lock_label.visible = false
+		return
+	_draw_lock_label.text = "🔒 다음 턴 드로우 −%d" % stacks
+	_draw_lock_label.visible = true
+	# 손패 벨트 위쪽에 배치
+	if hand_belt:
+		var r := hand_belt.get_global_rect()
+		_draw_lock_label.global_position = r.position + Vector2(0, -28)
+	# 등장 강조
+	_draw_lock_label.scale = Vector2(1.3, 1.3)
+	_draw_lock_label.pivot_offset = _draw_lock_label.size / 2.0
+	create_tween().tween_property(_draw_lock_label, "scale", Vector2.ONE, 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+
+func _on_vulnerability_changed(stacks: int) -> void:
+	if _vuln_label == null:
+		return
+	if stacks <= 0:
+		_vuln_label.visible = false
+		return
+	_vuln_label.text = "🩸 취약 %d" % stacks
+	_vuln_label.visible = true
+	# 플레이어 HP 라벨 옆 (위쪽)
+	if hp_label:
+		var r := hp_label.get_global_rect()
+		_vuln_label.global_position = r.position + Vector2(0, -26)
+	_vuln_label.scale = Vector2(1.3, 1.3)
+	_vuln_label.pivot_offset = _vuln_label.size / 2.0
+	create_tween().tween_property(_vuln_label, "scale", Vector2.ONE, 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+
+func _on_blood_scent_changed(active: bool) -> void:
+	# 피 냄새 활성화 시 배너 + 비네팅 켜기 (실제 표시는 HP 조건과 함께 _update_blood_vignette)
+	if active and phase_banner:
+		var msgs: Array[String] = ["🐺 피 냄새!", "버그베어가 피를 쫓는다 — HP 50% 이하 시 공격 강화"]
+		phase_banner.show_sequence(msgs)
+	_update_blood_vignette()
+
+
+# 분노의 포효 등으로 보스 공격력 영구 증가 시 — 보스 얼굴 붉은 글로우 펀치
+func _on_boss_attack_buffed(new_bonus: int) -> void:
+	if boss_face_texture:
+		boss_face_texture.pivot_offset = boss_face_texture.size / 2.0
+		var tween := create_tween()
+		boss_face_texture.modulate = Color(1.8, 1.2, 0.5, 1)   # 황금빛 강화 플래시
+		tween.tween_property(boss_face_texture, "modulate", Color.WHITE, 0.5)\
+			.set_ease(Tween.EASE_OUT)
+	# 보스 인텐트 라벨 옆에 강화 표시
+	if boss_intent_label:
+		_spawn_floating_text("⚔ 공격력 +%d!" % new_bonus, Color(1.0, 0.6, 0.2, 1),
+			boss_face_texture if boss_face_texture else boss_intent_label)
+
+
+# 앵커 노드 위에 잠깐 떠올랐다 사라지는 강조 텍스트 (공통 헬퍼)
+func _spawn_floating_text(text: String, color: Color, anchor: Control) -> void:
+	if anchor == null:
+		return
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 24)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	lbl.add_theme_constant_override("outline_size", 5)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.z_index = 110
+	add_child(lbl)
+	var r := anchor.get_global_rect()
+	lbl.global_position = r.get_center() - global_position + Vector2(-40, -20)
+	lbl.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(lbl, "modulate:a", 1.0, 0.15)
+	tween.parallel().tween_property(lbl, "position:y", lbl.position.y - 24, 0.6)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_interval(0.5)
+	tween.tween_property(lbl, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(lbl.queue_free)
+
+
+# 피 냄새 활성 + 보스 HP ≤50% 일 때만 비네팅 표시 (보스 HP 변경 시에도 호출)
+func _update_blood_vignette() -> void:
+	if _blood_vignette == null or game_ctx == null:
+		return
+	var should_show: bool = game_ctx.blood_scent_active and game_ctx.boss_hp <= game_ctx.boss_max_hp / 2
+	if should_show == _blood_vignette.visible:
+		return
+	if should_show:
+		_blood_vignette.visible = true
+		_blood_vignette.modulate.a = 0.0
+		if _blood_pulse_tween and _blood_pulse_tween.is_running():
+			_blood_pulse_tween.kill()
+		_blood_pulse_tween = create_tween().set_loops()
+		_blood_pulse_tween.tween_property(_blood_vignette, "modulate:a", 1.0, 1.0)\
+			.set_trans(Tween.TRANS_SINE)
+		_blood_pulse_tween.tween_property(_blood_vignette, "modulate:a", 0.5, 1.0)\
+			.set_trans(Tween.TRANS_SINE)
+	else:
+		if _blood_pulse_tween and _blood_pulse_tween.is_running():
+			_blood_pulse_tween.kill()
+		_blood_vignette.visible = false
+
+
+# === 보스 카드 호버 프리뷰 (다음 예고 / 파워 존) ===
+
+var _boss_card_preview: BossCardDisplay = null
+
+
+func _on_boss_card_label_hover(card: BossCardData, anchor: Control, tokens: int, entered: bool) -> void:
+	if entered:
+		_spawn_boss_card_preview(card, anchor, tokens)
+	else:
+		_clear_boss_card_preview()
+
+
+func _spawn_boss_card_preview(card: BossCardData, anchor: Control, tokens: int) -> void:
+	_clear_boss_card_preview()
+	if card == null or not is_instance_valid(anchor):
+		return
+	var preview := BossCardDisplay.new()
+	add_child(preview)
+	preview.setup(card, tokens)
+	preview.z_index = 250
+	preview.scale = Vector2(1.15, 1.15)
+	# 우측 컬럼이므로 프리뷰는 라벨 좌측에 배치
+	var anchor_rect := anchor.get_global_rect()
+	var preview_size := Vector2(BossCardDisplay.CARD_W, BossCardDisplay.CARD_H) * preview.scale
+	var target := anchor_rect.position \
+		+ Vector2(-preview_size.x - 16, anchor_rect.size.y * 0.5 - preview_size.y * 0.5) \
+		- global_position
+	# 좌측 잘림 시 우측에 배치
+	if target.x < 8:
+		target.x = anchor_rect.end.x + 16 - global_position.x
+	# 상/하단 잘림 보정
+	var vp := get_viewport_rect().size
+	target.y = clampf(target.y, 8.0, vp.y - preview_size.y - 8.0)
+	preview.position = target
+	# 페이드 인 + 살짝 떠오름
+	preview.modulate.a = 0.0
+	var start_y := target.y + 6.0
+	preview.position.y = start_y
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(preview, "modulate:a", 1.0, 0.12)
+	tween.tween_property(preview, "position:y", start_y - 6.0, 0.18)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_boss_card_preview = preview
+
+
+func _clear_boss_card_preview() -> void:
+	if is_instance_valid(_boss_card_preview):
+		_boss_card_preview.queue_free()
+	_boss_card_preview = null
 
 
 # === 보스 머리 위 인텐트 라벨 ===

@@ -35,11 +35,18 @@ var boss_deck_system: BossDeckSystem = null
 signal draw_lock_changed(stacks: int)
 signal vulnerability_changed(stacks: int)
 signal blood_scent_changed(active: bool)
+signal boss_attack_buffed(new_bonus: int)
 
 var draw_lock_stacks: int = 0             # 다음 플레이어 턴 드로우 -N (1회성)
 var vulnerability_stacks: int = 0         # 받는 다음 N번 피해 ×1.5 (스택당 1회 소진)
 var blood_scent_active: bool = false      # 피 냄새 — 보스 HP ≤50% 시 공격 ×1.3
 var boss_attack_bonus: int = 0            # 분노의 포효 등 — 보스 공격력 영구 +N
+var last_hit_vulnerable: bool = false     # 직전 플레이어 피격이 취약 강화였는지 (팝업 강조용)
+
+
+func add_boss_attack_bonus(amount: int) -> void:
+	boss_attack_bonus += amount
+	boss_attack_buffed.emit(boss_attack_bonus)
 
 
 func apply_draw_lock(stacks: int) -> void:
@@ -62,9 +69,11 @@ func apply_vulnerability(stacks: int) -> void:
 # 플레이어가 피해 받을 때 자동 호출됨 — 취약 1스택 소비 + 피해 ×1.5
 func _apply_vulnerability_multiplier(damage: int) -> int:
 	if vulnerability_stacks <= 0:
+		last_hit_vulnerable = false
 		return damage
 	vulnerability_stacks -= 1
 	vulnerability_changed.emit(vulnerability_stacks)
+	last_hit_vulnerable = true
 	return int(damage * 1.5)
 
 
