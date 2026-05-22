@@ -875,37 +875,66 @@ func _update_round_label() -> void:
 	round_label.text = "R%d" % current_round
 
 
+const _TOKEN_SIZE := 34
+const _TOKEN_PLAYER := Color(0.30, 0.52, 0.92, 1)   # 플레이어 청색
+const _TOKEN_BOSS   := Color(0.82, 0.28, 0.26, 1)   # 보스 적색
+
 func _update_turn_order_ui() -> void:
 	if turn_slot_labels.is_empty():
 		for i in range(TURNS_PER_ROUND):
 			var slot := PanelContainer.new()
-			slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			slot.custom_minimum_size = Vector2(_TOKEN_SIZE, _TOKEN_SIZE)
+			slot.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			var lbl := Label.new()
 			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			lbl.add_theme_font_size_override("font_size", 20)
+			lbl.add_theme_font_size_override("font_size", 16)
+			lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+			lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+			lbl.add_theme_constant_override("outline_size", 3)
 			slot.add_child(lbl)
 			turn_slots_container.add_child(slot)
 			turn_slot_labels.append(lbl)
 
-	# 고정 교대 순서이므로 처음부터 전부 공개. 압축 표기: P/B 단일 글자
+	# 원형 토큰 뱃지 — 플레이어=청 / 보스=적, 현재 턴 강조(금테+확대), 지난 턴 디밍
 	for i in range(TURNS_PER_ROUND):
 		var lbl := turn_slot_labels[i]
 		var slot: PanelContainer = lbl.get_parent()
 		var turn_num := i + 1
 		var who: String = turn_order[i]
+		var base: Color = _TOKEN_PLAYER if who == "player" else _TOKEN_BOSS
 
 		lbl.text = "P" if who == "player" else "B"
 		lbl.tooltip_text = "T%d — %s" % [turn_num, "플레이어 턴" if who == "player" else "보스 턴"]
-		lbl.add_theme_color_override("font_color",
-			Color(0.3, 0.5, 1.0) if who == "player" else Color(0.9, 0.25, 0.25))
 
+		var token := StyleBoxFlat.new()
+		token.set_corner_radius_all(_TOKEN_SIZE / 2)   # 원형
+		token.content_margin_left = 2
+		token.content_margin_right = 2
 		if turn_num == current_turn:
+			# 현재 턴 — 밝게 + 금색 테두리 + 확대
+			token.bg_color = base
+			token.set_border_width_all(3)
+			token.border_color = DarkFantasyTheme.GOLD_BRIGHT
+			slot.scale = Vector2(1.18, 1.18)
+			slot.pivot_offset = Vector2(_TOKEN_SIZE, _TOKEN_SIZE) / 2.0
 			slot.modulate = Color(1, 1, 1, 1)
 		elif turn_num < current_turn:
-			slot.modulate = Color(1, 1, 1, 0.35)
+			# 지난 턴 — 어둡게
+			token.bg_color = base.darkened(0.5)
+			token.set_border_width_all(1)
+			token.border_color = base.darkened(0.3)
+			slot.scale = Vector2.ONE
+			slot.modulate = Color(1, 1, 1, 0.4)
 		else:
-			slot.modulate = Color(1, 1, 1, 0.65)
+			# 다음 턴 — 중간
+			token.bg_color = base.darkened(0.25)
+			token.set_border_width_all(1)
+			token.border_color = base
+			slot.scale = Vector2.ONE
+			slot.modulate = Color(1, 1, 1, 0.85)
+		slot.add_theme_stylebox_override("panel", token)
 
 
 # === 턴 종료 ===

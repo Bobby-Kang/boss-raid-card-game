@@ -137,17 +137,18 @@ func _build_ui() -> void:
 	_root_vbox.add_theme_constant_override("separation", 4)
 	add_child(_root_vbox)
 
-	# 헤더 — 제목 + 리롤 버튼
+	# 헤더 — 리롤 버튼 (제목은 모달 프레임이 담당, 중복 제거)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 6)
 	_root_vbox.add_child(header)
 
-	var title := Label.new()
-	title.text = "마켓"
-	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", Color(1, 0.85, 0.3, 1))
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(title)
+	var reroll_label := Label.new()
+	reroll_label.text = "재추첨"
+	reroll_label.add_theme_font_size_override("font_size", 14)
+	reroll_label.add_theme_color_override("font_color", Color(0.75, 0.68, 0.55, 1))
+	reroll_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reroll_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	header.add_child(reroll_label)
 
 	_reroll_ap_button = Button.new()
 	_reroll_ap_button.text = "↻ 3⚡"
