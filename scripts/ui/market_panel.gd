@@ -14,8 +14,8 @@ const LANE_COUNT := 4
 ## 리롤 비용은 scripts/data/game_balance.gd 에서 수정하세요.
 const REROLL_AP_COST   := GameBalance.MARKET_REROLL_AP
 const REROLL_GOLD_COST := GameBalance.MARKET_REROLL_GOLD
-const CARD_WIDTH  := 120
-const CARD_HEIGHT := 170
+const CARD_WIDTH  := 176
+const CARD_HEIGHT := 249
 
 # 레인별 카드 디렉토리 경로 (씬에서 오버라이드 가능, 기본값은 전사)
 @export var attack_dir:  String = "res://resources/cards/warrior/market/attack"
@@ -140,27 +140,22 @@ func _build_ui() -> void:
 	# 헤더 — 리롤 버튼 (제목은 모달 프레임이 담당, 중복 제거)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 6)
+	header.alignment = BoxContainer.ALIGNMENT_END
 	_root_vbox.add_child(header)
 
-	var reroll_label := Label.new()
-	reroll_label.text = "재추첨"
-	reroll_label.add_theme_font_size_override("font_size", 14)
-	reroll_label.add_theme_color_override("font_color", Color(0.75, 0.68, 0.55, 1))
-	reroll_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	reroll_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	header.add_child(reroll_label)
-
 	_reroll_ap_button = Button.new()
-	_reroll_ap_button.text = "↻ 3⚡"
+	_reroll_ap_button.text = "↻ 재추첨  3⚡"
 	_reroll_ap_button.tooltip_text = "AP 3을 소모해 마켓 전체를 재추첨"
-	_reroll_ap_button.add_theme_font_size_override("font_size", 13)
+	_reroll_ap_button.custom_minimum_size = Vector2(150, 44)
+	_reroll_ap_button.add_theme_font_size_override("font_size", 18)
 	_reroll_ap_button.pressed.connect(_on_reroll_ap_pressed)
 	header.add_child(_reroll_ap_button)
 
 	_reroll_gold_button = Button.new()
-	_reroll_gold_button.text = "↻ 3💰"
+	_reroll_gold_button.text = "↻ 재추첨  3💰"
 	_reroll_gold_button.tooltip_text = "골드 3을 소모해 마켓 전체를 재추첨"
-	_reroll_gold_button.add_theme_font_size_override("font_size", 13)
+	_reroll_gold_button.custom_minimum_size = Vector2(150, 44)
+	_reroll_gold_button.add_theme_font_size_override("font_size", 18)
 	_reroll_gold_button.pressed.connect(_on_reroll_gold_pressed)
 	header.add_child(_reroll_gold_button)
 
@@ -196,7 +191,7 @@ func _build_lane_widget(index: int) -> Dictionary:
 	# 레인 이름
 	var header_lbl := Label.new()
 	header_lbl.text = meta["label"]
-	header_lbl.add_theme_font_size_override("font_size", 13)
+	header_lbl.add_theme_font_size_override("font_size", 17)
 	header_lbl.add_theme_color_override("font_color", meta["color"])
 	header_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lane_vbox.add_child(header_lbl)
@@ -209,9 +204,9 @@ func _build_lane_widget(index: int) -> Dictionary:
 
 	# 구매 버튼 — 카드 바로 아래 (separation=0으로 밀착), 컬럼 가운데 정렬
 	var buy_btn := Button.new()
-	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 36)
+	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 44)
 	buy_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	buy_btn.add_theme_font_size_override("font_size", 15)
+	buy_btn.add_theme_font_size_override("font_size", 17)
 	buy_btn.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1))
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
 	_style_buy_button(buy_btn, meta["color"])
@@ -287,6 +282,10 @@ func _render_slots() -> void:
 			card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			w.card_holder.add_child(card)
 			w.card = card
+			# 카드 본래 크기(144×204)를 레인 카드 크기로 확대
+			card.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+			card.size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+			card.pivot_offset = Vector2(CARD_WIDTH, CARD_HEIGHT) * 0.5
 			card.set_active(false)
 			card.modulate.a = 1.0
 			w.buy_btn.text    = "구매 (%d G)" % cd.gold_cost
