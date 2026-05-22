@@ -10,10 +10,6 @@
 [ext_resource type="Texture2D" uid="uid://byh1dv6cnfh1r" path="res://assets/art/gemini_image/warrior_face.png" id="8_warrior_face"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_result_screen.tscn" id="15_result"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_a4cr6"]
-atlas = ExtResource("7_bugbear_face")
-region = Rect2(703, 78, 1391, 710)
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_active"]
 bg_color = Color(0.08, 0.12, 0.2, 0.85)
 border_width_left = 2
@@ -42,7 +38,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.12, 0.12, 0.15, 1)
+color = Color(0.09, 0.07, 0.05, 1)
 
 [node name="BattleField" type="MarginContainer" parent="." unique_id=947311765]
 layout_mode = 1
@@ -63,7 +59,7 @@ theme_override_constants/separation = 10
 [node name="MiddleWrapper" type="Control" parent="BattleField/VBoxLayout" unique_id=492146476]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.22
+size_flags_stretch_ratio = 0.07
 
 [node name="MiddleArea" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper" unique_id=2022677500]
 layout_mode = 1
@@ -77,35 +73,50 @@ theme_override_constants/separation = 10
 [node name="TurnInfoPanel" type="PanelContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=1139663727]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.25
 
-[node name="RoundLabel" type="Label" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel" unique_id=309408685]
+[node name="TurnInfoHBox" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel" unique_id=991400001]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="RoundLabel" type="Label" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel/TurnInfoHBox" unique_id=309408685]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 1
 tooltip_text = "현재 라운드"
 theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 22
 text = "R1"
-horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="TurnSlotsContainer" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel" unique_id=2091243094]
+[node name="TurnIndicatorLabel" type="Label" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel/TurnInfoHBox" unique_id=-2094967293]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.75, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 22
+text = "🔵 내 턴"
+vertical_alignment = 1
 
-[node name="MarketPanel" type="PanelContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=1644372998]
+[node name="TurnSlotsContainer" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel/TurnInfoHBox" unique_id=2091243094]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.75
-script = ExtResource("6_market")
+theme_override_constants/separation = 4
+
+[node name="MarketButton" type="Button" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=991400002]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_font_sizes/font_size = 18
+text = "🛒 상점"
 
 [node name="BossArea" type="PanelContainer" parent="BattleField/VBoxLayout" unique_id=2063685351]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.38
+size_flags_stretch_ratio = 0.5
 
 [node name="BossVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea" unique_id=429015942]
 layout_mode = 2
@@ -161,8 +172,9 @@ texture_filter = 4
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-texture = SubResource("AtlasTexture_a4cr6")
+texture = ExtResource("7_bugbear_face")
 expand_mode = 3
+stretch_mode = 6
 
 [node name="BossIntentLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossFace" unique_id=991000003]
 unique_name_in_owner = true
@@ -179,91 +191,108 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.36
 theme_override_constants/separation = 6
 
-[node name="PhaseLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=874512098]
+[node name="TopStatsRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=991300001]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="PhaseLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/TopStatsRow" unique_id=874512098]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 text = "페이즈 1"
 horizontal_alignment = 1
-
-[node name="BossHpPanel" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=1726959318]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BossHpLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossHpPanel" unique_id=1811940047]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.35, 0.35, 1)
-theme_override_font_sizes/font_size = 22
-text = "❤ 100 / 100"
-horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="BossStatusPanel" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=2037245928]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BossBlockLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossStatusPanel" unique_id=21856678]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 0.75, 1, 1)
-theme_override_font_sizes/font_size = 20
-text = "🛡 0"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="BossDeckRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=991200001]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 8
-
-[node name="BossDeckCountLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossDeckRow" unique_id=1580672654]
+[node name="BossDeckCountLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/TopStatsRow" unique_id=1580672654]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "덱에 남은 카드 (마우스를 올리면 전체 목록)"
 mouse_filter = 1
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "🂠 0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="BossDiscardLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossDeckRow" unique_id=2036981885]
+[node name="BossDiscardLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/TopStatsRow" unique_id=2036981885]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "버린 카드 더미 (보스가 사용한 카드가 여기로 갑니다)"
 theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "🗑 0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="NextCardTitle" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=991200002]
+[node name="BossHpPanel" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=1726959318]
+layout_mode = 2
+
+[node name="BossHpLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossHpPanel" unique_id=1811940047]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.35, 0.35, 1)
+theme_override_font_sizes/font_size = 18
+text = "❤ 100 / 100"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BossStatusPanel" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=2037245928]
+layout_mode = 2
+
+[node name="BossBlockLabel" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossStatusPanel" unique_id=21856678]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.75, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "🛡 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BossCardsRow" type="HBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=991300002]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="NextCol" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossCardsRow" unique_id=991300003]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.55
+
+[node name="NextCardTitle" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossCardsRow/NextCol" unique_id=991200002]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.7, 0.95, 1)
 theme_override_font_sizes/font_size = 12
 text = "다음 예고"
 horizontal_alignment = 1
 
-[node name="BossNextCardContainer" type="CenterContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=5560004]
+[node name="BossNextCardContainer" type="CenterContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossCardsRow/NextCol" unique_id=5560004]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="PowerZoneTitle" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=991200003]
+[node name="PowerCol" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossCardsRow" unique_id=991300004]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.45
+
+[node name="PowerZoneTitle" type="Label" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossCardsRow/PowerCol" unique_id=991200003]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.7, 0.2, 1)
 theme_override_font_sizes/font_size = 12
 text = "⏳ 파워 존"
 horizontal_alignment = 1
 
-[node name="BossPowerZone" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight" unique_id=1169136594]
+[node name="BossPowerZone" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossInfoRight/BossCardsRow/PowerCol" unique_id=1169136594]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -282,7 +311,7 @@ drag_label_text = "⚔ 사용 / 보스 공격"
 [node name="BottomArea" type="VBoxContainer" parent="BattleField/VBoxLayout" unique_id=488632899]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.4
+size_flags_stretch_ratio = 0.43
 theme_override_constants/separation = 8
 
 [node name="StatusBars" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea" unique_id=1639051553]
@@ -520,40 +549,67 @@ unique_name_in_owner = true
 [node name="PhaseBanner" parent="." unique_id=814868930 instance=ExtResource("4_banner")]
 unique_name_in_owner = true
 
-[node name="TurnIndicator" type="PanelContainer" parent="." unique_id=-2094967295]
+[node name="MarketWindow" type="Control" parent="." unique_id=991400010]
+unique_name_in_owner = true
+visible = false
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -220.0
-offset_top = 6.0
-offset_right = 220.0
-offset_bottom = 50.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
-mouse_filter = 2
+grow_vertical = 2
 
-[node name="TurnIndicatorVBox" type="VBoxContainer" parent="TurnIndicator" unique_id=-2094967294]
+[node name="DimBg" type="ColorRect" parent="MarketWindow" unique_id=991400011]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="MarketFrame" type="PanelContainer" parent="MarketWindow" unique_id=991400012]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -720.0
+offset_top = -300.0
+offset_right = 720.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarketFrameVBox" type="VBoxContainer" parent="MarketWindow/MarketFrame" unique_id=991400013]
 layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = 8
 
-[node name="TurnIndicatorLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=-2094967293]
+[node name="MarketHeader" type="HBoxContainer" parent="MarketWindow/MarketFrame/MarketFrameVBox" unique_id=991400014]
+layout_mode = 2
+
+[node name="MarketTitle" type="Label" parent="MarketWindow/MarketFrame/MarketFrameVBox/MarketHeader" unique_id=991400015]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 24
+text = "🛒 라운드 마켓"
+
+[node name="MarketCloseButton" type="Button" parent="MarketWindow/MarketFrame/MarketFrameVBox/MarketHeader" unique_id=991400016]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "✕ 닫기"
+
+[node name="MarketPanel" type="PanelContainer" parent="MarketWindow/MarketFrame/MarketFrameVBox" unique_id=1644372998]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 0.75, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 22
-text = "🔵 내 턴"
-horizontal_alignment = 1
-
-[node name="TurnHintLabel" type="Label" parent="TurnIndicator/TurnIndicatorVBox" unique_id=-2094967292]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 12
-text = "카드를 드래그하거나 턴 종료"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("6_market")
 
 [node name="GameResultScreen" parent="." unique_id=923847651 instance=ExtResource("15_result")]
 unique_name_in_owner = true

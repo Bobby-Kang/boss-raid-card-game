@@ -174,8 +174,7 @@ func _build_ui() -> void:
 	_root_vbox.add_child(slots_margin)
 
 	_slots_hbox = HBoxContainer.new()
-	_slots_hbox.add_theme_constant_override("separation", 36)
-	_slots_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	_slots_hbox.add_theme_constant_override("separation", 10)
 	_slots_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_slots_hbox.size_flags_vertical   = Control.SIZE_EXPAND_FILL
 	slots_margin.add_child(_slots_hbox)
@@ -188,7 +187,7 @@ func _build_lane_widget(index: int) -> Dictionary:
 	var meta: Dictionary = LANE_META[index]
 
 	var lane_vbox := VBoxContainer.new()
-	lane_vbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	lane_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL   # 4레인 균등 분산
 	lane_vbox.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
 	lane_vbox.add_theme_constant_override("separation", 0)  # 카드-버튼 간격 없음
 	_slots_hbox.add_child(lane_vbox)
@@ -199,17 +198,18 @@ func _build_lane_widget(index: int) -> Dictionary:
 	header_lbl.add_theme_font_size_override("font_size", 13)
 	header_lbl.add_theme_color_override("font_color", meta["color"])
 	header_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header_lbl.custom_minimum_size  = Vector2(CARD_WIDTH, 0)
 	lane_vbox.add_child(header_lbl)
 
-	# 카드 자리
+	# 카드 자리 (컬럼 가운데 정렬)
 	var card_holder := Control.new()
 	card_holder.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	card_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	lane_vbox.add_child(card_holder)
 
-	# 구매 버튼 — 카드 바로 아래 (separation=0으로 밀착)
+	# 구매 버튼 — 카드 바로 아래 (separation=0으로 밀착), 컬럼 가운데 정렬
 	var buy_btn := Button.new()
 	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 36)
+	buy_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	buy_btn.add_theme_font_size_override("font_size", 15)
 	buy_btn.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1))
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))

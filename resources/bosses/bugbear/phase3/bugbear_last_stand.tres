@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
+[ext_resource type="Texture2D" uid="uid://ckbvusf6v1j8" path="res://assets/art/gemini_image/bugbear_last_stand.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")
@@ -10,6 +11,7 @@ value = 16
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "최후의 발악"
 card_type = 1
 countdown = 3

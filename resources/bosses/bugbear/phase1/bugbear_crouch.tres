@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://b2dquw6gv76i6" path="res://scripts/bosses/effects/boss_block_effect.gd" id="3_block"]
 [ext_resource type="Script" path="res://scripts/bosses/effects/boss_reflect_damage_effect.gd" id="4_reflect"]
+[ext_resource type="Texture2D" uid="uid://bl6bgq6hik6lr" path="res://assets/art/gemini_image/bugbear_crouch.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_block_immediate"]
 script = ExtResource("3_block")
@@ -18,6 +19,7 @@ script = ExtResource("4_reflect")
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "웅크리기"
 card_type = 1
 countdown = 3

@@ -3,12 +3,14 @@
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" path="res://scripts/bosses/effects/boss_power_speedup_effect.gd" id="3_speedup"]
+[ext_resource type="Texture2D" uid="uid://d3dh41ugg1tkd" path="res://assets/art/gemini_image/bugbear_beast_cry.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_speedup"]
 script = ExtResource("3_speedup")
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "야수의 외침"
 card_type = 1
 countdown = 1

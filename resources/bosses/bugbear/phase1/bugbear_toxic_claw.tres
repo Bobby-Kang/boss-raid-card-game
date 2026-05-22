@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
 [ext_resource type="Script" path="res://scripts/bosses/effects/boss_vulnerability_effect.gd" id="4_vuln"]
+[ext_resource type="Texture2D" uid="uid://b7b2qiok6esxh" path="res://assets/art/gemini_image/bugbear_toxic_claw.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")
@@ -15,6 +16,7 @@ value = 1
 
 [resource]
 script = ExtResource("1_script")
+artwork = ExtResource("9_art")
 card_name = "맹독 발톱"
 intent_icon = "☠"
 description = "4 피해 + 취약 1"

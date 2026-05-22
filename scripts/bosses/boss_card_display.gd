@@ -1,99 +1,111 @@
 class_name BossCardDisplay
 extends Control
 
-# 보스 카드를 시각적으로 표시하는 읽기 전용 카드 위젯
-# 플레이어 카드(card.tscn)와 유사한 외형이지만 드래그 없이 표시 전용
-# POWER 카드에는 카운트다운 토큰 뱃지(우상단 오렌지 원)를 표시
+# 보스 카드 시각 위젯 (읽기 전용, 드래그 없음).
+# 아트워크가 있으면 카드 전체 배경으로 깔고 이름·설명을 반투명 오버레이로 표시 (플레이어 카드 스타일).
+# 아트워크가 없으면 아이콘 기반 폴백 레이아웃.
+# POWER 카드에는 우상단 카운트다운 뱃지.
 
 const CARD_W := 100
 const CARD_H := 145
 
+var _artwork_rect: TextureRect
 var _icon_label: Label
 var _name_label: Label
 var _desc_label: Label
 var _type_label: Label
 var _countdown_badge: PanelContainer
 var _countdown_label: Label
+var _card_w: int = CARD_W
+var _card_h: int = CARD_H
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(CARD_W, CARD_H)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(_card_w, _card_h)
 
-	# ─── 배경 패널 (어두운 보스 톤) ───
+	# ─── 배경 패널 ───
 	var panel := PanelContainer.new()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
+	panel.clip_contents = true
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.13, 0.09, 0.08)
-	bg.border_width_left = 2
-	bg.border_width_top = 2
-	bg.border_width_right = 2
-	bg.border_width_bottom = 2
+	bg.set_border_width_all(2)
 	bg.border_color = Color(0.62, 0.16, 0.12)
-	bg.corner_radius_top_left = 6
-	bg.corner_radius_top_right = 6
-	bg.corner_radius_bottom_left = 6
-	bg.corner_radius_bottom_right = 6
+	bg.set_corner_radius_all(6)
 	panel.add_theme_stylebox_override("panel", bg)
 	add_child(panel)
 
-	# ─── 내용 마진 ───
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 6)
-	margin.add_theme_constant_override("margin_right", 6)
-	margin.add_theme_constant_override("margin_top", 6)
-	margin.add_theme_constant_override("margin_bottom", 6)
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(margin)
+	# ─── 아트워크 (풀커버, 기본 숨김) ───
+	_artwork_rect = TextureRect.new()
+	_artwork_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_artwork_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_artwork_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_artwork_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_artwork_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_artwork_rect.visible = false
+	panel.add_child(_artwork_rect)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 3)
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_child(vbox)
+	# ─── 상단 이름 스트립 (반투명) ───
+	var top_strip := PanelContainer.new()
+	top_strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var top_style := StyleBoxFlat.new()
+	top_style.bg_color = Color(0.05, 0.03, 0.03, 0.72)
+	top_strip.add_theme_stylebox_override("panel", top_style)
+	add_child(top_strip)
 
-	# 아이콘 (이모지)
-	_icon_label = Label.new()
-	_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_icon_label.add_theme_font_size_override("font_size", 32)
-	_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_icon_label)
-
-	# 카드명
 	_name_label = Label.new()
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_name_label.add_theme_font_size_override("font_size", 12)
-	_name_label.add_theme_color_override("font_color", Color(0.95, 0.90, 0.78))
-	_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_name_label.add_theme_font_size_override("font_size", 13)
+	_name_label.add_theme_color_override("font_color", Color(0.97, 0.92, 0.80))
+	_name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_name_label.add_theme_constant_override("outline_size", 3)
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_name_label)
+	top_strip.add_child(_name_label)
 
-	# 구분선
-	var sep := HSeparator.new()
-	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(sep)
+	# ─── 중앙 아이콘 (아트워크 없을 때만) ───
+	_icon_label = Label.new()
+	_icon_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_icon_label.add_theme_font_size_override("font_size", 38)
+	_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_icon_label)
 
-	# 설명
+	# ─── 하단 설명 스트립 (반투명) ───
+	var bottom_strip := PanelContainer.new()
+	bottom_strip.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom_strip.offset_top = -46
+	bottom_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bot_style := StyleBoxFlat.new()
+	bot_style.bg_color = Color(0.05, 0.03, 0.03, 0.78)
+	bottom_strip.add_theme_stylebox_override("panel", bot_style)
+	add_child(bottom_strip)
+
+	var bot_vbox := VBoxContainer.new()
+	bot_vbox.add_theme_constant_override("separation", 1)
+	bot_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bottom_strip.add_child(bot_vbox)
+
 	_desc_label = Label.new()
 	_desc_label.add_theme_font_size_override("font_size", 10)
-	_desc_label.add_theme_color_override("font_color", Color(0.78, 0.68, 0.56))
+	_desc_label.add_theme_color_override("font_color", Color(0.88, 0.80, 0.70))
+	_desc_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_desc_label.add_theme_constant_override("outline_size", 2)
 	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_desc_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_desc_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_desc_label)
+	bot_vbox.add_child(_desc_label)
 
-	# 타입 라벨 (우측 정렬)
 	_type_label = Label.new()
 	_type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_type_label.add_theme_font_size_override("font_size", 10)
+	_type_label.add_theme_font_size_override("font_size", 9)
 	_type_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_type_label)
+	bot_vbox.add_child(_type_label)
 
-	# ─── 카운트다운 뱃지 (POWER 카드 전용, 우상단) ───
+	# ─── 카운트다운 뱃지 (POWER 전용, 우상단) ───
 	_countdown_badge = PanelContainer.new()
 	_countdown_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_countdown_badge.offset_left = -28
@@ -101,13 +113,9 @@ func _ready() -> void:
 	_countdown_badge.offset_right = -2
 	_countdown_badge.offset_bottom = 28
 	_countdown_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
 	var badge_style := StyleBoxFlat.new()
 	badge_style.bg_color = Color(0.85, 0.44, 0.0)
-	badge_style.corner_radius_top_left = 5
-	badge_style.corner_radius_top_right = 5
-	badge_style.corner_radius_bottom_left = 5
-	badge_style.corner_radius_bottom_right = 5
+	badge_style.set_corner_radius_all(5)
 	_countdown_badge.add_theme_stylebox_override("panel", badge_style)
 	add_child(_countdown_badge)
 
@@ -118,22 +126,49 @@ func _ready() -> void:
 	_countdown_label.add_theme_color_override("font_color", Color.WHITE)
 	_countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_countdown_badge.add_child(_countdown_label)
-
 	_countdown_badge.visible = false
 
+	if _pending_card != null:
+		_apply(_pending_card, _pending_tokens)
 
-# card: BossCardData, current_tokens: 파워 카드의 현재 카운트다운 값
-func setup(card: BossCardData, current_tokens: int = 0) -> void:
-	_icon_label.text = card.intent_icon
+
+var _pending_card: BossCardData = null
+var _pending_tokens: int = 0
+
+
+# card: BossCardData / current_tokens: 파워 카운트다운 / card_size: 0,0이면 기본 크기
+func setup(card: BossCardData, current_tokens: int = 0, card_size: Vector2 = Vector2.ZERO) -> void:
+	if card_size != Vector2.ZERO:
+		_card_w = int(card_size.x)
+		_card_h = int(card_size.y)
+		custom_minimum_size = card_size
+	# _ready 전에 호출될 수 있으므로 보류했다 적용
+	if _name_label == null:
+		_pending_card = card
+		_pending_tokens = current_tokens
+		return
+	_apply(card, current_tokens)
+
+
+func _apply(card: BossCardData, current_tokens: int) -> void:
 	_name_label.text = card.card_name
 	_desc_label.text = card.description
+	_icon_label.text = card.intent_icon
+
+	if card.artwork != null:
+		_artwork_rect.texture = card.artwork
+		_artwork_rect.visible = true
+		_icon_label.visible = false   # 아트워크 있으면 중앙 아이콘 숨김
+	else:
+		_artwork_rect.visible = false
+		_icon_label.visible = true
 
 	if card.card_type == BossCardData.BossCardType.POWER:
 		_type_label.text = "파워"
-		_type_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.0))
+		_type_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1))
 		_countdown_badge.visible = true
 		_countdown_label.text = str(current_tokens)
 	else:
 		_type_label.text = "공격"
-		_type_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
+		_type_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 		_countdown_badge.visible = false

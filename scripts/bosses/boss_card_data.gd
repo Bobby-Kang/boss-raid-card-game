@@ -11,6 +11,7 @@ enum BossCardType { ATTACK, POWER }
 @export var countdown: int = 0          # POWER 전용: 발동까지 남은 보스 턴 수
 @export var intent_icon: String = "⚔️"  # 배너 표시용 아이콘
 @export var description: String = ""
+@export var artwork: Texture2D = null   # 카드 일러스트 (없으면 아이콘 폴백)
 @export var effects: Array[CardEffect] = []  # ATTACK: 즉시 / POWER: 카운트 0 시 발동
 
 # === POWER 다단 효과 (선택) ===

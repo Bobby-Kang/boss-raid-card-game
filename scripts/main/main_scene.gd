@@ -69,7 +69,10 @@ const STARTER_DECK: Array = [
 @onready var boss_hp_label: Label = %BossHpLabel
 @onready var boss_block_label: Label = %BossBlockLabel
 @onready var turn_indicator_label: Label = %TurnIndicatorLabel
-@onready var turn_hint_label: Label = %TurnHintLabel
+@onready var market_button: Button = %MarketButton
+@onready var market_window: Control = %MarketWindow
+@onready var market_close_button: Button = %MarketCloseButton
+@onready var market_dim_bg: ColorRect = %DimBg
 @onready var end_turn_button: Button = %EndTurnButton
 @onready var end_turn_overlay: CanvasLayer = %EndTurnOverlay
 @onready var phase_banner: CanvasLayer = %PhaseBanner
@@ -142,6 +145,8 @@ var _prev_boss_hp:   int = -1
 
 
 func _ready() -> void:
+	theme = DarkFantasyTheme.build()   # 전체 UI 다크 판타지 테마 적용
+	_setup_background_atmosphere()
 	_setup_helpers()
 	_setup_game_context()
 	_setup_drop_zones()
@@ -151,11 +156,57 @@ func _ready() -> void:
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	end_turn_overlay.order_confirmed.connect(_on_end_turn_order_confirmed)
 	end_turn_overlay.cancelled.connect(_on_end_turn_cancelled)
+	# 마켓 토글 (상점 버튼으로 오버레이 열고/닫기)
+	market_button.pressed.connect(_toggle_market)
+	market_close_button.pressed.connect(_close_market)
+	market_dim_bg.gui_input.connect(_on_market_dim_input)
+	market_window.visible = false
 	# Phase 1 BGM 시작
 	AudioManager.play_bgm(SfxLibrary.BGM_PHASE_1, 1.0)
 
 
 # === 헬퍼 노드 (분리된 책임) ===
+
+# 배경 깊이감 — 세로 그라데이션 + 가장자리 비네팅
+func _setup_background_atmosphere() -> void:
+	# 1) 세로 그라데이션 (상단 갈색 → 하단 흑갈색)
+	var grad := GradientTexture2D.new()
+	grad.fill = GradientTexture2D.FILL_LINEAR
+	grad.fill_from = Vector2(0.5, 0.0)
+	grad.fill_to = Vector2(0.5, 1.0)
+	var g := Gradient.new()
+	g.set_color(0, DarkFantasyTheme.BG_MID)
+	g.set_color(1, DarkFantasyTheme.BG_DEEP)
+	grad.gradient = g
+	var grad_rect := TextureRect.new()
+	grad_rect.name = "BgGradient"
+	grad_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	grad_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	grad_rect.texture = grad
+	grad_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	grad_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	add_child(grad_rect)
+	move_child(grad_rect, 1)   # Background ColorRect 바로 위 (트리 순서로 위에 그려짐)
+
+	# 2) 가장자리 비네팅 (radial: 중앙 투명 → 가장자리 어둠)
+	var vig_grad := GradientTexture2D.new()
+	vig_grad.fill = GradientTexture2D.FILL_RADIAL
+	vig_grad.fill_from = Vector2(0.5, 0.5)
+	vig_grad.fill_to = Vector2(1.0, 0.5)
+	var vg := Gradient.new()
+	vg.set_color(0, Color(0, 0, 0, 0.0))
+	vg.set_color(1, Color(0, 0, 0, 0.55))
+	vig_grad.gradient = vg
+	var vig := TextureRect.new()
+	vig.name = "BgVignette"
+	vig.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vig.texture = vig_grad
+	vig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vig.stretch_mode = TextureRect.STRETCH_SCALE
+	add_child(vig)
+	move_child(vig, 2)   # gradient 위, BattleField 아래
+
 
 func _setup_helpers() -> void:
 	combat_fx = CombatFeedback.new()
@@ -743,32 +794,28 @@ func _on_boss_deck_changed(_remaining: int) -> void:
 
 
 # 다음 예고 패널 갱신 — 텍스트 라벨로 컴팩트 표시 + 호버 시 풀사이즈 카드 프리뷰
+const _NEXT_CARD_SIZE := Vector2(165, 230)
+
 func _refresh_boss_next_card_preview() -> void:
-	# 갱신 직전 떠있던 프리뷰 정리 (라벨이 free되면 mouse_exited 누락 가능)
-	_clear_boss_card_preview()
 	_clear_boss_card_container(boss_next_card_container)
 	var next_card := boss_deck_system.peek_next()
-	var lbl := Label.new()
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Korean ICU word boundary는 음절 단위라 AUTOWRAP_WORD/ARBITRARY 모두 글자 줄바꿈됨 → OFF
-	lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
-	lbl.clip_text = false
-	lbl.add_theme_font_size_override("font_size", 13)
 	if next_card == null:
+		# 덱 소진 → 재편성 예정 안내
+		var lbl := Label.new()
 		lbl.text = "재편성"
 		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
-	else:
-		lbl.text = "%s %s" % [next_card.intent_icon, next_card.card_name]
-		lbl.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0, 0.95))
-		lbl.tooltip_text = "%s\n%s" % [next_card.card_name, next_card.description]
-		# 호버 시 풀사이즈 보스 카드 프리뷰 (반투명 — "다음 예고" 톤)
-		lbl.mouse_filter = Control.MOUSE_FILTER_STOP
-		lbl.mouse_entered.connect(_on_boss_card_label_hover.bind(next_card, lbl, 0, true))
-		lbl.mouse_exited.connect(_on_boss_card_label_hover.bind(next_card, lbl, 0, false))
-	boss_next_card_container.add_child(lbl)
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		boss_next_card_container.add_child(lbl)
+		return
+	# 다음 예고 — 큰 카드 모양으로 직접 표시 (반투명으로 "예고" 느낌)
+	var display := BossCardDisplay.new()
+	boss_next_card_container.add_child(display)
+	display.setup(next_card, next_card.countdown, _NEXT_CARD_SIZE)
+	display.modulate = Color(1, 1, 1, 0.85)
 
 func _on_boss_card_discarded(_card: BossCardData) -> void:
 	boss_discard_label.text = "🗑 %d" % boss_deck_system.get_discard_count()
@@ -1049,21 +1096,37 @@ func _trigger_game_over(is_win: bool) -> void:
 
 # === 턴 인디케이터 + 컨텍스트 디밍 ===
 
-func _update_turn_indicator(is_player: bool, hint: String) -> void:
+func _update_turn_indicator(is_player: bool, _hint: String) -> void:
+	# 턴 슬롯과 통합된 상단 바의 턴 상태 라벨
+	var accent: Color = Color(0.45, 0.7, 1.0, 1) if is_player else Color(1.0, 0.4, 0.4, 1)
 	if turn_indicator_label:
-		if is_player:
-			turn_indicator_label.text = "🔵 내 턴"
-			turn_indicator_label.add_theme_color_override("font_color", Color(0.35, 0.65, 1.0, 1))
-		else:
-			turn_indicator_label.text = "🔴 보스 턴"
-			turn_indicator_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35, 1))
-	if turn_hint_label:
-		if is_player:
-			turn_hint_label.text = "카드를 드래그하거나 턴 종료"
-		elif hint != "":
-			turn_hint_label.text = "보스 행동: %s" % hint
-		else:
-			turn_hint_label.text = "보스가 행동합니다…"
+		turn_indicator_label.text = "🔵 내 턴" if is_player else "🔴 보스 턴"
+		turn_indicator_label.add_theme_color_override("font_color", accent)
+
+
+# === 마켓 토글 ===
+
+func _toggle_market() -> void:
+	if market_window.visible:
+		_close_market()
+	else:
+		_open_market()
+
+
+func _open_market() -> void:
+	market_window.visible = true
+	AudioManager.play_sfx("ui.button")
+
+
+func _close_market() -> void:
+	market_window.visible = false
+	AudioManager.play_sfx("ui.button")
+
+
+func _on_market_dim_input(event: InputEvent) -> void:
+	# 어두운 배경 클릭 시 닫기
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_close_market()
 
 
 func _set_turn_focus(is_player_turn: bool) -> void:
