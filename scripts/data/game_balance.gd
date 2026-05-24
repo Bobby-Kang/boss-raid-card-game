@@ -14,7 +14,7 @@ class_name GameBalance
 
 
 # ─── 플레이어 ─────────────────────────────────────────────────────
-const PLAYER_MAX_HP     := 60   ## 플레이어 최대 체력
+const PLAYER_MAX_HP     := 54   ## 플레이어 최대 체력
 const PLAYER_DRAW_COUNT := 5    ## 플레이어 턴마다 손에 드로우하는 카드 수
 
 
