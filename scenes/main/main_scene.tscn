@@ -177,6 +177,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="BossFace" type="PanelContainer" parent="BattleField/VBoxLayout/BossArea/BossVBox/TopRow" unique_id=752482370]
+unique_name_in_owner = true
 clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 3
