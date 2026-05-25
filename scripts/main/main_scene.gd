@@ -123,6 +123,7 @@ var game_over: bool = false
 var combat_fx: CombatFeedback           # 플래시·셰이크·Hit-stop
 var card_hover: CardHoverPreview        # 호버 효과 라벨 + 파이프 카드 프리뷰
 var exile_animator: ExileAnimator       # 카드 영구 소멸 연출
+var boss_presenter: BossActionPresenter # 보스 턴 행동 카드 연출
 
 # === 페이즈 보상 큐 (시그널 콜백 도중 await race 회피) ===
 # 각 항목은 _grant_card_removal_reward에 넘길 reason_lines: Array[String]
@@ -220,6 +221,10 @@ func _setup_helpers() -> void:
 	exile_animator = ExileAnimator.new()
 	add_child(exile_animator)
 	exile_animator.setup(self)
+
+	boss_presenter = BossActionPresenter.new()
+	add_child(boss_presenter)
+	boss_presenter.setup(combat_fx, boss_face_texture, player_face_texture)
 
 	_setup_status_indicators()
 
@@ -741,35 +746,27 @@ func _begin_boss_turn() -> void:
 	# 2. 다음 카드 드로우
 	var drawn: BossCardData = boss_deck_system.draw_next()
 
-	# 3. 배너 메시지 구성
-	var messages: Array[String] = ["보스 차례입니다"]
-	for card in triggered:
-		messages.append("💥 %s 발동!" % card.card_name)
-		messages.append(card.description)
-	if drawn:
-		messages.append(drawn.get_intent_text())
-		if drawn.card_type == BossCardData.BossCardType.POWER:
-			messages.append("⏳ 파워 존에 배치됩니다")
-	# 턴 인디케이터 — 보스 카드명 표시
+	# 3. 턴 인디케이터 / 인텐트 갱신
 	var indicator_hint := drawn.card_name if drawn else ""
 	_update_turn_indicator(false, indicator_hint)
 	_update_boss_intent(drawn, false)
 
-	phase_banner.show_sequence(messages)
-	await phase_banner.banner_finished
+	# 4. 발동된 파워 카드 연출 (효과는 tick_powers에서 이미 적용됨)
+	for card in triggered:
+		await boss_presenter.present(card, BossActionPresenter.Kind.TRIGGER)
 
-	# 4. 카드 실행 — *불멸의 방패* 등으로 무효화된 경우 스킵
-	if game_ctx.negate_next_boss_action:
-		game_ctx.negate_next_boss_action = false
-		if drawn and phase_banner:
-			var negate_msgs: Array[String] = ["🛡 보스 행동 무효화!", "%s 가 막혔다" % drawn.card_name]
-			phase_banner.show_sequence(negate_msgs)
-			await phase_banner.banner_finished
-			boss_deck_system.discard_without_play(drawn)
-	elif drawn:
-		boss_deck_system.play_card(drawn)
+	# 5. 드로우 카드 연출 + 실행 동기화 (resolve_cb가 임팩트 순간 효과 적용)
+	if drawn:
+		if game_ctx.negate_next_boss_action:
+			game_ctx.negate_next_boss_action = false
+			await boss_presenter.present(drawn, BossActionPresenter.Kind.NEGATED,
+				func() -> void: boss_deck_system.discard_without_play(drawn))
+		else:
+			var kind: int = BossActionPresenter.Kind.POWER if drawn.card_type == BossCardData.BossCardType.POWER else BossActionPresenter.Kind.ATTACK
+			await boss_presenter.present(drawn, kind,
+				func() -> void: boss_deck_system.play_card(drawn))
 
-	# 5. 장착된 모듈의 보스 턴 종료 훅 실행
+	# 6. 장착된 모듈의 보스 턴 종료 훅 실행
 	for card in active_cards:
 		if card and card.data and card.data.module_ability:
 			card.data.module_ability.on_boss_turn_end(game_ctx)
@@ -1042,9 +1039,7 @@ func _on_phase_changed(new_phase: int, _old_phase: int) -> void:
 	match new_phase:
 		2: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_2, 1.5)
 		3: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_3, 1.5)
-	if phase_banner:
-		var messages: Array[String] = ["페이즈 %d 진입!" % new_phase]
-		phase_banner.show_sequence(messages)
+	_play_phase_transition_fx(new_phase)
 	# 페이즈 전환 보상 — 카드 1장 영구 제거 기회 (큐잉, 안전 시점에 처리)
 	var reward_lines: Array[String] = [
 		"🌟 전사의 깨달음",
@@ -1059,6 +1054,35 @@ func _apply_phase_label(phase: int) -> void:
 	phase_label.text = "페이즈 %d" % phase
 	var color: Color = PHASE_COLORS.get(phase, Color.WHITE)
 	phase_label.add_theme_color_override("font_color", color)
+
+
+# 페이즈별 타이틀 부제
+const PHASE_SUBTITLES := {
+	2: "버그베어가 분노한다",
+	3: "최후의 발악이 시작된다",
+}
+
+# 페이즈 전환 시네마틱 — 화면 섬광 + 흔들림 + 보스 각성 + 컬러 타이틀
+func _play_phase_transition_fx(phase: int) -> void:
+	var color: Color = PHASE_COLORS.get(phase, Color(0.9, 0.4, 0.3, 1))
+	if combat_fx:
+		combat_fx.screen_flash(color, 0.5, 0.7)
+		combat_fx.shake_screen(13.0, 0.45)
+	# 보스 각성 — 스케일 펀치 + 페이즈 색 밝은 틴트 펄스
+	if boss_face_texture:
+		boss_face_texture.pivot_offset = boss_face_texture.size / 2.0
+		var flash := color.lightened(0.4)
+		flash = Color(flash.r * 1.4, flash.g * 1.4, flash.b * 1.4, 1)
+		var roar := create_tween()
+		roar.tween_property(boss_face_texture, "scale", Vector2(1.16, 1.16), 0.18).set_ease(Tween.EASE_OUT)
+		roar.parallel().tween_property(boss_face_texture, "modulate", flash, 0.18)
+		roar.tween_property(boss_face_texture, "scale", Vector2.ONE, 0.42)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		roar.parallel().tween_property(boss_face_texture, "modulate", Color.WHITE, 0.42)
+	# 큰 컬러 타이틀
+	if phase_banner:
+		var sub: String = PHASE_SUBTITLES.get(phase, "보스가 각성한다")
+		phase_banner.show_title("⚔  PHASE %d  ⚔" % phase, sub, color)
 
 
 # === HP 바 ===
