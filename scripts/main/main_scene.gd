@@ -149,6 +149,7 @@ func _ready() -> void:
 	theme = DarkFantasyTheme.build()   # 전체 UI 다크 판타지 테마 적용
 	_setup_background_atmosphere()
 	_setup_helpers()
+	_setup_phase_deck_chips()   # 보스 덱 카운트 → 3-페이즈 칩 행 교체
 	_setup_game_context()
 	_setup_drop_zones()
 	_init_starter_deck()
@@ -332,6 +333,9 @@ func _setup_game_context() -> void:
 	boss_deck_system.power_zone_updated.connect(_on_boss_power_zone_updated)
 	boss_deck_system.card_discarded.connect(_on_boss_card_discarded)
 	boss_deck_system.setup(BUGBEAR_PHASE1, BUGBEAR_PHASE2, BUGBEAR_PHASE3)
+	# 보스 카드 연출 프리젠터에 덱 시스템 연결 (페이즈 뱃지/스트립 표시용)
+	if boss_presenter:
+		boss_presenter.set_deck_system(boss_deck_system)
 	_on_boss_deck_changed(boss_deck_system.get_remaining_count())
 	_on_boss_power_zone_updated([])
 
@@ -572,27 +576,27 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 	row.add_child(num_label)
 
 	# 미니 카드 패널
-	var mini := PanelContainer.new()
-	mini.custom_minimum_size = Vector2(0, 28)
-	mini.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var mini_panel := PanelContainer.new()
+	mini_panel.custom_minimum_size = Vector2(0, 28)
+	mini_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# 호버 활성화 — 효과 프리뷰 + 풀사이즈 카드 프리뷰 + 툴팁
-	mini.mouse_filter = Control.MOUSE_FILTER_STOP
+	mini_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	if card.data:
-		mini.tooltip_text = "%s\n비용: %d AP\n%s" % [
+		mini_panel.tooltip_text = "%s\n비용: %d AP\n%s" % [
 			card.data.card_name,
 			card.data.cost,
 			card.data.get_description_text(),
 		]
 	if card_hover:
-		mini.mouse_entered.connect(card_hover.on_pipe_row_hover.bind(card, mini, true))
-		mini.mouse_exited.connect(card_hover.on_pipe_row_hover.bind(card, mini, false))
+		mini_panel.mouse_entered.connect(card_hover.on_pipe_row_hover.bind(card, mini_panel, true))
+		mini_panel.mouse_exited.connect(card_hover.on_pipe_row_hover.bind(card, mini_panel, false))
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.22, 0.20, 0.18, 0.9)
 	style.border_color = Color(0.55, 0.45, 0.3, 1)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(3)
-	mini.add_theme_stylebox_override("panel", style)
+	mini_panel.add_theme_stylebox_override("panel", style)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 4)
@@ -611,8 +615,8 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(name_lbl)
 
-	mini.add_child(hbox)
-	row.add_child(mini)
+	mini_panel.add_child(hbox)
+	row.add_child(mini_panel)
 	return row
 
 
@@ -776,18 +780,93 @@ func _begin_boss_turn() -> void:
 # === 보스 덱 UI 핸들러 ===
 
 func _on_boss_deck_changed(_remaining: int) -> void:
-	# 덱 카드 목록 갱신 — 본문은 장수만, 전체 목록은 툴팁
-	var names := boss_deck_system.get_remaining_names_sorted()
-	boss_deck_count_label.text = "🂠 %d" % names.size()
-	if names.is_empty():
-		boss_deck_count_label.tooltip_text = "덱이 비어 있습니다"
-	else:
-		var lines: PackedStringArray = ["남은 카드 (%d장)" % names.size()]
-		for name in names:
-			lines.append("· " + name)
-		boss_deck_count_label.tooltip_text = "\n".join(lines)
+	# 페이즈별 칩 갱신 (P1·P2·P3 장수 + 페이즈 색 + 툴팁)
+	_update_phase_deck_chips()
 	# 다음 카드 미리보기 갱신
 	_refresh_boss_next_card_preview()
+
+
+# === 보스 덱 카운트 — 3-페이즈 칩 행 ===
+var _phase_chip_panels: Array = []   # PanelContainer ×3 (P1/P2/P3)
+var _phase_chip_labels: Array = []   # Label ×3
+
+func _setup_phase_deck_chips() -> void:
+	if boss_deck_count_label == null:
+		return
+	var parent_box: Node = boss_deck_count_label.get_parent()
+	if parent_box == null:
+		return
+	var insert_index: int = boss_deck_count_label.get_index()
+	# 원본 라벨은 숨김 (씬 구조 보존 — 다른 곳에서 참조해도 안전)
+	boss_deck_count_label.visible = false
+
+	var chip_row := HBoxContainer.new()
+	chip_row.add_theme_constant_override("separation", 4)
+	parent_box.add_child(chip_row)
+	parent_box.move_child(chip_row, insert_index)
+
+	_phase_chip_panels.clear()
+	_phase_chip_labels.clear()
+	for phase in [1, 2, 3]:
+		var chip := PanelContainer.new()
+		chip.mouse_filter = Control.MOUSE_FILTER_PASS
+		var style := StyleBoxFlat.new()
+		style.set_corner_radius_all(4)
+		style.set_border_width_all(1)
+		style.content_margin_left = 6
+		style.content_margin_right = 6
+		style.content_margin_top = 1
+		style.content_margin_bottom = 1
+		chip.add_theme_stylebox_override("panel", style)
+		chip_row.add_child(chip)
+
+		var lbl := Label.new()
+		lbl.text = "P%d·0" % phase
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		lbl.add_theme_constant_override("outline_size", 3)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(lbl)
+
+		_phase_chip_panels.append(chip)
+		_phase_chip_labels.append(lbl)
+
+
+func _update_phase_deck_chips() -> void:
+	if _phase_chip_panels.is_empty() or boss_deck_system == null:
+		return
+	var counts: Dictionary = boss_deck_system.get_remaining_counts_by_phase()
+	var names_by_phase: Dictionary = boss_deck_system.get_remaining_names_by_phase()
+	for i in 3:
+		var phase: int = i + 1
+		var n: int = int(counts.get(phase, 0))
+		var pc: Color = PHASE_COLORS.get(phase, Color.WHITE)
+		var chip: PanelContainer = _phase_chip_panels[i]
+		var lbl: Label = _phase_chip_labels[i]
+
+		lbl.text = "P%d·%d" % [phase, n]
+		var style: StyleBoxFlat = chip.get_theme_stylebox("panel")
+		if n > 0:
+			style.bg_color = Color(pc.r * 0.25, pc.g * 0.25, pc.b * 0.25, 0.85)
+			style.border_color = pc
+			lbl.add_theme_color_override("font_color", pc)
+			chip.modulate = Color(1, 1, 1, 1)
+		else:
+			# 소진된 페이즈 — 어둡게 디밍
+			style.bg_color = Color(0.10, 0.09, 0.08, 0.55)
+			style.border_color = Color(0.30, 0.27, 0.22, 0.7)
+			lbl.add_theme_color_override("font_color", Color(0.55, 0.50, 0.42, 1))
+			chip.modulate = Color(1, 1, 1, 0.6)
+
+		# 툴팁 — 해당 페이즈 남은 카드 이름
+		var names: Array = names_by_phase.get(phase, [])
+		if names.is_empty():
+			chip.tooltip_text = "Phase %d — 소진됨" % phase
+		else:
+			var lines: PackedStringArray = ["Phase %d — %d장 남음" % [phase, names.size()]]
+			for card_name in names:
+				lines.append("· " + card_name)
+			chip.tooltip_text = "\n".join(lines)
 
 
 # 다음 예고 패널 갱신 — 텍스트 라벨로 컴팩트 표시 + 호버 시 풀사이즈 카드 프리뷰
@@ -811,7 +890,8 @@ func _refresh_boss_next_card_preview() -> void:
 	# 다음 예고 — 큰 카드 모양으로 직접 표시 (반투명으로 "예고" 느낌)
 	var display := BossCardDisplay.new()
 	boss_next_card_container.add_child(display)
-	display.setup(next_card, next_card.countdown, _NEXT_CARD_SIZE)
+	var next_phase: int = boss_deck_system.get_phase_of(next_card) if boss_deck_system else 0
+	display.setup(next_card, next_card.countdown, _NEXT_CARD_SIZE, next_phase)
 	display.modulate = Color(1, 1, 1, 0.85)
 
 func _on_boss_card_discarded(_card: BossCardData) -> void:
@@ -906,7 +986,7 @@ func _update_turn_order_ui() -> void:
 		lbl.tooltip_text = "T%d — %s" % [turn_num, "플레이어 턴" if who == "player" else "보스 턴"]
 
 		var token := StyleBoxFlat.new()
-		token.set_corner_radius_all(_TOKEN_SIZE / 2)   # 원형
+		token.set_corner_radius_all(int(_TOKEN_SIZE / 2.0))   # 원형
 		token.content_margin_left = 2
 		token.content_margin_right = 2
 		if turn_num == current_turn:
@@ -1249,8 +1329,8 @@ func _on_boss_attack_buffed(new_bonus: int) -> void:
 			.set_ease(Tween.EASE_OUT)
 	# 보스 인텐트 라벨 옆에 강화 표시
 	if boss_intent_label:
-		_spawn_floating_text("⚔ 공격력 +%d!" % new_bonus, Color(1.0, 0.6, 0.2, 1),
-			boss_face_texture if boss_face_texture else boss_intent_label)
+		var anchor: Control = (boss_face_texture as Control) if boss_face_texture else (boss_intent_label as Control)
+		_spawn_floating_text("⚔ 공격력 +%d!" % new_bonus, Color(1.0, 0.6, 0.2, 1), anchor)
 
 
 # === 카드 사용 임팩트 이펙트 ===
@@ -1335,7 +1415,7 @@ func _spawn_floating_text(text: String, color: Color, anchor: Control) -> void:
 func _update_blood_vignette() -> void:
 	if _blood_vignette == null or game_ctx == null:
 		return
-	var should_show: bool = game_ctx.blood_scent_active and game_ctx.boss_hp <= game_ctx.boss_max_hp / 2
+	var should_show: bool = game_ctx.blood_scent_active and game_ctx.boss_hp * 2 <= game_ctx.boss_max_hp
 	if should_show == _blood_vignette.visible:
 		return
 	if should_show:
@@ -1372,7 +1452,8 @@ func _spawn_boss_card_preview(card: BossCardData, anchor: Control, tokens: int) 
 		return
 	var preview := BossCardDisplay.new()
 	add_child(preview)
-	preview.setup(card, tokens)
+	var preview_phase: int = boss_deck_system.get_phase_of(card) if boss_deck_system else 0
+	preview.setup(card, tokens, Vector2.ZERO, preview_phase)
 	preview.z_index = 250
 	preview.scale = Vector2(1.15, 1.15)
 	# 우측 컬럼이므로 프리뷰는 라벨 좌측에 배치

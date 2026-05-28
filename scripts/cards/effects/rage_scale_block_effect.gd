@@ -10,6 +10,7 @@ extends CardEffect
 
 func execute(ctx: GameContext) -> void:
 	var rage: int = ctx.rage_system.stacks if ctx.rage_system else 0
+	@warning_ignore("integer_division")
 	var scaled: int = rage / maxi(divisor, 1)
 	ctx.add_block(base_block + scaled)
 

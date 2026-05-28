@@ -7,12 +7,12 @@
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")
-value = 13
+value = 11
 
 [resource]
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "광기의 돌진"
 intent_icon = "🐗"
-description = "플레이어에게 13 피해"
+description = "플레이어에게 11 피해"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg")])

@@ -26,6 +26,10 @@ var deck: Array[BossCardData] = []
 var discard: Array[BossCardData] = []
 var active_powers: Array = []  # Array of Dictionary {card: BossCardData, tokens: int}
 
+# 각 카드의 출처 페이즈 (1/2/3) — UI에서 페이즈별 카운트·뱃지 표시용
+# .tres 자체에는 페이즈 정보가 없으므로 setup()에서 기록
+var _card_phase: Dictionary = {}
+
 
 func _init(game_ctx: GameContext) -> void:
 	ctx = game_ctx
@@ -42,15 +46,20 @@ func setup(
 	discard.clear()
 	active_powers.clear()
 
+	_card_phase.clear()
+
 	var b1: Array[BossCardData] = []
 	var b2: Array[BossCardData] = []
 	var b3: Array[BossCardData] = []
 	for c in phase1_cards:
 		b1.append(c)
+		_card_phase[c] = 1
 	for c in phase2_cards:
 		b2.append(c)
+		_card_phase[c] = 2
 	for c in phase3_cards:
 		b3.append(c)
+		_card_phase[c] = 3
 	b1.shuffle()
 	b2.shuffle()
 	b3.shuffle()
@@ -181,3 +190,32 @@ func get_remaining_names_sorted() -> Array[String]:
 
 func get_active_powers() -> Array:
 	return active_powers.duplicate()
+
+
+# === 페이즈 메타 (UI 시각화용) ===
+
+# 주어진 카드의 출처 페이즈(1/2/3). 모르면 1 반환.
+func get_phase_of(card: BossCardData) -> int:
+	if card == null:
+		return 1
+	return int(_card_phase.get(card, 1))
+
+
+# 덱(남은 카드)의 페이즈별 장수 — {1: n, 2: n, 3: n}
+func get_remaining_counts_by_phase() -> Dictionary:
+	var counts := {1: 0, 2: 0, 3: 0}
+	for c in deck:
+		var p: int = get_phase_of(c)
+		counts[p] = int(counts.get(p, 0)) + 1
+	return counts
+
+
+# 덱 남은 카드 이름을 페이즈별로 묶음 (정렬됨) — 칩 툴팁용
+func get_remaining_names_by_phase() -> Dictionary:
+	var by_phase := {1: [], 2: [], 3: []}
+	for c in deck:
+		var p: int = get_phase_of(c)
+		(by_phase[p] as Array).append(c.card_name)
+	for p in by_phase:
+		(by_phase[p] as Array).sort()
+	return by_phase

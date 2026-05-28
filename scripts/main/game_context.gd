@@ -87,7 +87,7 @@ func activate_blood_scent() -> void:
 # 보스의 모든 ATTACK 피해에 적용되는 배율 (피 냄새 + 공격력 보너스)
 func get_boss_attack_modifier(base_damage: int) -> int:
 	var total: int = base_damage + boss_attack_bonus
-	if blood_scent_active and boss_hp <= boss_max_hp / 2:
+	if blood_scent_active and boss_hp * 2 <= boss_max_hp:
 		total = int(total * 1.2)
 	return total
 

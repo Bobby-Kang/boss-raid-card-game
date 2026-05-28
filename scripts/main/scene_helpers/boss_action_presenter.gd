@@ -20,6 +20,7 @@ var _header: Label
 var _combat_fx: CombatFeedback = null
 var _boss_face: Control = null
 var _player_face: Control = null
+var _deck_system: BossDeckSystem = null
 
 
 func _ready() -> void:
@@ -60,10 +61,16 @@ func _ready() -> void:
 	_holder.add_child(_header)
 
 
-func setup(combat_fx: CombatFeedback, boss_face: Control, player_face: Control) -> void:
+func setup(combat_fx: CombatFeedback, boss_face: Control, player_face: Control, deck_system: BossDeckSystem = null) -> void:
 	_combat_fx = combat_fx
 	_boss_face = boss_face
 	_player_face = player_face
+	_deck_system = deck_system
+
+
+# 보스 덱이 main_scene._setup_helpers 이후 생성되므로 별도 주입 시점 제공
+func set_deck_system(deck_system: BossDeckSystem) -> void:
+	_deck_system = deck_system
 
 
 # 보스 카드 1장을 연출. resolve_cb는 임팩트 시점에 1회 호출(실제 효과 적용).
@@ -83,7 +90,8 @@ func present(card: BossCardData, kind: int, resolve_cb: Callable = Callable()) -
 
 	# 카드 위젯
 	var disp := BossCardDisplay.new()
-	disp.setup(card, card.countdown, CARD_SIZE)
+	var phase: int = _deck_system.get_phase_of(card) if _deck_system else 0
+	disp.setup(card, card.countdown, CARD_SIZE, phase)
 	disp.pivot_offset = CARD_SIZE / 2.0
 	_holder.add_child(disp)
 

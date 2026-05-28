@@ -14,6 +14,7 @@ extends CardEffect
 
 func execute(ctx: GameContext) -> void:
 	var rage: int = ctx.rage_system.stacks if ctx.rage_system else 0
+	@warning_ignore("integer_division")
 	var scaled: int = rage * multiplier / maxi(divisor, 1)
 	var total: int = base_damage + scaled
 	ctx.deal_damage_to_boss(total)

@@ -9,6 +9,13 @@ extends Control
 const CARD_W := 100
 const CARD_H := 145
 
+# 페이즈 색 팔레트 (main_scene.PHASE_COLORS와 동일 톤)
+const PHASE_COLORS := {
+	1: Color(0.95, 0.92, 0.85, 1),  # 양피지 흰 (추적 페이즈)
+	2: Color(0.50, 0.72, 1.00, 1),  # 청 (광폭화)
+	3: Color(1.00, 0.40, 0.40, 1),  # 적 (광기)
+}
+
 var _artwork_rect: TextureRect
 var _icon_label: Label
 var _name_label: Label
@@ -16,6 +23,9 @@ var _desc_label: Label
 var _type_label: Label
 var _countdown_badge: PanelContainer
 var _countdown_label: Label
+var _phase_stripe: ColorRect            # 좌측 세로 컬러 스트립
+var _phase_badge: PanelContainer        # 좌상단 P1/P2/P3 뱃지
+var _phase_badge_label: Label
 var _card_w: int = CARD_W
 var _card_h: int = CARD_H
 
@@ -128,16 +138,56 @@ func _ready() -> void:
 	_countdown_badge.add_child(_countdown_label)
 	_countdown_badge.visible = false
 
+	# ─── 페이즈 좌측 컬러 스트립 (전체 높이) ───
+	_phase_stripe = ColorRect.new()
+	_phase_stripe.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	_phase_stripe.offset_left = 0
+	_phase_stripe.offset_top = 0
+	_phase_stripe.offset_right = 6
+	_phase_stripe.offset_bottom = 0
+	_phase_stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_phase_stripe.visible = false
+	add_child(_phase_stripe)
+
+	# ─── 페이즈 뱃지 (좌상단 "P1"/"P2"/"P3") ───
+	_phase_badge = PanelContainer.new()
+	_phase_badge.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_phase_badge.offset_left = 8
+	_phase_badge.offset_top = 2
+	_phase_badge.offset_right = 34
+	_phase_badge.offset_bottom = 22
+	_phase_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var pb_style := StyleBoxFlat.new()
+	pb_style.bg_color = Color(0.08, 0.06, 0.05, 0.92)
+	pb_style.set_border_width_all(1)
+	pb_style.border_color = Color.WHITE
+	pb_style.set_corner_radius_all(4)
+	_phase_badge.add_theme_stylebox_override("panel", pb_style)
+	_phase_badge.visible = false
+	add_child(_phase_badge)
+
+	_phase_badge_label = Label.new()
+	_phase_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_phase_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_phase_badge_label.add_theme_font_size_override("font_size", 11)
+	_phase_badge_label.add_theme_color_override("font_color", Color.WHITE)
+	_phase_badge_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	_phase_badge_label.add_theme_constant_override("outline_size", 2)
+	_phase_badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_phase_badge.add_child(_phase_badge_label)
+
 	if _pending_card != null:
-		_apply(_pending_card, _pending_tokens)
+		_apply(_pending_card, _pending_tokens, _pending_phase)
 
 
 var _pending_card: BossCardData = null
 var _pending_tokens: int = 0
+var _pending_phase: int = 0
 
 
 # card: BossCardData / current_tokens: 파워 카운트다운 / card_size: 0,0이면 기본 크기
-func setup(card: BossCardData, current_tokens: int = 0, card_size: Vector2 = Vector2.ZERO) -> void:
+# phase: 1/2/3 (0이면 페이즈 뱃지 숨김 — 하위 호환)
+func setup(card: BossCardData, current_tokens: int = 0, card_size: Vector2 = Vector2.ZERO, phase: int = 0) -> void:
 	if card_size != Vector2.ZERO:
 		_card_w = int(card_size.x)
 		_card_h = int(card_size.y)
@@ -146,11 +196,12 @@ func setup(card: BossCardData, current_tokens: int = 0, card_size: Vector2 = Vec
 	if _name_label == null:
 		_pending_card = card
 		_pending_tokens = current_tokens
+		_pending_phase = phase
 		return
-	_apply(card, current_tokens)
+	_apply(card, current_tokens, phase)
 
 
-func _apply(card: BossCardData, current_tokens: int) -> void:
+func _apply(card: BossCardData, current_tokens: int, phase: int = 0) -> void:
 	_name_label.text = card.card_name
 	_desc_label.text = card.description
 	_icon_label.text = card.intent_icon
@@ -172,3 +223,19 @@ func _apply(card: BossCardData, current_tokens: int) -> void:
 		_type_label.text = "공격"
 		_type_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 		_countdown_badge.visible = false
+
+	# 페이즈 시각화 — 좌측 스트립 + 좌상단 뱃지
+	if phase >= 1 and phase <= 3 and PHASE_COLORS.has(phase):
+		var pc: Color = PHASE_COLORS[phase]
+		_phase_stripe.color = Color(pc.r, pc.g, pc.b, 0.85)
+		_phase_stripe.visible = true
+		_phase_badge_label.text = "P%d" % phase
+		# 뱃지 배경을 페이즈 색의 어두운 톤으로
+		var pb_style := _phase_badge.get_theme_stylebox("panel") as StyleBoxFlat
+		if pb_style:
+			pb_style.bg_color = Color(pc.r * 0.5, pc.g * 0.5, pc.b * 0.5, 0.95)
+			pb_style.border_color = pc
+		_phase_badge.visible = true
+	else:
+		_phase_stripe.visible = false
+		_phase_badge.visible = false
