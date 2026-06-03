@@ -3,15 +3,15 @@
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_draw_lock_effect.gd" id="4_lock"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_vulnerability_effect.gd" id="4_vuln"]
 [ext_resource type="Texture2D" uid="uid://b5yge7i7ayium" path="res://assets/art/gemini_image/bugbear_growl.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")
-value = 3
+value = 4
 
-[sub_resource type="Resource" id="Effect_lock"]
-script = ExtResource("4_lock")
+[sub_resource type="Resource" id="Effect_vuln"]
+script = ExtResource("4_vuln")
 value = 1
 
 [resource]
@@ -19,5 +19,5 @@ script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "으르렁"
 intent_icon = "😤"
-description = "3 피해 + 드로우 봉인 1"
-effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_lock")])
+description = "4 피해 + 취약 1"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_vuln")])

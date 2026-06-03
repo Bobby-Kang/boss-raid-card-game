@@ -2,19 +2,22 @@
 
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_drain_effect.gd" id="3_drain"]
+[ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_draw_lock_effect.gd" id="4_lock"]
 [ext_resource type="Texture2D" uid="uid://c73m5k0t6qn07" path="res://assets/art/gemini_image/bugbear_intimidate.png" id="9_art"]
 
-[sub_resource type="Resource" id="Effect_drain"]
-script = ExtResource("3_drain")
+[sub_resource type="Resource" id="Effect_dmg"]
+script = ExtResource("3_dmg")
 value = 3
+
+[sub_resource type="Resource" id="Effect_lock"]
+script = ExtResource("4_lock")
+value = 1
 
 [resource]
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "위협"
-card_type = 1
-countdown = 2
 intent_icon = "🩸"
-description = "2턴 후: 3 피해 + 보스 HP 3 회복 (흡혈)"
-effects = Array[ExtResource("2_base")]([SubResource("Effect_drain")])
+description = "3 피해 + 드로우 봉인 1"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_lock")])

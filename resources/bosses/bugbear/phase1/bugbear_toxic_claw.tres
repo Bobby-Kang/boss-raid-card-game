@@ -8,7 +8,7 @@
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")
-value = 4
+value = 3
 
 [sub_resource type="Resource" id="Effect_vuln"]
 script = ExtResource("4_vuln")
@@ -19,5 +19,5 @@ script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "맹독 발톱"
 intent_icon = "☠"
-description = "4 피해 + 취약 1"
+description = "3 피해 + 취약 1"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_vuln")])

@@ -6,13 +6,9 @@
 [ext_resource type="Script" path="res://scripts/bosses/effects/boss_reflect_damage_effect.gd" id="4_reflect"]
 [ext_resource type="Texture2D" uid="uid://bl6bgq6hik6lr" path="res://assets/art/gemini_image/bugbear_crouch.png" id="9_art"]
 
-[sub_resource type="Resource" id="Effect_block_immediate"]
+[sub_resource type="Resource" id="Effect_block"]
 script = ExtResource("3_block")
-value = 5
-
-[sub_resource type="Resource" id="Effect_block_tick"]
-script = ExtResource("3_block")
-value = 3
+value = 8
 
 [sub_resource type="Resource" id="Effect_reflect"]
 script = ExtResource("4_reflect")
@@ -24,7 +20,5 @@ card_name = "웅크리기"
 card_type = 1
 countdown = 3
 intent_icon = "🛡"
-description = "즉시 방어 +5 / 매턴 방어 +3 / 3턴 후: 방어도만큼 반사 피해"
-effects = Array[ExtResource("2_base")]([SubResource("Effect_reflect")])
-on_draw_effects = Array[ExtResource("2_base")]([SubResource("Effect_block_immediate")])
-on_tick_effects = Array[ExtResource("2_base")]([SubResource("Effect_block_tick")])
+description = "3턴 후: 방어 +8 + 방어도만큼 반사 피해"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_block"), SubResource("Effect_reflect")])

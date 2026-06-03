@@ -206,6 +206,10 @@ func _apply(card: BossCardData, current_tokens: int, phase: int = 0) -> void:
 	_desc_label.text = card.description
 	_icon_label.text = card.intent_icon
 
+	# 카드 크기 비례 폰트·뱃지 스케일링
+	# 기준: CARD_H = 145 (파워존 카드 기본). 더 큰 카드(다음 예고 230, 행동 연출 294)는 확대.
+	_apply_size_scaling()
+
 	if card.artwork != null:
 		_artwork_rect.texture = card.artwork
 		_artwork_rect.visible = true
@@ -239,3 +243,35 @@ func _apply(card: BossCardData, current_tokens: int, phase: int = 0) -> void:
 	else:
 		_phase_stripe.visible = false
 		_phase_badge.visible = false
+
+
+# 카드 크기에 비례해 폰트와 코너 뱃지(페이즈/카운트다운)를 스케일.
+# 기준: CARD_H = 145. 예) 230 → 1.58×, 294 → 2.03×.
+# 작은 카드(파워존 기본)는 1.0× 유지.
+func _apply_size_scaling() -> void:
+	var s: float = float(_card_h) / float(CARD_H)
+	if s < 1.0:
+		s = 1.0   # 기본 미만 카드는 그대로 (축소 방지)
+
+	# 폰트 스케일
+	_name_label.add_theme_font_size_override("font_size", int(round(13 * s)))
+	_desc_label.add_theme_font_size_override("font_size", int(round(10 * s)))
+	_type_label.add_theme_font_size_override("font_size", int(round(9 * s)))
+	_icon_label.add_theme_font_size_override("font_size", int(round(38 * s)))
+
+	# 페이즈 뱃지 — 좌상단 칩, 카드가 클수록 비례 확대
+	_phase_badge.offset_left = 8 * s
+	_phase_badge.offset_top = 2 * s
+	_phase_badge.offset_right = 34 * s
+	_phase_badge.offset_bottom = 22 * s
+	_phase_badge_label.add_theme_font_size_override("font_size", int(round(11 * s)))
+
+	# 카운트다운 뱃지 — 우상단, 비례 확대
+	_countdown_badge.offset_left = -28 * s
+	_countdown_badge.offset_top = 2 * s
+	_countdown_badge.offset_right = -2 * s
+	_countdown_badge.offset_bottom = 28 * s
+	_countdown_label.add_theme_font_size_override("font_size", int(round(14 * s)))
+
+	# 좌측 페이즈 스트립 — 두께도 약간 비례 (6 → 최대 10)
+	_phase_stripe.offset_right = mini(int(round(6 * s)), 10)
