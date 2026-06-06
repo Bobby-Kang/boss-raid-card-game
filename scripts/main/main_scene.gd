@@ -801,7 +801,7 @@ func _setup_phase_deck_chips() -> void:
 	boss_deck_count_label.visible = false
 
 	var chip_row := HBoxContainer.new()
-	chip_row.add_theme_constant_override("separation", 4)
+	chip_row.add_theme_constant_override("separation", 6)
 	parent_box.add_child(chip_row)
 	parent_box.move_child(chip_row, insert_index)
 
@@ -811,18 +811,18 @@ func _setup_phase_deck_chips() -> void:
 		var chip := PanelContainer.new()
 		chip.mouse_filter = Control.MOUSE_FILTER_PASS
 		var style := StyleBoxFlat.new()
-		style.set_corner_radius_all(4)
+		style.set_corner_radius_all(5)
 		style.set_border_width_all(1)
-		style.content_margin_left = 6
-		style.content_margin_right = 6
-		style.content_margin_top = 1
-		style.content_margin_bottom = 1
+		style.content_margin_left = 9
+		style.content_margin_right = 9
+		style.content_margin_top = 3
+		style.content_margin_bottom = 3
 		chip.add_theme_stylebox_override("panel", style)
 		chip_row.add_child(chip)
 
 		var lbl := Label.new()
 		lbl.text = "P%d·0" % phase
-		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_font_size_override("font_size", 18)
 		lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 		lbl.add_theme_constant_override("outline_size", 3)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
