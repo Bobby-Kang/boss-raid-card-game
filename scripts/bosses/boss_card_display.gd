@@ -259,11 +259,12 @@ func _apply_size_scaling() -> void:
 	_type_label.add_theme_font_size_override("font_size", int(round(9 * s)))
 	_icon_label.add_theme_font_size_override("font_size", int(round(38 * s)))
 
-	# 페이즈 뱃지 — 좌상단 칩, 카드가 클수록 비례 확대
-	_phase_badge.offset_left = 8 * s
-	_phase_badge.offset_top = 2 * s
-	_phase_badge.offset_right = 34 * s
-	_phase_badge.offset_bottom = 22 * s
+	# 페이즈 뱃지 — 이름 스트립 아래(아트워크 영역 좌상단)로 배치해 이름과 겹치지 않게
+	# 이름 스트립 높이 ≈ font_size + padding(약 7) → 13+7=20 기준, 거기서 4px 띄움
+	_phase_badge.offset_left = 6 * s
+	_phase_badge.offset_top = 26 * s
+	_phase_badge.offset_right = 32 * s
+	_phase_badge.offset_bottom = 46 * s
 	_phase_badge_label.add_theme_font_size_override("font_size", int(round(11 * s)))
 
 	# 카운트다운 뱃지 — 우상단, 비례 확대
