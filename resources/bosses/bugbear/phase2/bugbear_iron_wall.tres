@@ -8,11 +8,11 @@
 
 [sub_resource type="Resource" id="Effect_block"]
 script = ExtResource("3_block")
-value = 12
+value = 15
 
 [sub_resource type="Resource" id="Effect_heal"]
 script = ExtResource("4_heal")
-value = 6
+value = 10
 
 [resource]
 script = ExtResource("1_script")
@@ -21,5 +21,5 @@ card_name = "강철 벽"
 card_type = 1
 countdown = 2
 intent_icon = "🛡"
-description = "2턴 후: 보스 방어 +12 + HP +6 회복"
+description = "2턴 후: 보스 방어 +15 + HP +10 회복"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_block"), SubResource("Effect_heal")])

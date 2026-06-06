@@ -4,14 +4,19 @@
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
 [ext_resource type="Script" path="res://scripts/bosses/effects/boss_blood_scent_effect.gd" id="4_blood"]
+[ext_resource type="Script" path="res://scripts/bosses/effects/boss_vulnerability_effect.gd" id="5_vuln"]
 [ext_resource type="Texture2D" uid="uid://c3dn6qdsvwool" path="res://assets/art/gemini_image/bugbear_hunt_start.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")
-value = 8
+value = 10
 
 [sub_resource type="Resource" id="Effect_blood"]
 script = ExtResource("4_blood")
+
+[sub_resource type="Resource" id="Effect_vuln"]
+script = ExtResource("5_vuln")
+value = 3
 
 [resource]
 script = ExtResource("1_script")
@@ -20,5 +25,5 @@ card_name = "사냥의 시작"
 card_type = 1
 countdown = 4
 intent_icon = "🐺"
-description = "4턴 후: 피 냄새 활성 + 8 피해"
-effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_blood")])
+description = "4턴 후: 피 냄새 활성 + 10 피해 + 취약 3"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_blood"), SubResource("Effect_vuln")])

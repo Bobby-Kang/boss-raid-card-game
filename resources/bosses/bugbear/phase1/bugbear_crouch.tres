@@ -8,7 +8,7 @@
 
 [sub_resource type="Resource" id="Effect_block"]
 script = ExtResource("3_block")
-value = 8
+value = 5
 
 [sub_resource type="Resource" id="Effect_reflect"]
 script = ExtResource("4_reflect")
@@ -17,8 +17,6 @@ script = ExtResource("4_reflect")
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "웅크리기"
-card_type = 1
-countdown = 3
 intent_icon = "🛡"
-description = "3턴 후: 방어 +8 + 방어도만큼 반사 피해"
+description = "보스 방어 +5 + 방어도만큼 반사 피해"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_block"), SubResource("Effect_reflect")])
