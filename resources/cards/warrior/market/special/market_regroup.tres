@@ -2,20 +2,19 @@
 
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
-[ext_resource type="Script" uid="uid://bylcx1jvg5n37" path="res://scripts/cards/effects/draw_effect.gd" id="3_draw"]
+[ext_resource type="Script" path="res://scripts/cards/effects/reorder_pipe_effect.gd" id="3_reorder"]
 [ext_resource type="Texture2D" uid="uid://tita3ern3rrw" path="res://assets/art/gemini_image/market_regroup.png" id="9_art"]
 
-[sub_resource type="Resource" id="Effect_draw"]
-script = ExtResource("3_draw")
-value = 3
+[sub_resource type="Resource" id="Effect_reorder"]
+script = ExtResource("3_reorder")
 
 [resource]
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
-card_name = "재정비"
+card_name = "운명 재배치"
 cost = 1
 gold_cost = 5
 tier = 2
-description = "카드 3장 드로우"
+description = "파이프 카드 1장을 선택해 맨 앞으로 (원하는 카드를 당겨온다)"
 card_type = 1
-effects = Array[ExtResource("2_base")]([SubResource("Effect_draw")])
+effects = Array[ExtResource("2_base")]([SubResource("Effect_reorder")])

@@ -14,6 +14,7 @@ signal hover_changed(card: Control, entered: bool)
 var is_face_up: bool = false
 var is_active: bool = true
 var data: CardData
+var temper: int = 0   # 단련 횟수 — 파이프를 한 바퀴 돌 때마다 +1 (TemperedDamageEffect 등이 참조)
 
 
 func _ready() -> void:

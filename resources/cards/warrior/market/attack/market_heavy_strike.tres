@@ -2,12 +2,13 @@
 
 [ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
-[ext_resource type="Script" uid="uid://c323gvneknc4m" path="res://scripts/cards/effects/damage_effect.gd" id="3_damage"]
+[ext_resource type="Script" path="res://scripts/cards/effects/tempered_damage_effect.gd" id="3_tempered"]
 [ext_resource type="Texture2D" uid="uid://bsvexvgku7603" path="res://assets/art/gemini_image/market_heavy_strike.png" id="9_art"]
 
-[sub_resource type="Resource" id="Effect_damage"]
-script = ExtResource("3_damage")
-value = 7
+[sub_resource type="Resource" id="Effect_tempered"]
+script = ExtResource("3_tempered")
+value = 5
+per_temper = 2
 
 [resource]
 script = ExtResource("1_script")
@@ -16,5 +17,5 @@ card_name = "혼신의 일격"
 cost = 2
 gold_cost = 4
 tier = 1
-description = "보스에게 7 피해"
-effects = Array[ExtResource("2_base")]([SubResource("Effect_damage")])
+description = "보스에게 5 피해 — 🔨단련 1회당 +2 (파이프를 돌수록 강해진다)"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_tempered")])

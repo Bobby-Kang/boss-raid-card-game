@@ -15,6 +15,29 @@ var discard_cards: Callable # func(count: int) -> void (선택 UI 포함)
 var exile_cards: Callable   # func(count: int) -> void (영구 소멸, 파이프로 복귀 안 함)
 var request_card_removal: Callable  # func() -> void (손패+파이프에서 1장 영구 제거 선택)
 
+# === 파이프(타임라인) 메커니즘 ===
+# 효과 실행 직전 main_scene이 acting_card를 세팅 → 효과가 자기 카드의 단련 횟수를 조회
+var acting_card: Control = null            # 지금 실행 중인 카드 노드 (단련 조회용)
+var peek_pipe_front: Callable              # func(count: int) -> Array[CardData] (파이프 앞 N장 미리보기 — 인접 판정)
+var reorder_pipe_to_front: Callable        # func() -> void (파이프 카드 1장 선택해 맨 앞으로)
+var rewind_pipe: Callable                  # func(count: int) -> void (맨 뒤 N장을 맨 앞으로)
+
+# acting_card의 단련 횟수(파이프를 돈 바퀴 수). 없으면 0.
+func get_acting_card_temper() -> int:
+	if acting_card != null and "temper" in acting_card:
+		return int(acting_card.temper)
+	return 0
+
+# 파이프 맨 앞 카드가 특정 타입인지 (인접 판정용). count장 중 하나라도 해당 타입이면 true.
+func pipe_front_has_type(card_type: int, count: int = 1) -> bool:
+	if not peek_pipe_front.is_valid():
+		return false
+	var fronts: Array = peek_pipe_front.call(count)
+	for cd in fronts:
+		if cd != null and cd.card_type == card_type:
+			return true
+	return false
+
 var player_hp: int     = GameBalance.PLAYER_MAX_HP
 var player_max_hp: int = GameBalance.PLAYER_MAX_HP
 var player_block: int  = 0
@@ -39,7 +62,7 @@ signal boss_attack_buffed(new_bonus: int)
 
 var draw_lock_stacks: int = 0             # 다음 플레이어 턴 드로우 -N (1회성)
 var vulnerability_stacks: int = 0         # 받는 다음 N번 피해 ×1.5 (스택당 1회 소진)
-var blood_scent_active: bool = false      # 피 냄새 — 보스 HP ≤50% 시 공격 ×1.3
+var blood_scent_active: bool = false      # 피 냄새 — 보스 HP ≤50% 시 공격 ×1.2
 var boss_attack_bonus: int = 0            # 분노의 포효 등 — 보스 공격력 영구 +N
 var last_hit_vulnerable: bool = false     # 직전 플레이어 피격이 취약 강화였는지 (팝업 강조용)
 

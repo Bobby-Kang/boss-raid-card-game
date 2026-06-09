@@ -92,6 +92,22 @@ func _show_effect_preview(card: Control) -> void:
 				var gold: int = _game_ctx.gold_manager.current if _game_ctx and _game_ctx.gold_manager else 0
 				amount = int(info.get("base", 0)) + gold * int(info.get("mul", 1))
 				kind = "damage"
+			"tempered_damage":
+				# 단련 — 호버 카드의 현재 단련 횟수로 보정
+				var temper: int = int(card.temper) if "temper" in card else 0
+				amount = int(info.get("base", 0)) + temper * int(info.get("per_temper", 0))
+				kind = "damage"
+			"adjacency_damage":
+				# 인접 — 파이프 맨 앞이 require_type이면 보너스 포함
+				var hit: bool = _game_ctx != null and _game_ctx.pipe_front_has_type(
+					int(info.get("require_type", 0)), int(info.get("peek_count", 1)))
+				amount = int(info.get("base", 0)) + (int(info.get("bonus", 0)) if hit else 0)
+				kind = "damage"
+			"adjacency_block":
+				var hit_b: bool = _game_ctx != null and _game_ctx.pipe_front_has_type(
+					int(info.get("require_type", 1)), int(info.get("peek_count", 1)))
+				amount = int(info.get("base", 0)) + (int(info.get("bonus", 0)) if hit_b else 0)
+				kind = "block"
 			"rage_consume":
 				kind = "rage_consume"  # 별도 표시
 			"negate_boss":

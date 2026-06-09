@@ -287,6 +287,10 @@ func _setup_game_context() -> void:
 	game_ctx.discard_cards = _discard_cards_with_selection
 	game_ctx.exile_cards = _exile_cards_from_hand
 	game_ctx.request_card_removal = _on_request_card_removal_from_effect
+	# 파이프 메커니즘 (단련/조작/인접)
+	game_ctx.peek_pipe_front = _peek_pipe_front
+	game_ctx.reorder_pipe_to_front = _reorder_pipe_to_front
+	game_ctx.rewind_pipe = _rewind_pipe
 	game_ctx.player_hp_changed.connect(_on_player_hp_changed)
 	game_ctx.player_block_changed.connect(_on_player_block_changed)
 	game_ctx.boss_hp_changed.connect(_on_boss_hp_changed)
@@ -527,9 +531,57 @@ func _start_player_turn() -> void:
 func _send_to_pipe_back(card: Control) -> void:
 	hand_cards.erase(card)
 	card.set_active(false)
+	# 단련 — 파이프 맨 뒤로 돌아갈 때마다 +1 (한 바퀴 카운트)
+	if "temper" in card:
+		card.temper += 1
 	card.reparent(queue_card_holder)
 	queue_cards.append(card)
 	_update_hand_display()
+	_rebuild_pipe_ui()
+
+
+# === 파이프 메커니즘 (단련/조작/인접) ===
+
+# 파이프 앞 count장의 CardData 미리보기 (인접 판정용)
+func _peek_pipe_front(count: int) -> Array:
+	var result: Array = []
+	for i in mini(count, queue_cards.size()):
+		var c: Control = queue_cards[i]
+		result.append(c.data if c else null)
+	return result
+
+
+# 파이프 맨 뒤 count장을 맨 앞으로 이동 (시간 역행 — 방금 버린 카드 회수)
+func _rewind_pipe(count: int) -> void:
+	var n: int = mini(count, queue_cards.size())
+	if n <= 0:
+		return
+	# 맨 뒤 n장을 떼어 (순서 유지) 맨 앞에 삽입
+	var tail: Array[Control] = []
+	for i in range(queue_cards.size() - n, queue_cards.size()):
+		tail.append(queue_cards[i])
+	queue_cards = queue_cards.slice(0, queue_cards.size() - n)
+	for i in range(tail.size() - 1, -1, -1):
+		queue_cards.push_front(tail[i])
+	AudioManager.play_sfx("card.draw", 0.0, 0.05)
+	_rebuild_pipe_ui()
+
+
+# 파이프 카드 1장을 선택해 맨 앞으로 (운명 재배치 — 핀포인트)
+func _reorder_pipe_to_front() -> void:
+	if queue_cards.is_empty():
+		return
+	# 파이프 카드들로 선택 UI 표시 (end_turn_overlay 재사용, 1장 선택)
+	is_discarding_from_effect = true
+	end_turn_overlay.show_overlay_select(queue_cards.duplicate(), 1)
+	var chosen: Array[Control] = await end_turn_overlay.order_confirmed
+	is_discarding_from_effect = false
+	if chosen.is_empty():
+		return
+	var card: Control = chosen[0]
+	queue_cards.erase(card)
+	queue_cards.push_front(card)
+	AudioManager.play_sfx("card.draw", 0.0, 0.05)
 	_rebuild_pipe_ui()
 
 
@@ -615,6 +667,16 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(name_lbl)
 
+	# 단련 뱃지 — 파이프를 돈 바퀴 수 (TemperedDamageEffect 카드만 의미 있음)
+	if "temper" in card and card.temper > 0:
+		var temper_lbl := Label.new()
+		temper_lbl.text = "🔨%d" % card.temper
+		temper_lbl.add_theme_font_size_override("font_size", 14)
+		temper_lbl.add_theme_color_override("font_color", Color(0.95, 0.7, 0.35, 1))
+		temper_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		temper_lbl.tooltip_text = "단련 %d회 — 파이프를 돈 횟수" % card.temper
+		hbox.add_child(temper_lbl)
+
 	mini_panel.add_child(hbox)
 	row.add_child(mini_panel)
 	return row
@@ -666,16 +728,20 @@ func _play_card(card: Control) -> void:
 		game_ctx.attacks_this_turn += 1
 	# 카드 사용 임팩트 이펙트 (효과 종류 기반 — 슬래시/방어 쉬머)
 	_play_card_impact(card)
-	# 소비(consume) 카드는 파이프로 안 돌아가고 효과 실행 후 영구 소멸
+	# 효과 실행 — 파이프로 보내기 *전*에 실행해야 인접(파이프 맨 앞) 판정이 정확
+	# acting_card 세팅 → 단련 효과가 이 카드의 temper를 읽음
+	game_ctx.acting_card = card
+	for effect in card.data.effects:
+		effect.execute(game_ctx)
+	game_ctx.acting_card = null
+	# 소비(consume) 카드는 파이프로 안 돌아가고 영구 소멸
 	if card.data.consume:
 		hand_cards.erase(card)
 		_update_hand_display()
+		if is_instance_valid(card):
+			card.queue_free()
 	else:
 		_send_to_pipe_back(card)
-	for effect in card.data.effects:
-		effect.execute(game_ctx)
-	if card.data.consume and is_instance_valid(card):
-		card.queue_free()
 
 
 # === 라운드/턴 시스템 ===
