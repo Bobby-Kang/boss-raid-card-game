@@ -1404,27 +1404,96 @@ func _on_boss_attack_buffed(new_bonus: int) -> void:
 const _DAMAGE_KINDS := [
 	"damage", "rage_scale_damage", "execute_damage",
 	"chain_damage", "gold_scale_damage", "block_damage",
+	"tempered_damage", "adjacency_damage",
 ]
+const _BLOCK_KINDS := ["block", "rage_scale_block", "adjacency_block"]
 
 
-# 카드 효과 종류에 따라 적절한 임팩트 연출 분기
+# 카드 효과 종류에 따라 적절한 임팩트 연출 분기 (경쾌한 돌진 + 대상 반응)
 func _play_card_impact(card: Control) -> void:
 	if not card.data:
 		return
 	var has_damage := false
 	var has_block := false
+	var has_gold := false
+	var adj_bonus := false   # 인접 보너스 조건 충족 여부 ("연계!" 강조용)
 	for eff in card.data.effects:
 		if eff == null:
 			continue
-		var kind: String = eff.get_preview_summary().get("kind", "")
+		var info: Dictionary = eff.get_preview_summary()
+		var kind: String = info.get("kind", "")
 		if kind in _DAMAGE_KINDS:
 			has_damage = true
-		elif kind == "block" or kind == "rage_scale_block":
+		elif kind in _BLOCK_KINDS:
 			has_block = true
+		elif kind == "gold":
+			has_gold = true
+		# 인접 효과는 파이프 맨 앞 조건이 충족됐을 때만 "연계!" 강조
+		if (kind == "adjacency_damage" or kind == "adjacency_block") and game_ctx:
+			if game_ctx.pipe_front_has_type(int(info.get("require_type", 0)), int(info.get("peek_count", 1))):
+				adj_bonus = true
+
+	# 돌진 대상 — 공격은 보스, 방어는 플레이어, 그 외(드로우·조작·골드)는 파이프 쪽
+	var target: Control = null
 	if has_damage:
-		_spawn_slash_fx(boss_face_texture)
-	if has_block and combat_fx:
-		combat_fx.flash_buff(player_face_texture, Color(0.5, 0.85, 1.4, 1))
+		target = boss_face_texture
+	elif has_block:
+		target = player_face_texture
+
+	# 임팩트 순간 콜백 (돌진 착지 시점)
+	var on_impact := func() -> void:
+		if has_damage:
+			_spawn_slash_fx(boss_face_texture)
+			if combat_fx:
+				combat_fx.flash_recoil(boss_face_texture, 18.0)
+				combat_fx.shake_screen(5.0, 0.18)
+		if has_block and combat_fx:
+			combat_fx.flash_buff(player_face_texture, Color(0.5, 0.85, 1.4, 1))
+		if has_gold:
+			_spawn_floating_text("💰", Color(0.95, 0.82, 0.35, 1), player_face_texture)
+		if adj_bonus:
+			var anchor: Control = target if target else boss_face_texture
+			_spawn_floating_text("⚡ 연계!", Color(1.0, 0.9, 0.4, 1), anchor)
+
+	_spawn_card_lunge(card, target, on_impact)
+
+
+# 카드 잔상이 손패에서 대상으로 빠르게 돌진했다 사라지는 연출 (경쾌·타격감)
+func _spawn_card_lunge(card: Control, target: Control, on_impact: Callable) -> void:
+	if card == null or not card.data:
+		on_impact.call()
+		return
+	var start: Vector2 = card.get_global_rect().get_center() - global_position
+	var dest: Vector2 = start
+	if target != null and is_instance_valid(target):
+		dest = target.get_global_rect().get_center() - global_position
+	else:
+		dest = start + Vector2(0, -130)   # 파이프(상단) 방향으로 가볍게
+
+	var ghost := TextureRect.new()
+	ghost.texture = card.data.artwork
+	ghost.custom_minimum_size = Vector2(72, 100)
+	ghost.size = Vector2(72, 100)
+	ghost.pivot_offset = Vector2(36, 50)
+	ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	ghost.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ghost.z_index = 145
+	add_child(ghost)
+	ghost.position = start - Vector2(36, 50)
+	ghost.modulate = Color(1, 1, 1, 0.92)
+
+	# 대상 70% 지점까지 가속 돌진 → 임팩트 → 페이드아웃
+	var land: Vector2 = start.lerp(dest, 0.7) - Vector2(36, 50)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(ghost, "position", land, 0.16).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(ghost, "scale", Vector2(1.25, 1.25), 0.16).set_ease(Tween.EASE_IN)
+	tween.set_parallel(false)
+	tween.tween_callback(on_impact)
+	tween.tween_property(ghost, "modulate:a", 0.0, 0.12)
+	tween.tween_callback(ghost.queue_free)
 
 
 # 보스 얼굴을 가로지르는 대각선 슬래시 연출
