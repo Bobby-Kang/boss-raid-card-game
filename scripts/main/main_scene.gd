@@ -1463,7 +1463,14 @@ func _spawn_card_lunge(card: Control, target: Control, on_impact: Callable) -> v
 	if card == null or not card.data:
 		on_impact.call()
 		return
-	var start: Vector2 = card.get_global_rect().get_center() - global_position
+	# 시작점 = 전사 얼굴 (카드를 휘두르는 주체). 없으면 플레이존(무대 중앙) → 손패 순 폴백.
+	var start: Vector2
+	if player_face_texture != null and is_instance_valid(player_face_texture):
+		start = player_face_texture.get_global_rect().get_center() - global_position
+	elif play_drop_zone != null:
+		start = play_drop_zone.get_global_rect().get_center() - global_position
+	else:
+		start = card.get_global_rect().get_center() - global_position
 	var dest: Vector2 = start
 	if target != null and is_instance_valid(target):
 		dest = target.get_global_rect().get_center() - global_position
