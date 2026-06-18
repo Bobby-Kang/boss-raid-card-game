@@ -1482,28 +1482,29 @@ func _spawn_card_lunge(card: Control, target: Control, on_impact: Callable) -> v
 	else:
 		dest = start + Vector2(0, -130)   # 파이프(상단) 방향으로 가볍게
 
-	var ghost_size := Vector2(46, 64)
+	var ghost_size := Vector2(34, 48)
 	var half := ghost_size * 0.5
 	var ghost := TextureRect.new()
 	ghost.texture = card.data.artwork
-	ghost.custom_minimum_size = ghost_size
-	ghost.size = ghost_size
-	ghost.pivot_offset = half
 	ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	ghost.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ghost.z_index = 145
 	add_child(ghost)
+	# add_child 후 anchor·size 강제 (레이아웃이 size를 텍스처 원본으로 키우는 것 방지)
+	ghost.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	ghost.custom_minimum_size = ghost_size
+	ghost.size = ghost_size
+	ghost.pivot_offset = half
 	ghost.position = start - half
 	ghost.modulate = Color(1, 1, 1, 0.92)
 
-	# 대상 70% 지점까지 가속 돌진 → 임팩트 → 페이드아웃
+	# 대상 70% 지점까지 가속 돌진 → 페이드아웃 (확대 없음)
 	var land: Vector2 = start.lerp(dest, 0.7) - half
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(ghost, "position", land, 0.16).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(ghost, "scale", Vector2(1.12, 1.12), 0.16).set_ease(Tween.EASE_IN)
 	tween.set_parallel(false)
 	tween.tween_callback(on_impact)
 	tween.tween_property(ghost, "modulate:a", 0.0, 0.12)
