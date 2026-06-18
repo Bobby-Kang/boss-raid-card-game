@@ -1482,7 +1482,10 @@ func _spawn_card_lunge(card: Control, target: Control, on_impact: Callable) -> v
 	else:
 		dest = start + Vector2(0, -130)   # 파이프(상단) 방향으로 가볍게
 
-	var ghost_size := Vector2(34, 48)
+	# 손패 카드와 동일한 크기로 (card.size 우선, 없으면 custom_minimum_size 폴백)
+	var ghost_size: Vector2 = card.size if card.size.length() > 1.0 else card.custom_minimum_size
+	if ghost_size.length() < 1.0:
+		ghost_size = Vector2(144, 204)
 	var half := ghost_size * 0.5
 	var ghost := TextureRect.new()
 	ghost.texture = card.data.artwork
