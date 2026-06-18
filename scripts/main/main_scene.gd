@@ -1455,7 +1455,12 @@ func _play_card_impact(card: Control) -> void:
 			var anchor: Control = target if target else boss_face_texture
 			_spawn_floating_text("⚡ 연계!", Color(1.0, 0.9, 0.4, 1), anchor)
 
-	_spawn_card_lunge(card, target, on_impact)
+	# 돌진은 "타격" 연출 — 공격/방어처럼 대상이 있을 때만.
+	# 골드·드로우·조작 등 비전투 카드는 돌진 없이 팝업만 (어색한 큰 잔상 방지)
+	if target != null:
+		_spawn_card_lunge(card, target, on_impact)
+	else:
+		on_impact.call()
 
 
 # 카드 잔상이 손패에서 대상으로 빠르게 돌진했다 사라지는 연출 (경쾌·타격감)
