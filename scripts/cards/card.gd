@@ -93,9 +93,12 @@ func _create_drag_preview() -> Control:
 	# 커서가 프리뷰 중앙에 오도록 offset 컨테이너 사용
 	var offset_container := Control.new()
 
+	# 드래그 프리뷰는 카드 원본의 55% 크기 (마우스 따라다닐 때 화면 가림 최소화)
+	var preview_size: Vector2 = custom_minimum_size * 0.55
 	var preview := PanelContainer.new()
-	preview.custom_minimum_size = custom_minimum_size
-	preview.position = -custom_minimum_size / 2.0
+	preview.custom_minimum_size = preview_size
+	preview.size = preview_size
+	preview.position = -preview_size / 2.0
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.96, 0.93, 0.85, 0.9)
