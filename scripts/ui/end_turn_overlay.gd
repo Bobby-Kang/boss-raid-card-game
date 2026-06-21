@@ -6,7 +6,7 @@ signal cancelled
 const CardScene := preload("res://scenes/cards/card.tscn")
 
 @onready var dim_bg: ColorRect = $DimBackground
-@onready var card_row: HBoxContainer = $DimBackground/CenterVBox/CardRow
+@onready var card_row: HFlowContainer = $DimBackground/CenterVBox/CardRow
 @onready var confirm_button: Button = $DimBackground/CenterVBox/ButtonRow/ConfirmButton
 @onready var cancel_button: Button = $DimBackground/CenterVBox/ButtonRow/CancelButton
 @onready var info_label: Label = $DimBackground/CenterVBox/InfoLabel
@@ -51,16 +51,30 @@ func _open(hand_cards: Array[Control], required: int) -> void:
 
 	_original_cards.assign(hand_cards)
 
+	# 카드 수에 따라 크기 동적 조정 — 많으면 작게 (HFlowContainer가 자동 줄바꿈)
+	var n: int = _original_cards.size()
+	var card_scale: float = 1.0
+	if n > 16:
+		card_scale = 0.62
+	elif n > 11:
+		card_scale = 0.78
+	elif n > 7:
+		card_scale = 0.9
+	var slot_w: int = int(150 * card_scale)
+	var slot_h: int = int(212 * card_scale)
+	var order_font: int = maxi(int(44 * card_scale), 22)
+
 	for i in range(_original_cards.size()):
 		var card: Control = _original_cards[i]
 
 		var slot := Control.new()
-		slot.custom_minimum_size = Vector2(180, 255)
+		slot.custom_minimum_size = Vector2(slot_w, slot_h)
 
 		var preview: Control = CardScene.instantiate()
 		preview.data = card.data
 		preview.is_face_up = true
-		preview.scale = Vector2(1.5, 1.5)
+		preview.pivot_offset = Vector2.ZERO   # 좌상단 기준 스케일 → 슬롯에 정렬
+		preview.scale = Vector2(card_scale, card_scale)
 		preview.position = Vector2.ZERO
 		slot.add_child(preview)
 
@@ -70,7 +84,7 @@ func _open(hand_cards: Array[Control], required: int) -> void:
 		order_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		order_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		order_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-		order_label.add_theme_font_size_override("font_size", 48)
+		order_label.add_theme_font_size_override("font_size", order_font)
 		order_label.add_theme_color_override("font_color", Color(1, 1, 0, 1))
 		order_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 		order_label.add_theme_constant_override("shadow_offset_x", 2)
