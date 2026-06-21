@@ -1485,10 +1485,11 @@ func _spawn_card_lunge(card: Control, target: Control, on_impact: Callable) -> v
 	else:
 		dest = start + Vector2(0, -130)   # 파이프(상단) 방향으로 가볍게
 
-	# 손패 카드와 동일한 크기로 (card.size 우선, 없으면 custom_minimum_size 폴백)
+	# 손패 카드 크기의 2배로 (card.size 우선, 없으면 custom_minimum_size 폴백)
 	var ghost_size: Vector2 = card.size if card.size.length() > 1.0 else card.custom_minimum_size
 	if ghost_size.length() < 1.0:
 		ghost_size = Vector2(144, 204)
+	ghost_size *= 2.0
 	var half := ghost_size * 0.5
 	var ghost := TextureRect.new()
 	ghost.texture = card.data.artwork
@@ -1506,14 +1507,18 @@ func _spawn_card_lunge(card: Control, target: Control, on_impact: Callable) -> v
 	ghost.position = start - half
 	ghost.modulate = Color(1, 1, 1, 0.92)
 
-	# 대상 70% 지점까지 가속 돌진 → 페이드아웃 (확대 없음)
+	# 제자리(방어 등)면 더 오래 보여주고, 멀리 돌진(공격)이면 빠른 타격감
+	var stationary: bool = start.distance_to(dest) < 30.0
+	var hold: float = 0.4 if stationary else 0.06
+	var fade: float = 0.3 if stationary else 0.16
+
+	# 대상 70% 지점까지 가속 돌진 → 착지 임팩트 → 체류 → 페이드아웃
 	var land: Vector2 = start.lerp(dest, 0.7) - half
 	var tween := create_tween()
-	tween.set_parallel(true)
 	tween.tween_property(ghost, "position", land, 0.16).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
-	tween.set_parallel(false)
 	tween.tween_callback(on_impact)
-	tween.tween_property(ghost, "modulate:a", 0.0, 0.12)
+	tween.tween_interval(hold)
+	tween.tween_property(ghost, "modulate:a", 0.0, fade)
 	tween.tween_callback(ghost.queue_free)
 
 
