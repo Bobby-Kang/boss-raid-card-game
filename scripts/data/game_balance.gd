@@ -32,7 +32,7 @@ const BOSS_MAX_HP       := 70   ## 보스 최대 체력
 
 
 # ─── 전사: 투기 발산 ───────────────────────────────────────────────
-const RAGE_MAX_STACKS   := 10   ## 투기 최대 스택 (이 수치 도달 시 발동 버튼 활성화)
+const RAGE_MAX_STACKS   := 7    ## 투기 최대 스택 (이 수치 도달 시 발동 버튼 활성화)
 const RAGE_BURST_DAMAGE := 10   ## 투기 발산 시 보스에게 주는 피해
 const RAGE_BURST_BLOCK  := 10   ## 투기 발산 시 획득하는 방어도
 

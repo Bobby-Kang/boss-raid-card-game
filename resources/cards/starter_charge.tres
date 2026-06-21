@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b8strchrg0001"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/adjacency_damage_effect.gd" id="3_adj"]
+[ext_resource type="Texture2D" uid="uid://eogxwdmnrm3j" path="res://assets/art/gemini_image/market_charge.png" id="4_art"]
+
+[sub_resource type="Resource" id="Effect_adj"]
+script = ExtResource("3_adj")
+value = 3
+bonus_damage = 4
+require_type = 0
+peek_count = 1
+
+[resource]
+script = ExtResource("1_script")
+card_name = "돌격"
+cost = 1
+artwork = ExtResource("4_art")
+description = "보스에게 3 피해 — 파이프 다음 카드가 공격이면 +4 (연계 돌진)"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_adj")])

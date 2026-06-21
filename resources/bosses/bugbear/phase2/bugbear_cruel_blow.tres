@@ -9,7 +9,7 @@
 
 [sub_resource type="Resource" id="Effect_dmg"]
 script = ExtResource("3_dmg")
-value = 6
+value = 8
 
 [sub_resource type="Resource" id="Effect_vuln"]
 script = ExtResource("4_vuln")
@@ -17,12 +17,12 @@ value = 2
 
 [sub_resource type="Resource" id="Effect_heal"]
 script = ExtResource("5_heal")
-value = 3
+value = 2
 
 [resource]
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "잔혹한 일격"
 intent_icon = "🩸"
-description = "6 피해 + 취약 2 + 보스 HP +3 회복"
+description = "8 피해 + 취약 2 + 보스 HP +2 회복"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_vuln"), SubResource("Effect_heal")])

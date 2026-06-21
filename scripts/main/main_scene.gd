@@ -5,11 +5,12 @@ const CardScene := preload("res://scenes/cards/card.tscn")
 const DRAW_COUNT      := GameBalance.PLAYER_DRAW_COUNT
 const TURNS_PER_ROUND := GameBalance.TURNS_PER_ROUND
 
-# 카드 종류 (공용 스타터 4종)
+# 카드 종류 (공용 스타터 5종)
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
 const CARD_ATTACK := preload("res://resources/cards/starter_attack.tres")
 const CARD_BLOCK := preload("res://resources/cards/starter_block.tres")
 const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
+const CARD_CHARGE := preload("res://resources/cards/starter_charge.tres")
 
 # 전사 전용 모듈
 const MODULE_COUNTER_STANCE := preload("res://resources/cards/warrior/module_counter_stance.tres")
@@ -52,9 +53,11 @@ const PHASE_COLORS := {
 	3: Color(1.0, 0.4, 0.4, 1),
 }
 
+# 골드 3 · 베기 3 · 막기 2 · 집중 1 · 돌격 1 (10장)
+# 초반부터 전투 가능하도록 골드 5→3 축소, 베기 +1·돌격 +1 (경제는 마켓 골드 레인으로 보충)
 const STARTER_DECK: Array = [
-	CARD_GOLD, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_BLOCK,
-	CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_BLOCK, CARD_DRAW
+	CARD_GOLD, CARD_ATTACK, CARD_BLOCK, CARD_GOLD, CARD_CHARGE,
+	CARD_ATTACK, CARD_GOLD, CARD_BLOCK, CARD_ATTACK, CARD_DRAW
 ]
 
 # 손패 존
