@@ -5,12 +5,11 @@ const CardScene := preload("res://scenes/cards/card.tscn")
 const DRAW_COUNT      := GameBalance.PLAYER_DRAW_COUNT
 const TURNS_PER_ROUND := GameBalance.TURNS_PER_ROUND
 
-# 카드 종류 (공용 스타터 5종)
+# 카드 종류 (공용 스타터 4종)
 const CARD_GOLD := preload("res://resources/cards/starter_gold.tres")
 const CARD_ATTACK := preload("res://resources/cards/starter_attack.tres")
 const CARD_BLOCK := preload("res://resources/cards/starter_block.tres")
 const CARD_DRAW := preload("res://resources/cards/starter_draw.tres")
-const CARD_CHARGE := preload("res://resources/cards/starter_charge.tres")
 
 # 전사 전용 모듈
 const MODULE_COUNTER_STANCE := preload("res://resources/cards/warrior/module_counter_stance.tres")
@@ -53,11 +52,12 @@ const PHASE_COLORS := {
 	3: Color(1.0, 0.4, 0.4, 1),
 }
 
-# 골드 3 · 베기 3 · 막기 2 · 집중 1 · 돌격 1 (10장)
-# 초반부터 전투 가능하도록 골드 5→3 축소, 베기 +1·돌격 +1 (경제는 마켓 골드 레인으로 보충)
+# 골드 3 · 베기 4 · 막기 2 · 집중 1 (10장)
+# 스타터는 순수 기본기(공격·방어·드로우·자원)만. 콤보(인접 등)는 마켓에서.
+# 시작 시 1회 셔플하므로 배열 순서는 무의미 (게임 중엔 섞지 않음 — 파이프 컨셉 유지)
 const STARTER_DECK: Array = [
-	CARD_GOLD, CARD_ATTACK, CARD_BLOCK, CARD_GOLD, CARD_CHARGE,
-	CARD_ATTACK, CARD_GOLD, CARD_BLOCK, CARD_ATTACK, CARD_DRAW
+	CARD_GOLD, CARD_GOLD, CARD_GOLD, CARD_ATTACK, CARD_ATTACK,
+	CARD_ATTACK, CARD_ATTACK, CARD_BLOCK, CARD_BLOCK, CARD_DRAW
 ]
 
 # 손패 존
@@ -483,7 +483,11 @@ func _make_card(cdata: CardData, face_up: bool = true) -> Control:
 
 func _init_starter_deck() -> void:
 	_clear_cards()
-	for card_data: CardData in STARTER_DECK:
+	# 스타터 구성으로 카드 생성 후 파이프를 1회만 셔플 → 매 판 첫 손패가 달라져 고착화 방지.
+	# (게임 중에는 섞지 않음 — 파이프의 '예측 가능성' 컨셉은 유지)
+	var starter: Array = STARTER_DECK.duplicate()
+	starter.shuffle()
+	for card_data: CardData in starter:
 		var card: Control = _make_card(card_data, true)
 		queue_card_holder.add_child(card)
 		queue_cards.append(card)
