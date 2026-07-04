@@ -19,3 +19,6 @@ Thumbs.db
 
 # Temp files
 *.tmp
+
+# 빌드 산출물 (export)
+/build/
