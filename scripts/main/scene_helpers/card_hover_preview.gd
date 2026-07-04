@@ -119,20 +119,24 @@ func _show_effect_preview(card: Control) -> void:
 		totals[kind] = totals.get(kind, 0) + amount
 
 	# 라벨 스폰
+	# 보스 대상(데미지·무효)은 보스 HP 옆, 자기 대상(방어·드로우·골드 등)은 호버 카드 위에 세로로.
+	var boss_i := 0
 	if totals.get("damage", 0) > 0:
-		_spawn_label("−%d" % totals["damage"], COLOR_DAMAGE, _anchor_boss_hp)
-	if totals.get("block", 0) > 0:
-		_spawn_label("+%d 🛡" % totals["block"], COLOR_BLOCK, _anchor_player_block)
-	if totals.get("draw", 0) > 0:
-		_spawn_label("+%d 드로우" % totals["draw"], COLOR_DRAW, _anchor_player_hp)
-	if totals.get("gold", 0) > 0:
-		_spawn_label("+%d 💰" % totals["gold"], COLOR_GOLD, _anchor_player_hp)
-	if totals.get("remove", 0) > 0 or totals.get("exile", 0) > 0:
-		_spawn_label("✖ 카드 정리", COLOR_REMOVE, _anchor_player_hp)
-	if totals.get("rage_consume", 0) > 0:
-		_spawn_label("🔥 −%d" % totals["rage_consume"], Color(1.0, 0.55, 0.15, 1), _anchor_player_hp)
+		_spawn_label("−%d" % totals["damage"], COLOR_DAMAGE, _pos_beside(_anchor_boss_hp, boss_i)); boss_i += 1
 	if totals.get("negate_boss", 0) > 0:
-		_spawn_label("🛡 보스 무효", COLOR_BLOCK, _anchor_boss_hp)
+		_spawn_label("🛡 보스 무효", COLOR_BLOCK, _pos_beside(_anchor_boss_hp, boss_i)); boss_i += 1
+
+	var slot := 0
+	if totals.get("block", 0) > 0:
+		_spawn_label("+%d 🛡" % totals["block"], COLOR_BLOCK, _pos_above(_hover_card, slot)); slot += 1
+	if totals.get("draw", 0) > 0:
+		_spawn_label("+%d 드로우" % totals["draw"], COLOR_DRAW, _pos_above(_hover_card, slot)); slot += 1
+	if totals.get("gold", 0) > 0:
+		_spawn_label("+%d 💰" % totals["gold"], COLOR_GOLD, _pos_above(_hover_card, slot)); slot += 1
+	if totals.get("remove", 0) > 0 or totals.get("exile", 0) > 0:
+		_spawn_label("✖ 카드 정리", COLOR_REMOVE, _pos_above(_hover_card, slot)); slot += 1
+	if totals.get("rage_consume", 0) > 0:
+		_spawn_label("🔥 −%d" % totals["rage_consume"], Color(1.0, 0.55, 0.15, 1), _pos_above(_hover_card, slot)); slot += 1
 
 
 # 게임 컨텍스트 통한 투기 스택 조회 — 직업 의존 안 함
@@ -142,8 +146,24 @@ func _rage_stacks() -> int:
 	return 0
 
 
-func _spawn_label(text: String, color: Color, anchor: Control) -> void:
+# 앵커(보스 HP 등) 오른쪽 위치 — i는 세로 슬롯
+func _pos_beside(anchor: Control, i: int = 0) -> Vector2:
 	if anchor == null or _root == null:
+		return Vector2.ZERO
+	var r := anchor.get_global_rect()
+	return r.position - _root.global_position + Vector2(r.size.x + 8, -6 + i * 26)
+
+
+# 호버 카드 위쪽 위치 — slot은 위로 쌓이는 세로 슬롯
+func _pos_above(card: Control, slot: int = 0) -> Vector2:
+	if card == null or _root == null:
+		return Vector2.ZERO
+	var r := card.get_global_rect()
+	return r.position - _root.global_position + Vector2(r.size.x * 0.5 - 30, -34 - slot * 28)
+
+
+func _spawn_label(text: String, color: Color, local_pos: Vector2) -> void:
+	if _root == null or local_pos == Vector2.ZERO:
 		return
 	var lbl := Label.new()
 	lbl.text = text
@@ -154,8 +174,7 @@ func _spawn_label(text: String, color: Color, anchor: Control) -> void:
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lbl.z_index = 100
 	_root.add_child(lbl)
-	var anchor_rect := anchor.get_global_rect()
-	lbl.global_position = anchor_rect.position + Vector2(anchor_rect.size.x + 8, -6)
+	lbl.position = local_pos
 	# 살짝 떠오르는 모션
 	var tween := create_tween()
 	tween.tween_property(lbl, "position:y", lbl.position.y - 6, 0.25)\
