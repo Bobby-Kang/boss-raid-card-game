@@ -99,6 +99,11 @@ func _ready() -> void:
 	bottom_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bot_style := StyleBoxFlat.new()
 	bot_style.bg_color = Color(0.05, 0.03, 0.03, 0.78)
+	# 좌측 페이즈 스트립(최대 10px)에 설명이 안 걸리도록 좌우 여백 확보
+	bot_style.content_margin_left = 13
+	bot_style.content_margin_right = 8
+	bot_style.content_margin_top = 2
+	bot_style.content_margin_bottom = 2
 	bottom_strip.add_theme_stylebox_override("panel", bot_style)
 	add_child(bottom_strip)
 
@@ -112,6 +117,7 @@ func _ready() -> void:
 	_desc_label.add_theme_color_override("font_color", Color(0.88, 0.80, 0.70))
 	_desc_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	_desc_label.add_theme_constant_override("outline_size", 2)
+	_desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_desc_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bot_vbox.add_child(_desc_label)
