@@ -64,6 +64,11 @@ func _ready() -> void:
 	top_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var top_style := StyleBoxFlat.new()
 	top_style.bg_color = Color(0.05, 0.03, 0.03, 0.72)
+	# 좌측 페이즈 스트립(최대 10px)에 이름이 안 걸리도록 좌우 여백 확보
+	top_style.content_margin_left = 13
+	top_style.content_margin_right = 8
+	top_style.content_margin_top = 2
+	top_style.content_margin_bottom = 2
 	top_strip.add_theme_stylebox_override("panel", top_style)
 	add_child(top_strip)
 
@@ -73,6 +78,8 @@ func _ready() -> void:
 	_name_label.add_theme_color_override("font_color", Color(0.97, 0.92, 0.80))
 	_name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	_name_label.add_theme_constant_override("outline_size", 3)
+	_name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_name_label.clip_text = false
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_strip.add_child(_name_label)
 

@@ -960,7 +960,7 @@ func _update_phase_deck_chips() -> void:
 
 
 # 다음 예고 패널 갱신 — 텍스트 라벨로 컴팩트 표시 + 호버 시 풀사이즈 카드 프리뷰
-const _NEXT_CARD_SIZE := Vector2(165, 230)
+const _NEXT_CARD_SIZE := Vector2(200, 280)
 
 func _refresh_boss_next_card_preview() -> void:
 	_clear_boss_card_container(boss_next_card_container)
