@@ -124,8 +124,8 @@ var game_over: bool = false
 
 # === 게임 로그 (A: 모달 전체 로그 / B: 파이프 오른쪽 미니 로그) ===
 const _LOG_MAX := 150
-const _MINI_LOG_LINES := 6
-var _game_log: Array[String] = []
+const _MINI_LOG_LINES := 5
+var _game_log: Array = []   # [{short: String, full: String}] — B는 short, A 모달은 full
 var _log_button: Button
 var _log_layer: CanvasLayer
 var _log_root: Control
@@ -753,7 +753,7 @@ func _play_card(card: Control) -> void:
 	for effect in card.data.effects:
 		effect.execute(game_ctx)
 	game_ctx.acting_card = null
-	_log("🗡 %s" % card.data.card_name)
+	_log("🗡 %s" % card.data.card_name, "🗡 %s — %s" % [card.data.card_name, card.data.get_description_text()])
 	# 소비(consume) 카드는 파이프로 안 돌아가고 영구 소멸
 	if card.data.consume:
 		hand_cards.erase(card)
@@ -845,7 +845,7 @@ func _begin_boss_turn() -> void:
 	# 4. 발동된 파워 카드 연출 (효과는 tick_powers에서 이미 적용됨)
 	for card in triggered:
 		await boss_presenter.present(card, BossActionPresenter.Kind.TRIGGER)
-		_log("💥 파워 발동: %s" % card.card_name)
+		_log("💥 파워 발동: %s" % card.card_name, "💥 파워 발동: %s — %s" % [card.card_name, card.description])
 
 	# 5. 드로우 카드 연출 + 실행 동기화 (resolve_cb가 임팩트 순간 효과 적용)
 	if drawn:
@@ -858,7 +858,7 @@ func _begin_boss_turn() -> void:
 			var kind: int = BossActionPresenter.Kind.POWER if drawn.card_type == BossCardData.BossCardType.POWER else BossActionPresenter.Kind.ATTACK
 			await boss_presenter.present(drawn, kind,
 				func() -> void: boss_deck_system.play_card(drawn))
-			_log("💀 보스: %s" % drawn.card_name)
+			_log("💀 보스: %s" % drawn.card_name, "💀 보스: %s — %s" % [drawn.card_name, drawn.description])
 
 	# 6. 장착된 모듈의 보스 턴 종료 훅 실행
 	for card in active_cards:
@@ -1251,7 +1251,7 @@ func _build_mini_log() -> void:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_FILL
-	panel.size_flags_stretch_ratio = 1.0
+	panel.size_flags_stretch_ratio = 0.5   # 파이프 오른쪽 영역 축소
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var vb := VBoxContainer.new()
@@ -1279,9 +1279,12 @@ func _build_mini_log() -> void:
 	zones.add_child(panel)   # 파이프가 마지막 자식이므로 그 오른쪽에 배치됨
 
 
-# 로그 1줄 추가 — 라운드 프리픽스 + 저장 + 미니/모달 갱신
-func _log(msg: String) -> void:
-	_game_log.append("R%d · %s" % [current_round, msg])
+# 로그 1줄 추가 — full 생략 시 short와 동일. B(미니)는 short, A(모달)는 full 표시.
+func _log(short: String, full: String = "") -> void:
+	if full == "":
+		full = short
+	var prefix: String = "R%d · " % current_round
+	_game_log.append({"short": prefix + short, "full": prefix + full})
 	if _game_log.size() > _LOG_MAX:
 		_game_log.pop_front()
 	_update_mini_log()
@@ -1293,7 +1296,10 @@ func _update_mini_log() -> void:
 	if _mini_log_label == null:
 		return
 	var start_i: int = maxi(0, _game_log.size() - _MINI_LOG_LINES)
-	_mini_log_label.text = "\n".join(_game_log.slice(start_i))
+	var lines: PackedStringArray = []
+	for e in _game_log.slice(start_i):
+		lines.append(e["short"])
+	_mini_log_label.text = "\n".join(lines)
 
 
 func _toggle_log() -> void:
@@ -1320,9 +1326,9 @@ func _refresh_log_panel() -> void:
 		return
 	for c in _log_list_vbox.get_children():
 		c.queue_free()
-	for line in _game_log:
+	for e in _game_log:
 		var lbl := Label.new()
-		lbl.text = line
+		lbl.text = e["full"]
 		lbl.add_theme_font_size_override("font_size", 15)
 		lbl.add_theme_color_override("font_color", DarkFantasyTheme.TEXT)
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
