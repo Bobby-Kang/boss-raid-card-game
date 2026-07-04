@@ -122,6 +122,17 @@ var boss_deck_system: BossDeckSystem
 var is_discarding_from_effect: bool = false
 var game_over: bool = false
 
+# === 게임 로그 (A: 모달 전체 로그 / B: 파이프 오른쪽 미니 로그) ===
+const _LOG_MAX := 150
+const _MINI_LOG_LINES := 6
+var _game_log: Array[String] = []
+var _log_button: Button
+var _log_layer: CanvasLayer
+var _log_root: Control
+var _log_list_vbox: VBoxContainer
+var _log_scroll: ScrollContainer
+var _mini_log_label: Label
+
 # === Scene 헬퍼 (분리된 책임) ===
 var combat_fx: CombatFeedback           # 플래시·셰이크·Hit-stop
 var card_hover: CardHoverPreview        # 호버 효과 라벨 + 파이프 카드 프리뷰
@@ -155,6 +166,7 @@ func _ready() -> void:
 	_setup_phase_deck_chips()   # 보스 덱 카운트 → 3-페이즈 칩 행 교체
 	_setup_game_context()
 	_setup_drop_zones()
+	_setup_game_log()   # 로그 UI를 먼저 만들어 _init_starter_deck의 첫 로그부터 반영
 	_init_starter_deck()
 	resource_bar.gold_manager.set_to(0)
 	resource_bar.ap_manager.set_to(3)
@@ -737,6 +749,7 @@ func _play_card(card: Control) -> void:
 	for effect in card.data.effects:
 		effect.execute(game_ctx)
 	game_ctx.acting_card = null
+	_log("🗡 %s" % card.data.card_name)
 	# 소비(consume) 카드는 파이프로 안 돌아가고 영구 소멸
 	if card.data.consume:
 		hand_cards.erase(card)
@@ -753,6 +766,7 @@ func _start_round() -> void:
 	_build_turn_order()
 	_update_round_label()
 	_update_turn_order_ui()
+	_log("━━ 라운드 %d ━━" % current_round)
 	current_turn = 0
 	if market_panel:
 		market_panel.refresh_slots()
@@ -827,6 +841,7 @@ func _begin_boss_turn() -> void:
 	# 4. 발동된 파워 카드 연출 (효과는 tick_powers에서 이미 적용됨)
 	for card in triggered:
 		await boss_presenter.present(card, BossActionPresenter.Kind.TRIGGER)
+		_log("💥 파워 발동: %s" % card.card_name)
 
 	# 5. 드로우 카드 연출 + 실행 동기화 (resolve_cb가 임팩트 순간 효과 적용)
 	if drawn:
@@ -834,10 +849,12 @@ func _begin_boss_turn() -> void:
 			game_ctx.negate_next_boss_action = false
 			await boss_presenter.present(drawn, BossActionPresenter.Kind.NEGATED,
 				func() -> void: boss_deck_system.discard_without_play(drawn))
+			_log("🛡 보스 무효화: %s" % drawn.card_name)
 		else:
 			var kind: int = BossActionPresenter.Kind.POWER if drawn.card_type == BossCardData.BossCardType.POWER else BossActionPresenter.Kind.ATTACK
 			await boss_presenter.present(drawn, kind,
 				func() -> void: boss_deck_system.play_card(drawn))
+			_log("💀 보스: %s" % drawn.card_name)
 
 	# 6. 장착된 모듈의 보스 턴 종료 훅 실행
 	for card in active_cards:
@@ -1150,6 +1167,164 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 	rage_button.disabled = stacks < max_stacks
 
 
+# === 게임 로그 시스템 ===
+
+func _setup_game_log() -> void:
+	# 로그 버튼 — 상단바 상점 버튼 왼쪽
+	_log_button = Button.new()
+	_log_button.text = "📜 기록"
+	_log_button.custom_minimum_size = Vector2(110, 0)
+	_log_button.pressed.connect(_toggle_log)
+	if market_button and market_button.get_parent():
+		var bar: Node = market_button.get_parent()
+		bar.add_child(_log_button)
+		bar.move_child(_log_button, market_button.get_index())
+	_build_log_window()
+	_build_mini_log()
+
+
+# A: 전체 로그 모달 (마켓 모달과 동일 패턴)
+func _build_log_window() -> void:
+	_log_layer = CanvasLayer.new()
+	_log_layer.layer = 13
+	add_child(_log_layer)
+
+	_log_root = Control.new()
+	_log_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_log_root.visible = false
+	_log_layer.add_child(_log_root)
+
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed:
+			_close_log())
+	_log_root.add_child(dim)
+
+	var frame := PanelContainer.new()
+	frame.set_anchors_preset(Control.PRESET_CENTER)
+	frame.offset_left = -420
+	frame.offset_right = 420
+	frame.offset_top = -320
+	frame.offset_bottom = 320
+	_log_root.add_child(frame)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 8)
+	frame.add_child(vb)
+
+	var header := HBoxContainer.new()
+	vb.add_child(header)
+	var title := Label.new()
+	title.text = "📜 전투 기록"
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", DarkFantasyTheme.GOLD_BRIGHT)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var close_btn := Button.new()
+	close_btn.text = "✕ 닫기"
+	close_btn.pressed.connect(_close_log)
+	header.add_child(close_btn)
+
+	_log_scroll = ScrollContainer.new()
+	_log_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_log_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vb.add_child(_log_scroll)
+
+	_log_list_vbox = VBoxContainer.new()
+	_log_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_log_list_vbox.add_theme_constant_override("separation", 3)
+	_log_scroll.add_child(_log_list_vbox)
+
+
+# B: 파이프 오른쪽 미니 로그 (최근 N줄 상시 표시)
+func _build_mini_log() -> void:
+	var zones: Node = timeline_pipe_panel.get_parent() if timeline_pipe_panel else null
+	if zones == null:
+		return
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_FILL
+	panel.size_flags_stretch_ratio = 1.0
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 4)
+	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(vb)
+
+	var title := Label.new()
+	title.text = "📜 기록"
+	title.add_theme_font_size_override("font_size", 15)
+	title.add_theme_color_override("font_color", DarkFantasyTheme.GOLD_BRIGHT)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(title)
+
+	_mini_log_label = Label.new()
+	_mini_log_label.add_theme_font_size_override("font_size", 13)
+	_mini_log_label.add_theme_color_override("font_color", DarkFantasyTheme.TEXT_DIM)
+	_mini_log_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_mini_log_label.clip_text = true
+	_mini_log_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_mini_log_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_mini_log_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(_mini_log_label)
+
+	zones.add_child(panel)   # 파이프가 마지막 자식이므로 그 오른쪽에 배치됨
+
+
+# 로그 1줄 추가 — 라운드 프리픽스 + 저장 + 미니/모달 갱신
+func _log(msg: String) -> void:
+	_game_log.append("R%d · %s" % [current_round, msg])
+	if _game_log.size() > _LOG_MAX:
+		_game_log.pop_front()
+	_update_mini_log()
+	if _log_root and _log_root.visible:
+		_refresh_log_panel()
+
+
+func _update_mini_log() -> void:
+	if _mini_log_label == null:
+		return
+	var start_i: int = maxi(0, _game_log.size() - _MINI_LOG_LINES)
+	_mini_log_label.text = "\n".join(_game_log.slice(start_i))
+
+
+func _toggle_log() -> void:
+	if _log_root == null:
+		return
+	if _log_root.visible:
+		_close_log()
+	else:
+		_refresh_log_panel()
+		_log_root.visible = true
+		# 최신 로그가 보이도록 맨 아래로 스크롤
+		await get_tree().process_frame
+		if _log_scroll:
+			_log_scroll.scroll_vertical = int(_log_scroll.get_v_scroll_bar().max_value)
+
+
+func _close_log() -> void:
+	if _log_root:
+		_log_root.visible = false
+
+
+func _refresh_log_panel() -> void:
+	if _log_list_vbox == null:
+		return
+	for c in _log_list_vbox.get_children():
+		c.queue_free()
+	for line in _game_log:
+		var lbl := Label.new()
+		lbl.text = line
+		lbl.add_theme_font_size_override("font_size", 15)
+		lbl.add_theme_color_override("font_color", DarkFantasyTheme.TEXT)
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_log_list_vbox.add_child(lbl)
+
+
 # === 마켓 ===
 
 func _on_market_card_purchased(card_data: CardData) -> void:
@@ -1159,6 +1334,7 @@ func _on_market_card_purchased(card_data: CardData) -> void:
 	card.set_active(false)
 	queue_cards.append(card)
 	AudioManager.play_sfx("ui.market_buy")
+	_log("🛒 구매: %s" % card_data.card_name)
 	_rebuild_pipe_ui()
 
 
@@ -1175,6 +1351,7 @@ func _on_rage_button_pressed() -> void:
 	_spawn_slash_fx(boss_face_texture)
 	AudioManager.play_sfx("rage.consume", 2.0, 0.05)
 	rage_system.consume()
+	_log("🔥 투기 발산! 보스 %d 피해 + 방어 %d" % [GameBalance.RAGE_BURST_DAMAGE, GameBalance.RAGE_BURST_BLOCK])
 
 
 # === 보스 페이즈 ===
@@ -1188,6 +1365,7 @@ func _on_phase_changed(new_phase: int, _old_phase: int) -> void:
 	match new_phase:
 		2: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_2, 1.5)
 		3: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_3, 1.5)
+	_log("💢 페이즈 %d 진입!" % new_phase)
 	_play_phase_transition_fx(new_phase)
 	# 페이즈 전환 보상 — 카드 1장 영구 제거 기회 (큐잉, 안전 시점에 처리)
 	var reward_lines: Array[String] = [
