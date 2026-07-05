@@ -138,6 +138,8 @@ var combat_fx: CombatFeedback           # 플래시·셰이크·Hit-stop
 var card_hover: CardHoverPreview        # 호버 효과 라벨 + 파이프 카드 프리뷰
 var exile_animator: ExileAnimator       # 카드 영구 소멸 연출
 var boss_presenter: BossActionPresenter # 보스 턴 행동 카드 연출
+var tutorial: TutorialOverlay           # 첫 플레이 스포트라이트 튜토리얼
+var _tutorial_shown: bool = false       # 이번 세션에서 이미 표시했는지
 
 # === 페이즈 보상 큐 (시그널 콜백 도중 await race 회피) ===
 # 각 항목은 _grant_card_removal_reward에 넘길 reason_lines: Array[String]
@@ -241,6 +243,9 @@ func _setup_helpers() -> void:
 	boss_presenter = BossActionPresenter.new()
 	add_child(boss_presenter)
 	boss_presenter.setup(combat_fx, boss_face_texture, player_face_texture)
+
+	tutorial = TutorialOverlay.new()
+	add_child(tutorial)
 
 	_setup_status_indicators()
 
@@ -543,6 +548,37 @@ func _draw_extra_cards(count: int) -> void:
 func _start_player_turn() -> void:
 	end_turn_button.disabled = false
 	_draw_hand()
+	_maybe_show_tutorial()
+
+
+# 첫 플레이(라운드 1) 최초 플레이어 턴에 스포트라이트 튜토리얼 표시
+func _maybe_show_tutorial() -> void:
+	if _tutorial_shown or current_round != 1:
+		return
+	if _has_seen_tutorial():
+		return
+	_tutorial_shown = true
+	_mark_tutorial_seen()
+	var steps: Array = [
+		{"target": boss_face, "text": "💀 [b]버그베어[/b](보스)입니다. HP를 [b]0으로[/b] 만들면 승리! 내 HP가 0이 되면 패배예요."},
+		{"target": boss_next_card_container, "text": "보스의 [b]다음 행동[/b]이 미리 공개됩니다. 뭐가 올지 보고 대비하세요."},
+		{"target": hand_belt, "text": "🃏 [b]손패[/b]입니다. 카드를 [b]드래그[/b]해서 사용해요. (AP를 소모)"},
+		{"target": timeline_pipe_panel, "text": "📜 [b]타임라인 파이프[/b] — 덱을 [b]섞지 않아요.[/b] 다음에 올 카드 순서가 다 보입니다. 카드를 여기로 끌면 그냥 버려요."},
+		{"target": resource_bar, "text": "⚡ [b]AP 3[/b]으로 카드를 씁니다. 쓰고 남은 AP는 🔥[b]투기[/b]가 되고, 7이 되면 [b]투기 발산[/b]!"},
+		{"target": market_button, "text": "🛒 [b]상점[/b]에서 골드로 카드를 삽니다. 골드는 [b]턴이 끝나면 사라지니[/b] 그 턴에 쓰세요!"},
+	]
+	tutorial.show_tutorial(steps)
+
+
+func _has_seen_tutorial() -> bool:
+	return FileAccess.file_exists("user://tutorial_seen")
+
+
+func _mark_tutorial_seen() -> void:
+	var f := FileAccess.open("user://tutorial_seen", FileAccess.WRITE)
+	if f:
+		f.store_string("1")
+		f.close()
 
 
 # === 파이프로 보내기 ===
