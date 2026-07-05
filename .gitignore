@@ -22,3 +22,14 @@ Thumbs.db
 
 # 빌드 산출물 (export)
 /build/
+# 루트에 직접 export된 경우 (export_path=./)
+/*.exe
+/index.html
+/index.js
+/index.wasm
+/index.pck
+/index.png
+/index.icon.png
+/index.apple-touch-icon.png
+/index.audio.worklet.js
+/index.audio.position.worklet.js
