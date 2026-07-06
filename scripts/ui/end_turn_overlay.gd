@@ -20,6 +20,8 @@ var _order_sequence: Array[int] = []
 var _current_order: int = 0
 # 선택 필요 수 (-1이면 전체 선택 필수)
 var _required_count: int = -1
+# 안내 문구 동사 (버리기 / 소멸 / 제거 등) — "%s 순서를 선택하세요 (n/n)"
+var _prompt_verb: String = "버릴"
 
 
 func _ready() -> void:
@@ -31,15 +33,16 @@ func _ready() -> void:
 
 ## 전체 선택 모드 (턴 종료용)
 func show_overlay(hand_cards: Array[Control]) -> void:
-	_open(hand_cards, -1)
+	_open(hand_cards, -1, "파이프에 넣을")
 
 
-## N장만 선택 모드 (밑장 빼기 등)
-func show_overlay_select(hand_cards: Array[Control], count: int) -> void:
-	_open(hand_cards, count)
+## N장만 선택 모드 (밑장 빼기 등). prompt_verb로 안내 문구 동사 지정.
+func show_overlay_select(hand_cards: Array[Control], count: int, prompt_verb: String = "버릴") -> void:
+	_open(hand_cards, count, prompt_verb)
 
 
-func _open(hand_cards: Array[Control], required: int) -> void:
+func _open(hand_cards: Array[Control], required: int, prompt_verb: String = "버릴") -> void:
+	_prompt_verb = prompt_verb
 	_original_cards.clear()
 	_order_sequence.clear()
 	_current_order = 0
@@ -137,7 +140,7 @@ func _update_ui() -> void:
 
 	var total: int = _original_cards.size() if _required_count < 0 else _required_count
 	var selected := _order_sequence.size()
-	info_label.text = "버릴 순서를 선택하세요 (%d/%d)" % [selected, total]
+	info_label.text = "%s 순서를 선택하세요 (%d/%d)" % [_prompt_verb, selected, total]
 	confirm_button.disabled = (selected != total)
 
 

@@ -628,7 +628,7 @@ func _reorder_pipe_to_front() -> void:
 		return
 	# 파이프 카드들로 선택 UI 표시 (end_turn_overlay 재사용, 1장 선택)
 	is_discarding_from_effect = true
-	end_turn_overlay.show_overlay_select(queue_cards.duplicate(), 1)
+	end_turn_overlay.show_overlay_select(queue_cards.duplicate(), 1, "맨 앞으로 당길")
 	var chosen: Array[Control] = await end_turn_overlay.order_confirmed
 	is_discarding_from_effect = false
 	if chosen.is_empty():
@@ -758,7 +758,7 @@ func _exile_cards_from_hand(count: int) -> void:
 		return
 	is_discarding_from_effect = true
 	var actual := mini(count, hand_cards.size())
-	end_turn_overlay.show_overlay_select(hand_cards.duplicate(), actual)
+	end_turn_overlay.show_overlay_select(hand_cards.duplicate(), actual, "소멸시킬")
 	var selected: Array[Control] = await end_turn_overlay.order_confirmed
 	for card in selected:
 		hand_cards.erase(card)
@@ -996,7 +996,7 @@ func _update_phase_deck_chips() -> void:
 
 
 # 다음 예고 패널 갱신 — 텍스트 라벨로 컴팩트 표시 + 호버 시 풀사이즈 카드 프리뷰
-const _NEXT_CARD_SIZE := Vector2(200, 280)
+const _NEXT_CARD_SIZE := Vector2(175, 245)
 
 func _refresh_boss_next_card_preview() -> void:
 	_clear_boss_card_container(boss_next_card_container)
@@ -1917,7 +1917,7 @@ func _grant_card_removal_reward(reason_lines: Array[String]) -> void:
 		phase_banner.show_sequence(reason_lines)
 		await phase_banner.banner_finished
 	is_discarding_from_effect = true
-	end_turn_overlay.show_overlay_select(all_cards, 1)
+	end_turn_overlay.show_overlay_select(all_cards, 1, "영구 제거할")
 	# confirm 또는 cancel 둘 중 무엇이든 풀림
 	var resolved: Array = [false]
 	var picked: Array[Control] = []
