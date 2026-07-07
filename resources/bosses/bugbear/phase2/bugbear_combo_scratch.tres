@@ -19,8 +19,8 @@ value = 4
 
 [resource]
 script = ExtResource("1_script")
-artwork = ExtResource("9_art")
 card_name = "연속 할퀴기"
 intent_icon = "🗡"
 description = "4 피해 × 3회 (다단 공격)"
+artwork = ExtResource("9_art")
 effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg1"), SubResource("Effect_dmg2"), SubResource("Effect_dmg3")])

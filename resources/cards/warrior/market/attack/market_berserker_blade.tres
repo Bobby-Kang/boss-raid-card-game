@@ -7,7 +7,7 @@
 
 [sub_resource type="Resource" id="Effect_rage_dmg"]
 script = ExtResource("3_rage_dmg")
-base_damage = 6
+base_damage = 8
 multiplier = 1
 divisor = 1
 
@@ -18,6 +18,6 @@ card_name = "광폭의 검"
 cost = 2
 gold_cost = 9
 tier = 3
-description = "보스에게 (6 + 투기) 피해"
+description = "보스에게 (8 + 투기) 피해"
 card_type = 0
 effects = Array[ExtResource("2_base")]([SubResource("Effect_rage_dmg")])

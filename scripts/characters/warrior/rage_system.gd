@@ -2,7 +2,8 @@ class_name WarriorRageSystem
 extends RefCounted
 
 ## 전사 전용 — 투기 발산 시스템.
-## 플레이어 턴 종료 시 남은 AP를 투기 스택으로 치환하고,
+## 공급원 2종: ① ATTACK 카드 사용 시 +1 (주 공급 — 휘두를수록 달아오른다)
+##            ② 플레이어 턴 종료 시 남은 AP 치환 (부수 공급)
 ## 최대 스택 도달 시 발동하여 보스에게 피해 + 플레이어 방어도를 부여한다.
 ##
 ## 수치 조정: scripts/data/game_balance.gd 참고

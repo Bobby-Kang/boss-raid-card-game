@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_attack_buff_effect.gd" id="3_atk"]
+[ext_resource type="Script" uid="uid://c4axaj2ol5kxy" path="res://scripts/bosses/effects/boss_attack_buff_effect.gd" id="3_atk"]
 [ext_resource type="Texture2D" uid="uid://brotsxkiockt3" path="res://assets/art/gemini_image/bugbear_rage_roar.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_atk"]
@@ -11,8 +11,8 @@ value = 2
 
 [resource]
 script = ExtResource("1_script")
-artwork = ExtResource("9_art")
 card_name = "분노의 포효"
 intent_icon = "📢"
 description = "보스 공격력 +2 영구"
+artwork = ExtResource("9_art")
 effects = Array[ExtResource("2_base")]([SubResource("Effect_atk")])

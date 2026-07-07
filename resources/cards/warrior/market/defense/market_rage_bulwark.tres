@@ -7,8 +7,8 @@
 
 [sub_resource type="Resource" id="Effect_rage_blk"]
 script = ExtResource("3_rage_blk")
-base_block = 4
-divisor = 2
+base_block = 3
+divisor = 1
 
 [resource]
 script = ExtResource("1_script")
@@ -17,6 +17,6 @@ card_name = "격앙된 방벽"
 cost = 1
 gold_cost = 6
 tier = 2
-description = "방어도 (4 + 투기/2) 획득"
+description = "방어도 (3 + 투기) 획득"
 card_type = 1
 effects = Array[ExtResource("2_base")]([SubResource("Effect_rage_blk")])

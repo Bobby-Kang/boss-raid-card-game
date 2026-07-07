@@ -7,7 +7,7 @@
 
 [sub_resource type="Resource" id="Effect_damage"]
 script = ExtResource("3_damage")
-value = 5
+value = 7
 
 [resource]
 script = ExtResource("1_script")
@@ -16,5 +16,5 @@ card_name = "강타"
 cost = 2
 gold_cost = 4
 tier = 1
-description = "보스에게 5 피해"
+description = "보스에게 7 피해"
 effects = Array[ExtResource("2_base")]([SubResource("Effect_damage")])

@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://b2dquw6gv76i6" path="res://scripts/bosses/effects/boss_block_effect.gd" id="3_block"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_heal_effect.gd" id="4_heal"]
+[ext_resource type="Script" uid="uid://dqjqsdvoa2qvf" path="res://scripts/bosses/effects/boss_heal_effect.gd" id="4_heal"]
 [ext_resource type="Texture2D" uid="uid://c0mko50jyyiku" path="res://assets/art/gemini_image/bugbear_iron_wall.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_block"]
@@ -16,10 +16,10 @@ value = 6
 
 [resource]
 script = ExtResource("1_script")
-artwork = ExtResource("9_art")
 card_name = "강철 벽"
 card_type = 1
 countdown = 2
 intent_icon = "🛡"
 description = "2턴 후: 보스 방어 +15 + HP +6 회복"
+artwork = ExtResource("9_art")
 effects = Array[ExtResource("2_base")]([SubResource("Effect_block"), SubResource("Effect_heal")])

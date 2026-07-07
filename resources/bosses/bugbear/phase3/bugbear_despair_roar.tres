@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://d01fbaumt0jor" path="res://scripts/bosses/effects/boss_damage_effect.gd" id="3_dmg"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_draw_lock_effect.gd" id="4_lock"]
+[ext_resource type="Script" uid="uid://bjctho3k4vau7" path="res://scripts/bosses/effects/boss_draw_lock_effect.gd" id="4_lock"]
 [ext_resource type="Texture2D" uid="uid://1w0pud8lqumm" path="res://assets/art/gemini_image/bugbear_despair_roar.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_dmg"]
@@ -16,8 +16,8 @@ value = 2
 
 [resource]
 script = ExtResource("1_script")
-artwork = ExtResource("9_art")
 card_name = "절망의 포효"
 intent_icon = "💀"
 description = "8 피해 + 드로우 봉인 2"
+artwork = ExtResource("9_art")
 effects = Array[ExtResource("2_base")]([SubResource("Effect_dmg"), SubResource("Effect_lock")])

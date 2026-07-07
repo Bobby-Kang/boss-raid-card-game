@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cy3ng8axtijye" path="res://scripts/bosses/boss_card_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
 [ext_resource type="Script" uid="uid://b2dquw6gv76i6" path="res://scripts/bosses/effects/boss_block_effect.gd" id="3_block"]
-[ext_resource type="Script" path="res://scripts/bosses/effects/boss_reflect_damage_effect.gd" id="4_reflect"]
+[ext_resource type="Script" uid="uid://dkvkoe1cvfc2j" path="res://scripts/bosses/effects/boss_reflect_damage_effect.gd" id="4_reflect"]
 [ext_resource type="Texture2D" uid="uid://bl6bgq6hik6lr" path="res://assets/art/gemini_image/bugbear_crouch.png" id="9_art"]
 
 [sub_resource type="Resource" id="Effect_block"]
@@ -15,8 +15,8 @@ script = ExtResource("4_reflect")
 
 [resource]
 script = ExtResource("1_script")
-artwork = ExtResource("9_art")
 card_name = "웅크리기"
 intent_icon = "🛡"
 description = "보스 방어 +5 + 방어도만큼 반사 피해"
+artwork = ExtResource("9_art")
 effects = Array[ExtResource("2_base")]([SubResource("Effect_block"), SubResource("Effect_reflect")])

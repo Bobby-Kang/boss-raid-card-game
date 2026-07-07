@@ -559,15 +559,24 @@ func _maybe_show_tutorial() -> void:
 		return
 	_tutorial_shown = true
 	_mark_tutorial_seen()
-	var steps: Array = [
+	tutorial.show_tutorial(_build_tutorial_steps())
+
+
+# 상단 튜토리얼 버튼 → 언제든 다시 보기
+func _replay_tutorial() -> void:
+	if tutorial:
+		tutorial.show_tutorial(_build_tutorial_steps())
+
+
+func _build_tutorial_steps() -> Array:
+	return [
 		{"target": boss_face, "text": "💀 [b]버그베어[/b](보스)입니다. HP를 [b]0으로[/b] 만들면 승리! 내 HP가 0이 되면 패배예요."},
 		{"target": boss_next_card_container, "text": "보스의 [b]다음 행동[/b]이 미리 공개됩니다. 뭐가 올지 보고 대비하세요."},
 		{"target": hand_belt, "text": "🃏 [b]손패[/b]입니다. 카드를 [b]드래그[/b]해서 사용해요. (AP를 소모)"},
 		{"target": timeline_pipe_panel, "text": "📜 [b]타임라인 파이프[/b] — 덱을 [b]섞지 않아요.[/b] 다음에 올 카드 순서가 다 보입니다. 카드를 여기로 끌면 그냥 버려요."},
-		{"target": resource_bar, "text": "⚡ [b]AP 3[/b]으로 카드를 씁니다. 쓰고 남은 AP는 🔥[b]투기[/b]가 되고, 7이 되면 [b]투기 발산[/b]!"},
+		{"target": resource_bar, "text": "⚡ [b]AP 3[/b]으로 카드를 씁니다. [b]공격할 때마다[/b] 🔥[b]투기 +1[/b] (남은 AP도 투기로), 7이 되면 [b]투기 발산[/b]!"},
 		{"target": market_button, "text": "🛒 [b]상점[/b]에서 골드로 카드를 삽니다. 골드는 [b]턴이 끝나면 사라지니[/b] 그 턴에 쓰세요!"},
 	]
-	tutorial.show_tutorial(steps)
 
 
 func _has_seen_tutorial() -> bool:
@@ -779,8 +788,11 @@ func _play_card(card: Control) -> void:
 	resource_bar.ap_manager.spend(cost)
 	AudioManager.play_sfx("card.play", 0.0, 0.08)
 	# 콤보 트래커 — ATTACK 카드 사용 시 카운트 (연환격 등에서 참조)
+	# + 투기 리워크: 공격할 때마다 투기 +1 (휘두를수록 달아오른다)
 	if card.data.card_type == CardData.CardType.ATTACK:
 		game_ctx.attacks_this_turn += 1
+		if rage_system:
+			rage_system.add(1)
 	# 카드 사용 임팩트 이펙트 (효과 종류 기반 — 슬래시/방어 쉬머)
 	_play_card_impact(card)
 	# 효과 실행 — 파이프로 보내기 *전*에 실행해야 인접(파이프 맨 앞) 판정이 정확
@@ -1210,15 +1222,27 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 # === 게임 로그 시스템 ===
 
 func _setup_game_log() -> void:
-	# 로그 버튼 — 상단바 상점 버튼 왼쪽
-	_log_button = Button.new()
-	_log_button.text = "📜 기록"
-	_log_button.custom_minimum_size = Vector2(110, 0)
-	_log_button.pressed.connect(_toggle_log)
+	# 상단바 상점 버튼 왼쪽에 [❓ 튜토리얼] [📜 기록] 순으로 배치
 	if market_button and market_button.get_parent():
 		var bar: Node = market_button.get_parent()
+
+		var tut_btn := Button.new()
+		tut_btn.text = "❓ 튜토리얼"
+		tut_btn.custom_minimum_size = Vector2(120, 0)
+		tut_btn.pressed.connect(_replay_tutorial)
+		bar.add_child(tut_btn)
+		bar.move_child(tut_btn, market_button.get_index())
+
+		_log_button = Button.new()
+		_log_button.text = "📜 기록"
+		_log_button.custom_minimum_size = Vector2(110, 0)
+		_log_button.pressed.connect(_toggle_log)
 		bar.add_child(_log_button)
 		bar.move_child(_log_button, market_button.get_index())
+	else:
+		_log_button = Button.new()
+		_log_button.text = "📜 기록"
+		_log_button.pressed.connect(_toggle_log)
 	_build_log_window()
 	_build_mini_log()
 
