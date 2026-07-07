@@ -440,7 +440,8 @@ func _can_accept_card(card: Control, zone_type: DropZone.ZoneType) -> bool:
 			# 모듈은 파이프로 버릴 수 없음 (장착 전용)
 			return not is_module
 		DropZone.ZoneType.ACTIVE:
-			return is_module
+			# 모듈 장착도 카드 사용 — AP가 충분해야 드롭 수용
+			return is_module and resource_bar.ap_manager.has(card.data.cost)
 	return false
 
 
@@ -462,6 +463,12 @@ func _on_active_slot_2_dropped(card: Control) -> void:
 
 
 func _equip_module(card: Control, slot_index: int) -> void:
+	# 모듈 장착도 카드 사용 — AP 소모 (드롭 수용 조건에서 1차 체크, 여기서 최종 차감)
+	var cost: int = card.data.cost if card.data else 0
+	if not resource_bar.ap_manager.has(cost):
+		return
+	resource_bar.ap_manager.spend(cost)
+	AudioManager.play_sfx("card.play", 0.0, 0.08)
 	var slot: PanelContainer = active_slot_1 if slot_index == 0 else active_slot_2
 	if active_cards[slot_index] != null:
 		var old := active_cards[slot_index]
@@ -574,7 +581,7 @@ func _build_tutorial_steps() -> Array:
 		{"target": boss_next_card_container, "text": "보스의 [b]다음 행동[/b]이 미리 공개됩니다. 뭐가 올지 보고 대비하세요."},
 		{"target": hand_belt, "text": "🃏 [b]손패[/b]입니다. 카드를 [b]드래그[/b]해서 사용해요. (AP를 소모)"},
 		{"target": timeline_pipe_panel, "text": "📜 [b]타임라인 파이프[/b] — 덱을 [b]섞지 않아요.[/b] 다음에 올 카드 순서가 다 보입니다. 카드를 여기로 끌면 그냥 버려요."},
-		{"target": resource_bar, "text": "⚡ [b]AP 3[/b]으로 카드를 씁니다. [b]공격할 때마다[/b] 🔥[b]투기 +1[/b] (남은 AP도 투기로), 7이 되면 [b]투기 발산[/b]!"},
+		{"target": resource_bar, "text": "⚡ [b]AP 3[/b]으로 카드를 씁니다. [b]공격할 때마다[/b] 🔥[b]투기 +1[/b] (남은 AP도 투기로), 10이 되면 [b]투기 발산[/b]!"},
 		{"target": market_button, "text": "🛒 [b]상점[/b]에서 골드로 카드를 삽니다. 골드는 [b]턴이 끝나면 사라지니[/b] 그 턴에 쓰세요!"},
 	]
 

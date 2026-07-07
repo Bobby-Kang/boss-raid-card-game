@@ -17,7 +17,7 @@ const _HELP_BBCODE := "[center][font_size=34][color=eac77a]📖 게임 방법[/c
 [font_size=21][color=eac77a]⚡ AP & 🔥 투기[/color][/font_size]
 매 턴 AP 3을 받아 카드 사용에 씁니다.
 [b]공격 카드를 쓸 때마다 투기 +1[/b] — 휘두를수록 달아오릅니다. (남은 AP도 투기로)
-투기 7이 되면 [b]투기 발산[/b](보스 10 피해 + 방어 10)!
+투기 10이 되면 [b]투기 발산[/b](보스 10 피해 + 방어 10)!
 
 [font_size=21][color=eac77a]💰 골드[/color][/font_size]
 재화 카드로 골드를 벌 수 있어요. [b]턴이 끝나면 사라지니[/b] 그 턴에 [color=eac77a]🛒 상점[/color]에서 카드를 사세요.

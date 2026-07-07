@@ -71,7 +71,7 @@
 - 보스 턴/턴 종료 시 `set_player_turn(false)` 호출로 모든 버튼 비활성
 
 ### 전사 고유 시스템
-- **투기 스택** (`WarriorRageSystem`): 주 공급 = **ATTACK 카드 사용 시 +1** (*휘두를수록 달아오른다*), 부수 = 턴 종료 시 남은 AP 치환 (최대 7). 7스택 시 0 AP로 보스 10 피해 + 방어도 +10
+- **투기 스택** (`WarriorRageSystem`): 주 공급 = **ATTACK 카드 사용 시 +1** (*휘두를수록 달아오른다*), 부수 = 턴 종료 시 남은 AP 치환 (최대 10). 10스택 시 0 AP로 보스 10 피해 + 방어도 +10
 - **반격 태세 모듈** (`CounterStanceAbility`): 보스 턴 종료 시 방어도 1+ 남으면 보스 2 피해
 - UI: `BuffBar` 패널 내부에 `%RageLabel` + `%RageOrbs` + `%RageButton`
 
