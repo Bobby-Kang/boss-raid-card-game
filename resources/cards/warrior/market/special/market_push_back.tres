@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b9pushbk00004"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/push_boss_card_effect.gd" id="3_push"]
+[ext_resource type="Texture2D" uid="uid://b3l2bb8lcpbi4" path="res://assets/art/gemini_image/market_shield_bash.png" id="9_art"]
+
+[sub_resource type="Resource" id="Effect_push"]
+script = ExtResource("3_push")
+
+[resource]
+script = ExtResource("1_script")
+artwork = ExtResource("9_art")
+card_name = "밀어내기"
+cost = 1
+gold_cost = 4
+tier = 1
+description = "보스의 다음 카드를 덱 맨 뒤로 밀어낸다 (위험한 예고 회피)"
+card_type = 1
+effects = Array[ExtResource("2_base")]([SubResource("Effect_push")])

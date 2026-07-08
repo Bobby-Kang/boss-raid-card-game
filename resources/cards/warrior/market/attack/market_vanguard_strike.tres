@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b9vgstrk00001"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/vanguard_damage_effect.gd" id="3_vg"]
+[ext_resource type="Texture2D" uid="uid://eogxwdmnrm3j" path="res://assets/art/gemini_image/market_charge.png" id="9_art"]
+
+[sub_resource type="Resource" id="Effect_vg"]
+script = ExtResource("3_vg")
+value = 4
+bonus_damage = 6
+
+[resource]
+script = ExtResource("1_script")
+artwork = ExtResource("9_art")
+card_name = "선봉 돌파"
+cost = 1
+gold_cost = 5
+tier = 2
+description = "보스에게 4 피해 — 🚩손패 첫 장으로 드로우되면 +6 (턴 종료 때 선두에 세워라)"
+effects = Array[ExtResource("2_base")]([SubResource("Effect_vg")])

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://b9pwbrkr00006"]
+
+[ext_resource type="Script" uid="uid://csn4ue6t4ruvd" path="res://scripts/cards/card_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://gfj2vjrpeqnl" path="res://scripts/cards/effects/card_effect.gd" id="2_base"]
+[ext_resource type="Script" path="res://scripts/cards/effects/break_power_effect.gd" id="3_break"]
+[ext_resource type="Texture2D" uid="uid://er7a18snjvff" path="res://assets/art/gemini_image/market_execute.png" id="9_art"]
+
+[sub_resource type="Resource" id="Effect_break"]
+script = ExtResource("3_break")
+
+[resource]
+script = ExtResource("1_script")
+artwork = ExtResource("9_art")
+card_name = "파워 브레이커"
+cost = 2
+gold_cost = 9
+tier = 3
+description = "카운트 2 이상인 활성 POWER 1장을 발동 없이 파괴 (임박하면 못 부순다)"
+card_type = 1
+effects = Array[ExtResource("2_base")]([SubResource("Effect_break")])

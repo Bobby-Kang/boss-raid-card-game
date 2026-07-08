@@ -192,6 +192,49 @@ func get_active_powers() -> Array:
 	return active_powers.duplicate()
 
 
+# === 플레이어 간섭 동사 (타임라인 전쟁) ===
+
+## 밀어내기 — 덱 맨 앞(다음 예고) 카드를 맨 뒤로. 밀린 카드 반환 (없으면 null).
+func push_front_to_back() -> BossCardData:
+	if deck.size() < 2:
+		return null   # 0~1장이면 밀어도 의미 없음
+	var card: BossCardData = deck.pop_front()
+	deck.push_back(card)
+	deck_changed.emit(deck.size())
+	return card
+
+
+## 시간의 족쇄 — 모든 활성 POWER 카운트 +n (발동 지연)
+func delay_all_powers(n: int = 1) -> int:
+	var affected: int = 0
+	for entry in active_powers:
+		entry.tokens += n
+		affected += 1
+	if affected > 0:
+		power_zone_updated.emit(active_powers.duplicate())
+	return affected
+
+
+## 파워 브레이커 — 카운트 min_tokens 이상인 활성 POWER 1장을 발동 없이 파괴.
+## 임박한(카운트 1) 파워는 못 부숨 — 예고를 보고 미리 대응해야 한다.
+## 파괴된 카드 반환 (대상 없으면 null).
+func break_ready_power(min_tokens: int = 2) -> BossCardData:
+	var best_i: int = -1
+	for i in active_powers.size():
+		var entry = active_powers[i]
+		if entry.tokens >= min_tokens:
+			if best_i < 0 or entry.tokens > active_powers[best_i].tokens:
+				best_i = i
+	if best_i < 0:
+		return null
+	var card: BossCardData = active_powers[best_i].card
+	active_powers.remove_at(best_i)
+	discard.append(card)
+	card_discarded.emit(card)
+	power_zone_updated.emit(active_powers.duplicate())
+	return card
+
+
 # === 페이즈 메타 (UI 시각화용) ===
 
 # 주어진 카드의 출처 페이즈(1/2/3). 모르면 1 반환.

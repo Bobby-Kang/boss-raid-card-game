@@ -14,7 +14,8 @@ signal hover_changed(card: Control, entered: bool)
 var is_face_up: bool = false
 var is_active: bool = true
 var data: CardData
-var temper: int = 0   # 단련 횟수 — 파이프를 한 바퀴 돌 때마다 +1 (TemperedDamageEffect 등이 참조)
+var temper: int = 0      # 단련 횟수 — 파이프를 한 바퀴 돌 때마다 +1 (TemperedDamageEffect 등이 참조)
+var vanguard: bool = false   # 선봉 🚩 — 이번 손패의 첫 장(파이프 맨 앞)으로 드로우됐는지 (Vanguard 효과가 참조)
 
 
 func _ready() -> void:

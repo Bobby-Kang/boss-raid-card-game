@@ -28,6 +28,19 @@ func get_acting_card_temper() -> int:
 		return int(acting_card.temper)
 	return 0
 
+
+# acting_card가 선봉(이번 손패의 첫 장으로 드로우)인지 (Vanguard 효과용)
+func is_acting_card_vanguard() -> bool:
+	return acting_card != null and "vanguard" in acting_card and acting_card.vanguard
+
+
+# 보스 덱 맨 앞(다음 예고) 카드가 ATTACK인지 (예지의 일격 등 보스 타임라인 읽기용)
+func boss_next_card_is_attack() -> bool:
+	if boss_deck_system == null:
+		return false
+	var nxt: BossCardData = boss_deck_system.peek_next()
+	return nxt != null and nxt.card_type == BossCardData.BossCardType.ATTACK
+
 # 파이프 맨 앞 카드가 특정 타입인지 (인접 판정용). count장 중 하나라도 해당 타입이면 true.
 func pipe_front_has_type(card_type: int, count: int = 1) -> bool:
 	if not peek_pipe_front.is_valid():

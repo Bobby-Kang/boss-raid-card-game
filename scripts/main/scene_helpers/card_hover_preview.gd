@@ -108,6 +108,24 @@ func _show_effect_preview(card: Control) -> void:
 					int(info.get("require_type", 1)), int(info.get("peek_count", 1)))
 				amount = int(info.get("base", 0)) + (int(info.get("bonus", 0)) if hit_b else 0)
 				kind = "block"
+			"tempered_block":
+				var temper_b: int = int(card.temper) if "temper" in card else 0
+				amount = int(info.get("base", 0)) + temper_b * int(info.get("per_temper", 0))
+				kind = "block"
+			"vanguard_damage":
+				# 선봉 — 이 카드가 이번 손패의 첫 장으로 드로우됐으면 보너스
+				var vg: bool = "vanguard" in card and card.vanguard
+				amount = int(info.get("base", 0)) + (int(info.get("bonus", 0)) if vg else 0)
+				kind = "damage"
+			"vanguard_block":
+				var vg_b: bool = "vanguard" in card and card.vanguard
+				amount = int(info.get("base", 0)) + (int(info.get("bonus", 0)) if vg_b else 0)
+				kind = "block"
+			"foresight_damage":
+				# 예지 — 보스 다음 예고가 공격이면 보너스
+				var fs: bool = _game_ctx != null and _game_ctx.boss_next_card_is_attack()
+				amount = int(info.get("base", 0)) + (int(info.get("bonus", 0)) if fs else 0)
+				kind = "damage"
 			"rage_consume":
 				kind = "rage_consume"  # 별도 표시
 			"negate_boss":

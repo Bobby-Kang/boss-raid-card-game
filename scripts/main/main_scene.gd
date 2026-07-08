@@ -528,6 +528,9 @@ func _draw_hand() -> void:
 		var card: Control = queue_cards.pop_front()
 		card.reparent(hand_belt)
 		card.set_active(true)
+		# 선봉 🚩 — 손패의 첫 장(파이프 맨 앞이었던 카드)만 true
+		if "vanguard" in card:
+			card.vanguard = (i == 0)
 		hand_cards.append(card)
 	if count > 0:
 		AudioManager.play_sfx("card.draw", 0.0, 0.05)
@@ -541,12 +544,14 @@ func _draw_hand() -> void:
 
 
 func _draw_extra_cards(count: int) -> void:
-	# 효과에 의한 추가 드로우
+	# 효과에 의한 추가 드로우 — 손패 첫 장이 아니므로 선봉 아님
 	var actual := mini(count, queue_cards.size())
 	for i in actual:
 		var card: Control = queue_cards.pop_front()
 		card.reparent(hand_belt)
 		card.set_active(true)
+		if "vanguard" in card:
+			card.vanguard = false
 		hand_cards.append(card)
 	_update_hand_display()
 	_rebuild_pipe_ui()
@@ -605,6 +610,9 @@ func _send_to_pipe_back(card: Control) -> void:
 	# 단련 — 파이프 맨 뒤로 돌아갈 때마다 +1 (한 바퀴 카운트)
 	if "temper" in card:
 		card.temper += 1
+	# 선봉 플래그는 손패를 떠나면 리셋
+	if "vanguard" in card:
+		card.vanguard = false
 	card.reparent(queue_card_holder)
 	queue_cards.append(card)
 	_update_hand_display()
@@ -678,11 +686,26 @@ func _rebuild_pipe_ui() -> void:
 	for child in pipe_queue.get_children():
 		child.queue_free()
 
-	# 큐 카드마다 행 생성
+	# 큐 카드마다 행 생성 — 5장 단위(미래 손패)마다 구분선으로 "타임라인" 가독성 확보
 	for i in queue_cards.size():
+		if i % DRAW_COUNT == 0:
+			pipe_queue.add_child(_make_hand_divider(floori(i / float(DRAW_COUNT))))
 		var card: Control = queue_cards[i]
 		var row := _create_pipe_row(i + 1, card)
 		pipe_queue.add_child(row)
+
+
+# 파이프의 미래 손패 경계 라벨 — group 0 = 다음 손패, 1 = 2턴 뒤, ...
+func _make_hand_divider(group: int) -> Control:
+	var lbl := Label.new()
+	lbl.text = "▼ 다음 손패" if group == 0 else "▼ %d턴 뒤 손패" % (group + 1)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color",
+		DarkFantasyTheme.GOLD_BRIGHT if group == 0 else DarkFantasyTheme.TEXT_DIM)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.tooltip_text = "드로우 봉인 등으로 실제 드로우 수가 달라지면 경계가 어긋날 수 있습니다"
+	return lbl
 
 
 func _create_pipe_row(index: int, card: Control) -> Control:
@@ -1663,8 +1686,10 @@ const _DAMAGE_KINDS := [
 	"damage", "rage_scale_damage", "execute_damage",
 	"chain_damage", "gold_scale_damage", "block_damage",
 	"tempered_damage", "adjacency_damage",
+	"vanguard_damage", "foresight_damage",
 ]
-const _BLOCK_KINDS := ["block", "rage_scale_block", "adjacency_block"]
+const _BLOCK_KINDS := ["block", "rage_scale_block", "adjacency_block",
+	"tempered_block", "vanguard_block"]
 
 
 # 카드 효과 종류에 따라 적절한 임팩트 연출 분기 (경쾌한 돌진 + 대상 반응)
