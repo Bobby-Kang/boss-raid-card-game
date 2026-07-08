@@ -255,6 +255,8 @@ func _setup_helpers() -> void:
 var _draw_lock_label: Label = null
 var _vuln_label: Label = null
 var _blood_vignette: TextureRect = null
+var _boss_buff_label: Label = null    # 보스 공격력 버프 상시 칩 (⚔ +N)
+var _blood_label: Label = null        # 피 냄새 상시 칩 (🐺 ×1.2)
 var _blood_pulse_tween: Tween = null
 
 
@@ -274,8 +276,31 @@ func _make_status_label(font_color: Color) -> Label:
 func _setup_status_indicators() -> void:
 	# 드로우 봉인 — 손패 영역 상단
 	_draw_lock_label = _make_status_label(Color(0.7, 0.85, 1.0, 1))
-	# 취약 — 플레이어 HP 라벨 옆
+	# 취약 — 플레이어 HP 라벨 옆 (상시·강조 크기)
 	_vuln_label = _make_status_label(Color(1.0, 0.45, 0.55, 1))
+	_vuln_label.add_theme_font_size_override("font_size", 22)
+	_vuln_label.tooltip_text = "받는 다음 N번 피해가 ×1.5 (피격마다 1스택 소비)"
+
+	# 보스 상시 상태 칩 — 페이즈 라벨이 있는 상단 행(TopStatsRow)에 추가
+	var stats_row: Node = phase_label.get_parent() if phase_label else null
+	if stats_row:
+		_boss_buff_label = Label.new()
+		_boss_buff_label.add_theme_font_size_override("font_size", 18)
+		_boss_buff_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2, 1))
+		_boss_buff_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		_boss_buff_label.add_theme_constant_override("outline_size", 3)
+		_boss_buff_label.tooltip_text = "보스 공격력 영구 증가 — 모든 공격에 +N"
+		_boss_buff_label.visible = false
+		stats_row.add_child(_boss_buff_label)
+
+		_blood_label = Label.new()
+		_blood_label.add_theme_font_size_override("font_size", 18)
+		_blood_label.add_theme_color_override("font_color", Color(0.95, 0.3, 0.25, 1))
+		_blood_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		_blood_label.add_theme_constant_override("outline_size", 3)
+		_blood_label.tooltip_text = "피 냄새 — 보스 HP 50% 이하일 때 모든 공격 ×1.2"
+		_blood_label.visible = false
+		stats_row.add_child(_blood_label)
 
 	# 피 냄새 — 화면 가장자리 핏빛 비네팅 (radial gradient)
 	var grad := GradientTexture2D.new()
@@ -1065,34 +1090,32 @@ func _refresh_boss_next_card_preview() -> void:
 func _on_boss_card_discarded(_card: BossCardData) -> void:
 	boss_discard_label.text = "🗑 %d" % boss_deck_system.get_discard_count()
 
+const _POWER_CARD_SIZE := Vector2(130, 182)
+
 func _on_boss_power_zone_updated(active_powers: Array) -> void:
 	_clear_boss_card_preview()
 	_clear_boss_card_container(boss_power_zone)
 	if active_powers.is_empty():
 		_show_boss_empty_label(boss_power_zone)
 	else:
+		# 활성 파워를 카드 형태로 표시 (카운트다운 뱃지 + 페이즈 뱃지 내장)
 		for entry in active_powers:
-			var lbl := Label.new()
-			lbl.text = "%s %s (%d턴)" % [entry.card.intent_icon, entry.card.card_name, entry.tokens]
-			lbl.add_theme_font_size_override("font_size", 13)
-			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
-			lbl.clip_text = false
-			lbl.tooltip_text = "%s\n%s" % [entry.card.card_name, entry.card.description]
-			# 카운트 1턴 남으면 임박 경고 — 빨간색 + 깜빡임 / 그 외 오렌지
+			var disp := BossCardDisplay.new()
+			var phase: int = boss_deck_system.get_phase_of(entry.card) if boss_deck_system else 0
+			disp.setup(entry.card, entry.tokens, _POWER_CARD_SIZE, phase)
+			boss_power_zone.add_child(disp)
+			# 카운트 1턴 남으면 임박 경고 — 붉은 틴트 깜빡임
 			if entry.tokens <= 1:
-				lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.25, 1))
-				var blink := lbl.create_tween().set_loops()
-				blink.tween_property(lbl, "modulate:a", 0.4, 0.45).set_trans(Tween.TRANS_SINE)
-				blink.tween_property(lbl, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
-			else:
-				lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.25, 1))
-			# 호버 시 풀사이즈 보스 카드 프리뷰 + 카운트다운 표시
-			lbl.mouse_filter = Control.MOUSE_FILTER_STOP
-			lbl.mouse_entered.connect(_on_boss_card_label_hover.bind(entry.card, lbl, entry.tokens, true))
-			lbl.mouse_exited.connect(_on_boss_card_label_hover.bind(entry.card, lbl, entry.tokens, false))
-			boss_power_zone.add_child(lbl)
+				var blink := disp.create_tween().set_loops()
+				blink.tween_property(disp, "modulate", Color(1.0, 0.55, 0.5, 0.75), 0.45)\
+					.set_trans(Tween.TRANS_SINE)
+				blink.tween_property(disp, "modulate", Color.WHITE, 0.45)\
+					.set_trans(Tween.TRANS_SINE)
+			# 호버 시 풀사이즈 프리뷰 (BossCardDisplay._ready가 IGNORE로 두므로 STOP으로 되돌림)
+			disp.mouse_filter = Control.MOUSE_FILTER_STOP
+			disp.tooltip_text = "%s\n%s" % [entry.card.card_name, entry.card.description]
+			disp.mouse_entered.connect(_on_boss_card_label_hover.bind(entry.card, disp, entry.tokens, true))
+			disp.mouse_exited.connect(_on_boss_card_label_hover.bind(entry.card, disp, entry.tokens, false))
 
 
 # 컨테이너 자식을 모두 제거
@@ -1666,8 +1689,12 @@ func _on_blood_scent_changed(active: bool) -> void:
 	_update_blood_vignette()
 
 
-# 분노의 포효 등으로 보스 공격력 영구 증가 시 — 보스 얼굴 붉은 글로우 펀치
+# 분노의 포효 등으로 보스 공격력 영구 증가 시 — 보스 얼굴 붉은 글로우 펀치 + 상시 칩
 func _on_boss_attack_buffed(new_bonus: int) -> void:
+	# 상시 상태 칩 갱신 (페이즈 라벨 옆)
+	if _boss_buff_label:
+		_boss_buff_label.text = "⚔+%d" % new_bonus
+		_boss_buff_label.visible = new_bonus > 0
 	if boss_face_texture:
 		boss_face_texture.pivot_offset = boss_face_texture.size / 2.0
 		var tween := create_tween()
@@ -1857,6 +1884,15 @@ func _update_blood_vignette() -> void:
 	if _blood_vignette == null or game_ctx == null:
 		return
 	var should_show: bool = game_ctx.blood_scent_active and game_ctx.boss_hp * 2 <= game_ctx.boss_max_hp
+	# 상시 상태 칩 — 발동 중엔 밝게 ×1.2, 활성이지만 HP 조건 미충족이면 흐리게 (대기)
+	if _blood_label:
+		_blood_label.visible = game_ctx.blood_scent_active
+		if should_show:
+			_blood_label.text = "🐺×1.2"
+			_blood_label.modulate = Color.WHITE
+		else:
+			_blood_label.text = "🐺대기"
+			_blood_label.modulate = Color(1, 1, 1, 0.45)
 	if should_show == _blood_vignette.visible:
 		return
 	if should_show:
