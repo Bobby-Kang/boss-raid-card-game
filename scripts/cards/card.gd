@@ -79,6 +79,42 @@ func set_active(active: bool) -> void:
 	_set_children_mouse_ignore(self)
 
 
+# --- 실시간 예상 수치 뱃지 (손패 전용) ---
+# 현재 상황(보스 방어·투기·단련·인접 등)에서 이 카드가 실제로 낼 피해/방어를 좌하단에 표시.
+var _live_label: Label = null
+
+func set_live_preview(damage: int, block: int) -> void:
+	if damage <= 0 and block <= 0:
+		if _live_label:
+			_live_label.visible = false
+		return
+	if _live_label == null:
+		_live_label = Label.new()
+		_live_label.add_theme_font_size_override("font_size", 17)
+		_live_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		_live_label.add_theme_constant_override("outline_size", 5)
+		_live_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_live_label.z_index = 5
+		add_child(_live_label)
+		_live_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		_live_label.offset_left = 6
+		_live_label.offset_top = -28
+		_live_label.offset_bottom = -6
+	var parts: PackedStringArray = []
+	if damage > 0:
+		parts.append("⚔%d" % damage)
+	if block > 0:
+		parts.append("🛡%d" % block)
+	_live_label.text = " ".join(parts)
+	if damage > 0 and block > 0:
+		_live_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8, 1))
+	elif damage > 0:
+		_live_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4, 1))
+	else:
+		_live_label.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0, 1))
+	_live_label.visible = true
+
+
 # --- 드래그 앤 드롭 ---
 
 func _get_drag_data(_at_position: Vector2) -> Variant:

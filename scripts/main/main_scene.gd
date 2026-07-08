@@ -345,6 +345,9 @@ func _setup_game_context() -> void:
 	game_ctx.vulnerability_changed.connect(_on_vulnerability_changed)
 	game_ctx.blood_scent_changed.connect(_on_blood_scent_changed)
 	game_ctx.boss_attack_buffed.connect(_on_boss_attack_buffed)
+	# 골드 변동 시 골드 스케일 카드(상인의 격언 등) 뱃지 갱신
+	resource_bar.gold_manager.gold_changed.connect(
+		func(_c: int, _m: int) -> void: _refresh_hand_live_previews())
 	_on_player_hp_changed(game_ctx.player_hp, game_ctx.player_max_hp)
 	_on_player_block_changed(game_ctx.player_block)
 	_on_boss_hp_changed(game_ctx.boss_hp, game_ctx.boss_max_hp)
@@ -430,12 +433,14 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 	if phase_system:
 		phase_system.check_hp_trigger()
 	_update_blood_vignette()   # 피 냄새 — HP 50% 임계 진입/이탈 반영
+	_refresh_hand_live_previews()   # 처형의 일격 등 HP 임계 카드 뱃지 갱신
 	if current <= 0 and not game_over:
 		_trigger_game_over(true)
 
 func _on_boss_block_changed(block: int) -> void:
 	boss_block_label.text = "🛡 %d" % block
 	boss_block_label.visible = block > 0
+	_refresh_hand_live_previews()   # 보스 방어 차감 반영 뱃지 갱신
 
 
 # === 드롭 존 설정 ===
@@ -635,9 +640,11 @@ func _send_to_pipe_back(card: Control) -> void:
 	# 단련 — 파이프 맨 뒤로 돌아갈 때마다 +1 (한 바퀴 카운트)
 	if "temper" in card:
 		card.temper += 1
-	# 선봉 플래그는 손패를 떠나면 리셋
+	# 선봉 플래그는 손패를 떠나면 리셋 + 실시간 뱃지 숨김
 	if "vanguard" in card:
 		card.vanguard = false
+	if card.has_method("set_live_preview"):
+		card.set_live_preview(0, 0)
 	card.reparent(queue_card_holder)
 	queue_cards.append(card)
 	_update_hand_display()
@@ -692,6 +699,7 @@ func _reorder_pipe_to_front() -> void:
 # === 손패 UI 갱신 ===
 
 func _update_hand_display() -> void:
+	_refresh_hand_live_previews()
 	if hand_cards.is_empty():
 		return
 	var spacing := hand_cards[0].custom_minimum_size.x + 8
@@ -700,6 +708,18 @@ func _update_hand_display() -> void:
 		var tween := create_tween()
 		tween.tween_property(card, "position", Vector2(i * spacing, 0), 0.18)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+
+# 손패 카드 좌하단에 "지금 실제로 낼 피해/방어" 뱃지 갱신
+# (보스 방어·투기·단련·인접·선봉·예지 등 현재 상황 반영 — 호버 프리뷰와 동일 계산)
+func _refresh_hand_live_previews() -> void:
+	if card_hover == null:
+		return
+	for card in hand_cards:
+		if not is_instance_valid(card) or not card.has_method("set_live_preview"):
+			continue
+		var totals: Dictionary = card_hover.compute_card_totals(card)
+		card.set_live_preview(int(totals.get("damage", 0)), int(totals.get("block", 0)))
 
 
 # === 파이프 UI 재빌드 ===
@@ -718,6 +738,8 @@ func _rebuild_pipe_ui() -> void:
 		var card: Control = queue_cards[i]
 		var row := _create_pipe_row(i + 1, card)
 		pipe_queue.add_child(row)
+	# 파이프 맨 앞이 바뀌면 인접 카드의 예상 수치도 달라짐
+	_refresh_hand_live_previews()
 
 
 # 파이프의 미래 손패 경계 라벨 — group 0 = 다음 손패, 1 = 2턴 뒤, ...
@@ -852,11 +874,40 @@ func _play_card(card: Control) -> void:
 	_play_card_impact(card)
 	# 효과 실행 — 파이프로 보내기 *전*에 실행해야 인접(파이프 맨 앞) 판정이 정확
 	# acting_card 세팅 → 단련 효과가 이 카드의 temper를 읽음
+	# 실측 기록용 스냅샷 (효과 실행 전)
+	var boss_hp0: int = game_ctx.boss_hp
+	var boss_blk0: int = game_ctx.boss_block
+	var my_blk0: int = game_ctx.player_block
+	var my_hp0: int = game_ctx.player_hp
+	var gold0: int = resource_bar.gold_manager.current
 	game_ctx.acting_card = card
 	for effect in card.data.effects:
 		effect.execute(game_ctx)
 	game_ctx.acting_card = null
-	_log("🗡 %s" % card.data.card_name, "🗡 %s — %s" % [card.data.card_name, card.data.get_description_text()])
+	# 실제 결과 합산 → 로그 (예: "보스 −12 (방어 3 파괴) · 방어 +5 · 골드 +3")
+	var parts: PackedStringArray = []
+	var dealt: int = boss_hp0 - game_ctx.boss_hp
+	var broke: int = maxi(boss_blk0 - game_ctx.boss_block, 0)
+	if dealt > 0:
+		parts.append("보스 −%d" % dealt + (" (방어 %d 파괴)" % broke if broke > 0 else ""))
+	elif broke > 0:
+		parts.append("보스 방어 −%d" % broke)
+	var gained_blk: int = game_ctx.player_block - my_blk0
+	if gained_blk > 0:
+		parts.append("방어 +%d" % gained_blk)
+	var healed: int = game_ctx.player_hp - my_hp0
+	if healed > 0:
+		parts.append("회복 +%d" % healed)
+	var gained_gold: int = resource_bar.gold_manager.current - gold0
+	if gained_gold > 0:
+		parts.append("골드 +%d" % gained_gold)
+	var result: String = " · ".join(parts)
+	if result != "":
+		_log("🗡 %s ⇒ %s" % [card.data.card_name, result],
+			"🗡 %s ⇒ %s  [%s]" % [card.data.card_name, result, card.data.get_description_text()])
+	else:
+		_log("🗡 %s" % card.data.card_name,
+			"🗡 %s — %s" % [card.data.card_name, card.data.get_description_text()])
 	# 소비(consume) 카드는 파이프로 안 돌아가고 영구 소멸
 	if card.data.consume:
 		hand_cards.erase(card)
@@ -929,12 +980,25 @@ func _begin_player_turn() -> void:
 	_start_player_turn()
 
 
+# 스냅샷 이후 플레이어가 받은 실측 피해 문자열 (로그용)
+func _describe_player_hit(hp0: int, blk0: int) -> String:
+	var taken: int = hp0 - game_ctx.player_hp
+	var absorbed: int = maxi(blk0 - game_ctx.player_block, 0)
+	if taken > 0:
+		return "피해 −%d" % taken + (" (방어 %d 흡수)" % absorbed if absorbed > 0 else "")
+	elif absorbed > 0:
+		return "방어로 %d 전부 흡수" % absorbed
+	return "피해 없음"
+
+
 func _begin_boss_turn() -> void:
 	if market_panel:
 		market_panel.set_player_turn(false)
 	_set_turn_focus(false)
 
-	# 1. 파워 카운트다운 틱 (0이 된 파워 카드 즉시 발동)
+	# 1. 파워 카운트다운 틱 (0이 된 파워 카드 즉시 발동) — 실측 기록용 스냅샷 먼저
+	var tick_hp0: int = game_ctx.player_hp
+	var tick_blk0: int = game_ctx.player_block
 	var triggered: Array[BossCardData] = boss_deck_system.tick_powers()
 
 	# 2. 다음 카드 드로우
@@ -948,7 +1012,12 @@ func _begin_boss_turn() -> void:
 	# 4. 발동된 파워 카드 연출 (효과는 tick_powers에서 이미 적용됨)
 	for card in triggered:
 		await boss_presenter.present(card, BossActionPresenter.Kind.TRIGGER)
-		_log("💥 파워 발동: %s" % card.card_name, "💥 파워 발동: %s — %s" % [card.card_name, card.description])
+		# 파워 1장 발동이면 실측치 부여 (여러 장이면 합산 구분이 안 돼 설명만)
+		if triggered.size() == 1:
+			_log("💥 파워 발동: %s ⇒ %s" % [card.card_name, _describe_player_hit(tick_hp0, tick_blk0)],
+				"💥 파워 발동: %s ⇒ %s  [%s]" % [card.card_name, _describe_player_hit(tick_hp0, tick_blk0), card.description])
+		else:
+			_log("💥 파워 발동: %s" % card.card_name, "💥 파워 발동: %s — %s" % [card.card_name, card.description])
 
 	# 5. 드로우 카드 연출 + 실행 동기화 (resolve_cb가 임팩트 순간 효과 적용)
 	if drawn:
@@ -959,9 +1028,24 @@ func _begin_boss_turn() -> void:
 			_log("🛡 보스 무효화: %s" % drawn.card_name)
 		else:
 			var kind: int = BossActionPresenter.Kind.POWER if drawn.card_type == BossCardData.BossCardType.POWER else BossActionPresenter.Kind.ATTACK
+			var hit_hp0: int = game_ctx.player_hp
+			var hit_blk0: int = game_ctx.player_block
+			var boss_hp0: int = game_ctx.boss_hp
 			await boss_presenter.present(drawn, kind,
 				func() -> void: boss_deck_system.play_card(drawn))
-			_log("💀 보스: %s" % drawn.card_name, "💀 보스: %s — %s" % [drawn.card_name, drawn.description])
+			if kind == BossActionPresenter.Kind.POWER:
+				_log("💀 보스: %s → 파워 존 (C%d)" % [drawn.card_name, drawn.countdown],
+					"💀 보스: %s → 파워 존 배치 (카운트 %d)  [%s]" % [drawn.card_name, drawn.countdown, drawn.description])
+			else:
+				var result := _describe_player_hit(hit_hp0, hit_blk0)
+				# 보스 자해/회복도 기록
+				var boss_delta: int = game_ctx.boss_hp - boss_hp0
+				if boss_delta > 0:
+					result += " · 보스 회복 +%d" % boss_delta
+				elif boss_delta < 0:
+					result += " · 보스 자해 −%d" % -boss_delta
+				_log("💀 보스: %s ⇒ %s" % [drawn.card_name, result],
+					"💀 보스: %s ⇒ %s  [%s]" % [drawn.card_name, result, drawn.description])
 
 	# 6. 장착된 모듈의 보스 턴 종료 훅 실행
 	for card in active_cards:
@@ -1270,6 +1354,7 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 	for i in range(orbs.size()):
 		orbs[i].color = RAGE_COLOR if i < stacks else RAGE_EMPTY_COLOR
 	rage_button.disabled = stacks < max_stacks
+	_refresh_hand_live_previews()   # 투기 스케일 카드 뱃지 갱신
 
 
 # === 게임 로그 시스템 ===

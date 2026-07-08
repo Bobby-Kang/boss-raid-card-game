@@ -51,12 +51,12 @@ func on_card_hover_changed(card: Control, entered: bool) -> void:
 			_clear_effect_preview()
 
 
-func _show_effect_preview(card: Control) -> void:
-	_clear_effect_preview()
-	if not card.data or card.data.effects == null:
-		return
-	# 합산 — 같은 종류 효과는 합쳐서 표시
+## 카드가 *지금 상황*에서 낼 실효 수치 합산 — 호버 프리뷰와 손패 뱃지가 공유.
+## 반환: {"damage": int(보스 방어 차감 후), "block": int, "draw": int, "gold": int, ...}
+func compute_card_totals(card: Control) -> Dictionary:
 	var totals := {}  # kind → amount
+	if card == null or not card.data or card.data.effects == null:
+		return totals
 	for eff in card.data.effects:
 		if eff == null:
 			continue
@@ -135,6 +135,14 @@ func _show_effect_preview(card: Control) -> void:
 			var blocked := mini(amount, _game_ctx.boss_block) if _game_ctx else 0
 			amount = maxi(0, amount - blocked)
 		totals[kind] = totals.get(kind, 0) + amount
+	return totals
+
+
+func _show_effect_preview(card: Control) -> void:
+	_clear_effect_preview()
+	var totals: Dictionary = compute_card_totals(card)
+	if totals.is_empty():
+		return
 
 	# 라벨 스폰
 	# 보스 대상(데미지·무효)은 보스 HP 옆, 자기 대상(방어·드로우·골드 등)은 호버 카드 위에 세로로.
