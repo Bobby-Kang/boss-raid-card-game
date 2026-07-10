@@ -194,12 +194,15 @@ func get_active_powers() -> Array:
 
 # === 플레이어 간섭 동사 (타임라인 전쟁) ===
 
-## 밀어내기 — 덱 맨 앞(다음 예고) 카드를 맨 뒤로. 밀린 카드 반환 (없으면 null).
-func push_front_to_back() -> BossCardData:
+## 밀어내기 — 덱 맨 앞(다음 예고) 카드를 뒤로 slots칸 이동 (기본 3).
+## "맨 뒤"가 아니라 몇 장 뒤라서, 회피하되 카드가 게임에서 삭제되진 않는다.
+## 밀린 카드 반환 (없으면 null).
+func push_front_back(slots: int = 3) -> BossCardData:
 	if deck.size() < 2:
 		return null   # 0~1장이면 밀어도 의미 없음
 	var card: BossCardData = deck.pop_front()
-	deck.push_back(card)
+	var idx: int = mini(slots, deck.size())   # 남은 덱 크기로 클램프
+	deck.insert(idx, card)
 	deck_changed.emit(deck.size())
 	return card
 

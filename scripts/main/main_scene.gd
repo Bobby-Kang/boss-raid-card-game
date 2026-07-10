@@ -996,6 +996,11 @@ func _begin_boss_turn() -> void:
 		market_panel.set_player_turn(false)
 	_set_turn_focus(false)
 
+	# 0. 보스 방어 리셋 — 웅크리기/강철 벽 방어는 다음 보스 턴 시작까지만 유지
+	#    (잔존 시 영구 벽이 되어 느린 빌드가 딜을 못 넣는 문제 — 모의 2패 원인)
+	if game_ctx.boss_block > 0:
+		game_ctx.reset_boss_block()
+
 	# 1. 파워 카운트다운 틱 (0이 된 파워 카드 즉시 발동) — 실측 기록용 스냅샷 먼저
 	var tick_hp0: int = game_ctx.player_hp
 	var tick_blk0: int = game_ctx.player_block

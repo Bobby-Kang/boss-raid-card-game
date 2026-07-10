@@ -7,6 +7,7 @@
 
 [sub_resource type="Resource" id="Effect_push"]
 script = ExtResource("3_push")
+value = 3
 
 [resource]
 script = ExtResource("1_script")
@@ -15,6 +16,6 @@ card_name = "밀어내기"
 cost = 1
 gold_cost = 4
 tier = 1
-description = "보스의 다음 카드를 덱 맨 뒤로 밀어낸다 (위험한 예고 회피)"
+description = "보스의 다음 카드를 뒤로 3장 밀어낸다 (예고 회피 — 결국 다시 온다)"
 card_type = 1
 effects = Array[ExtResource("2_base")]([SubResource("Effect_push")])
