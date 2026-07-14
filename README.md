@@ -103,10 +103,13 @@ Godot 4.6.2 에디터에서 프로젝트를 열고 실행하면 타이틀 화면
 - Gemini 생성 이미지 적용: 전사·버그베어 초상화, 스타터 4종(베기·막기·집중·골드), 반격 태세 모듈
 - 메인 씬 상단에 버그베어 풀커버 초상화, 캐릭터 선택 화면은 양쪽 초상화 영역 꽉 채움
 
-### UI 테마 (다크 판타지 프리미엄)
-- `DarkFantasyTheme` (코드 빌드 Theme) 루트 적용 — 패널/버튼/라벨/구분선 통일 (흑갈색 배경 / 양피지 텍스트 / 금색 액센트)
-- 배경 세로 그라데이션 + 가장자리 비네팅, 카드 이미지 mipmap+Linear 필터로 축소 에일리어싱 제거
-- 상단 슬림바(라운드 · 턴 인디케이터 · **원형 턴 토큰** · `🛒 상점`) + 1:1 대결 무대 확대 + 하단(자원·손패·파이프)
+### UI 테마 (다크 판타지 프리미엄 — Kenney 프레임)
+- `DarkFantasyTheme` (코드 빌드 Theme) 루트 적용 — 패널/버튼/카드/라벨 통일 (흑갈색 배경 / 양피지 텍스트 / 금색 액센트)
+- **Kenney Fantasy UI Borders (CC0)** 9-slice 프레임 기반. 흰 장식 테두리를 **2톤 베벨로 구워**(도금 금속 하이라이트→그림자 + 어두운 중앙) `assets/art/Kenny/baked/`에 생성. 공용 헬퍼 `kenney_panel()` / `card_frame(type)` / `kenney_button(state)`로 전 화면(시작·선택·전투·모달·결과) 자동 통일
+- **카드 = 타입별 색 프레임**: 공격 붉은구리 / 스킬 블루스틸 / 파워 바이올렛 / 모듈 골드 — 손패·타임라인이 색으로 연결
+- **타임라인 파이프**: 타입색 원형 노드 + 왼쪽 색 스파인으로 흐름 가시화
+- **보스 카드**: 붉은 프레임 + 크림슨 위협 비네트 + 발광 카운트다운 뱃지
+- 배경 세로 그라데이션 + 비네팅, nearest 필터 전역으로 프레임 선명
 - **마켓 모달 토글**: `🛒 상점` 버튼으로 여닫는 중앙 팝업 (평소 숨김 → 대결 무대 공간 확보)
 
 ### UX 보조 시스템
@@ -210,6 +213,12 @@ assets/
 ### 효과음 (Sound Effects)
 - **Kenney Audio Packs** by Kenney — [kenney.nl](https://kenney.nl/)
   - UI Audio / Casino Audio / Impact Sounds / RPG Audio
+  - Licensed under CC0 1.0 Universal (Public Domain)
+  - https://creativecommons.org/publicdomain/zero/1.0/
+
+### UI 에셋 (UI Assets)
+- **Fantasy UI Borders** by Kenney — [kenney.nl/assets/fantasy-ui-borders](https://kenney.nl/assets/fantasy-ui-borders)
+  - 9-slice 패널/버튼 프레임의 기반 (2톤 베벨로 가공해 사용)
   - Licensed under CC0 1.0 Universal (Public Domain)
   - https://creativecommons.org/publicdomain/zero/1.0/
 

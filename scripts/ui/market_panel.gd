@@ -58,11 +58,18 @@ var _lane_widgets: Array = []  # Array of dicts per lane
 
 
 func _ready() -> void:
+	_apply_panel_frame()
 	_attack_pool  = _load_pool(attack_dir)
 	_defense_pool = _load_pool(defense_dir)
 	_special_pool = _load_pool(special_dir)
 	_gold_pool    = _load_pool(gold_dir)
 	_build_ui()
+
+
+# Kenney 장식 프레임을 마켓 패널 배경으로 적용 (게임 전체와 통일)
+func _apply_panel_frame() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 18))
 
 
 # 디렉토리 안의 .tres 파일을 모두 로드해 CardData 배열로 반환

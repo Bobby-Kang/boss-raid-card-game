@@ -41,12 +41,12 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [node name="Card" type="Control" unique_id=1908339420]
-custom_minimum_size = Vector2(144, 204)
+custom_minimum_size = Vector2(146, 206)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 144.0
-offset_bottom = 204.0
-pivot_offset = Vector2(72, 102)
+offset_right = 146.0
+offset_bottom = 206.0
+pivot_offset = Vector2(73, 103)
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("1_script")

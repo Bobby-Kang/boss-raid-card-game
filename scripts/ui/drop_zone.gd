@@ -16,7 +16,7 @@ enum ZoneType { PLAY, DISCARD, ACTIVE }
 ## main_scene에서 설정하는 필터 함수: func(card, zone_type) -> bool
 var accept_filter: Callable
 
-var _default_style: StyleBoxFlat
+var _default_style: StyleBox             # 드래그 직전의 배경(픽셀 프레임 포함) 보존용
 var _highlight_style: StyleBoxFlat       # 호버 시(드롭 가능)
 var _accept_overlay_style: StyleBoxFlat  # 드래그 시작·이 카드 수용 가능
 var _reject_overlay_style: StyleBoxFlat  # 드래그 시작·수용 불가
@@ -27,7 +27,7 @@ var _idle_self_modulate: Color = Color.WHITE  # 평소 self_modulate 보존
 
 
 func _ready() -> void:
-	_default_style = get_theme_stylebox("panel").duplicate() if get_theme_stylebox("panel") else null
+	_default_style = get_theme_stylebox("panel")
 
 	_highlight_style = StyleBoxFlat.new()
 	_highlight_style.bg_color = Color(0.4, 0.85, 0.4, 0.45)
@@ -105,6 +105,8 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_BEGIN:
 		if pass_through_when_idle:
 			mouse_filter = MOUSE_FILTER_STOP
+		# 현재 배경(픽셀 프레임 오버라이드 포함)을 저장 — 드래그 종료 시 그대로 복원
+		_default_style = get_theme_stylebox("panel")
 		_show_drag_overlay()
 	elif what == NOTIFICATION_DRAG_END:
 		if pass_through_when_idle:

@@ -18,15 +18,66 @@ const TEXT_DIM       := Color(0.62, 0.55, 0.45, 1.0)
 const PLAYER_BLUE    := Color(0.42, 0.66, 0.92, 1.0)
 const BOSS_RED       := Color(0.85, 0.33, 0.30, 1.0)
 
+# === Kenney 프레임 (2톤 구움: 금속 테두리 + 어두운 중앙) ===
+# modulate 단색은 중앙이 진흙색이 되어, 테두리·중앙을 분리해 구운 전용 프레임을 쓴다.
+# 스왑: gold / steel / blued 중 파일명만 바꾸면 전체 반영.
+const KENNEY_FRAME := "res://assets/art/Kenny/baked/frame_gold.png"
+
+
+# 카드 타입별 프레임 색 (레인 구분 + 프리미엄). enum CardType 순서: ATTACK,SKILL,POWER,MODULE
+const CARD_FRAMES := {
+	0: "res://assets/art/Kenny/baked/frame_attack.png",  # ATTACK — 붉은 구리
+	1: "res://assets/art/Kenny/baked/frame_blued.png",   # SKILL  — 블루 스틸
+	2: "res://assets/art/Kenny/baked/frame_power.png",   # POWER  — 바이올렛
+	3: "res://assets/art/Kenny/baked/frame_gold.png",    # MODULE — 골드
+}
+
+
+# 카드 타입에 맞는 프레임 스타일박스
+static func card_frame(card_type: int) -> StyleBoxTexture:
+	return kenney_panel(true, 8, CARD_FRAMES.get(card_type, KENNEY_FRAME))
+
+
+# Kenney 버튼 프레임 (#001 기반, 상태별로 구운 텍스처). 버튼은 짧으니 여백 작게.
+static func kenney_button(state: String) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = load("res://assets/art/Kenny/baked/%s.png" % state)
+	s.texture_margin_left = 14
+	s.texture_margin_top = 14
+	s.texture_margin_right = 14
+	s.texture_margin_bottom = 14
+	s.content_margin_left = 16
+	s.content_margin_right = 16
+	s.content_margin_top = 7
+	s.content_margin_bottom = 7
+	return s
+
+
+# 공용 Kenney 프레임 스타일박스.
+#   draw_center=true  → 어두운 패널 배경까지 (색은 이미 구워짐 → modulate 없음)
+#   draw_center=false → 테두리만(아트·이미지가 깨끗이 보임)
+static func kenney_panel(draw_center: bool = true, content_margin: int = 14, tex_path: String = KENNEY_FRAME) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = load(tex_path)
+	s.texture_margin_left = 16
+	s.texture_margin_top = 16
+	s.texture_margin_right = 16
+	s.texture_margin_bottom = 16
+	s.draw_center = draw_center
+	s.content_margin_left = content_margin
+	s.content_margin_right = content_margin
+	s.content_margin_top = content_margin
+	s.content_margin_bottom = content_margin
+	return s
+
 
 static func build() -> Theme:
 	var theme := Theme.new()
 	theme.default_font_size = 16
 
-	# ─── PanelContainer / Panel ───
-	var panel := _panel_style(SURFACE, GOLD_DIM, 2, 8)
-	theme.set_stylebox("panel", "PanelContainer", panel)
-	theme.set_stylebox("panel", "Panel", panel.duplicate())
+	# ─── PanelContainer / Panel — 기본을 Kenney 프레임으로 (전 화면 통일) ───
+	theme.set_stylebox("panel", "PanelContainer", kenney_panel(true, 10))
+	theme.set_stylebox("panel", "Panel", kenney_panel(true, 10))
 
 	# ─── Label ───
 	theme.set_color("font_color", "Label", TEXT)
@@ -34,15 +85,11 @@ static func build() -> Theme:
 	theme.set_constant("outline_size", "Label", 0)
 	theme.set_font_size("font_size", "Label", 16)
 
-	# ─── Button (구매 / 턴 종료 / 리롤 등) ───
-	var btn_normal := _panel_style(SURFACE_LIGHT, GOLD_DIM, 2, 6)
-	var btn_hover  := _panel_style(SURFACE_LIGHT.lightened(0.12), GOLD, 2, 6)
-	var btn_pressed := _panel_style(SURFACE.darkened(0.1), GOLD_BRIGHT, 2, 6)
-	var btn_disabled := _panel_style(Color(0.14, 0.12, 0.10, 0.6), GOLD_DIM.darkened(0.3), 1, 6)
-	theme.set_stylebox("normal", "Button", btn_normal)
-	theme.set_stylebox("hover", "Button", btn_hover)
-	theme.set_stylebox("pressed", "Button", btn_pressed)
-	theme.set_stylebox("disabled", "Button", btn_disabled)
+	# ─── Button — Kenney 프레임(#001) 3상태 + 비활성 ───
+	theme.set_stylebox("normal", "Button", kenney_button("btn_normal"))
+	theme.set_stylebox("hover", "Button", kenney_button("btn_hover"))
+	theme.set_stylebox("pressed", "Button", kenney_button("btn_pressed"))
+	theme.set_stylebox("disabled", "Button", kenney_button("btn_disabled"))
 	theme.set_color("font_color", "Button", TEXT)
 	theme.set_color("font_hover_color", "Button", GOLD_BRIGHT)
 	theme.set_color("font_pressed_color", "Button", GOLD_BRIGHT)

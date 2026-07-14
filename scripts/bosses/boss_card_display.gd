@@ -40,12 +40,9 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.clip_contents = true
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.13, 0.09, 0.08)
-	bg.set_border_width_all(2)
-	bg.border_color = Color(0.62, 0.16, 0.12)
-	bg.set_corner_radius_all(6)
-	panel.add_theme_stylebox_override("panel", bg)
+	# 보스 카드 = 붉은 Kenney 프레임 (위협/위험 신호)
+	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	panel.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 4, DarkFantasyTheme.CARD_FRAMES[0]))
 	add_child(panel)
 
 	# ─── 아트워크 (풀커버, 기본 숨김) ───
@@ -58,12 +55,31 @@ func _ready() -> void:
 	_artwork_rect.visible = false
 	panel.add_child(_artwork_rect)
 
+	# ─── 위협 비네트 (아트 위 붉은 어둠 — 보스 위압감) ───
+	var menace := TextureRect.new()
+	menace.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menace.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menace.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	menace.stretch_mode = TextureRect.STRETCH_SCALE
+	var mg := GradientTexture2D.new()
+	mg.fill = GradientTexture2D.FILL_RADIAL
+	mg.fill_from = Vector2(0.5, 0.42)
+	mg.fill_to = Vector2(1.05, 1.05)
+	var mgrad := Gradient.new()
+	mgrad.set_color(0, Color(0.45, 0.03, 0.03, 0.0))
+	mgrad.set_color(1, Color(0.13, 0.0, 0.0, 0.74))
+	mg.gradient = mgrad
+	menace.texture = mg
+	panel.add_child(menace)
+
 	# ─── 상단 이름 스트립 (반투명) ───
 	var top_strip := PanelContainer.new()
 	top_strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var top_style := StyleBoxFlat.new()
-	top_style.bg_color = Color(0.05, 0.03, 0.03, 0.72)
+	top_style.bg_color = Color(0.17, 0.02, 0.02, 0.82)   # 크림슨 이름판
+	top_style.border_width_bottom = 1
+	top_style.border_color = Color(0.75, 0.18, 0.15, 0.85)
 	# 좌측 페이즈 스트립(최대 10px)에 이름이 안 걸리도록 좌우 여백 확보
 	top_style.content_margin_left = 13
 	top_style.content_margin_right = 8
@@ -75,8 +91,8 @@ func _ready() -> void:
 	_name_label = Label.new()
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.add_theme_font_size_override("font_size", 13)
-	_name_label.add_theme_color_override("font_color", Color(0.97, 0.92, 0.80))
-	_name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_name_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.80))
+	_name_label.add_theme_color_override("font_outline_color", Color(0.15, 0, 0, 1))
 	_name_label.add_theme_constant_override("outline_size", 3)
 	_name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_name_label.clip_text = false
@@ -98,7 +114,9 @@ func _ready() -> void:
 	bottom_strip.offset_top = -46
 	bottom_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bot_style := StyleBoxFlat.new()
-	bot_style.bg_color = Color(0.05, 0.03, 0.03, 0.78)
+	bot_style.bg_color = Color(0.10, 0.02, 0.02, 0.82)   # 크림슨 설명판
+	bot_style.border_width_top = 1
+	bot_style.border_color = Color(0.60, 0.14, 0.12, 0.7)
 	# 좌측 페이즈 스트립(최대 10px)에 설명이 안 걸리도록 좌우 여백 확보
 	bot_style.content_margin_left = 13
 	bot_style.content_margin_right = 8
@@ -137,8 +155,12 @@ func _ready() -> void:
 	_countdown_badge.offset_bottom = 28
 	_countdown_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var badge_style := StyleBoxFlat.new()
-	badge_style.bg_color = Color(0.85, 0.44, 0.0)
-	badge_style.set_corner_radius_all(5)
+	badge_style.bg_color = Color(0.74, 0.10, 0.07)      # 크림슨
+	badge_style.set_border_width_all(2)
+	badge_style.border_color = Color(1.0, 0.62, 0.45)   # 발광 링
+	badge_style.set_corner_radius_all(13)               # 원형
+	badge_style.shadow_color = Color(0.9, 0.2, 0.1, 0.55)
+	badge_style.shadow_size = 5
 	_countdown_badge.add_theme_stylebox_override("panel", badge_style)
 	add_child(_countdown_badge)
 

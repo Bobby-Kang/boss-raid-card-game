@@ -37,6 +37,7 @@ const _HELP_BBCODE := "[center][font_size=34][color=eac77a]📖 게임 방법[/c
 
 
 func _ready() -> void:
+	theme = DarkFantasyTheme.build()   # 버튼·패널을 다크 판타지 톤으로 통일
 	start_button.pressed.connect(_on_start_pressed)
 	help_button.pressed.connect(_show_help)
 	_build_help_overlay()
@@ -72,16 +73,8 @@ func _build_help_overlay() -> void:
 	frame.offset_right = 450
 	frame.offset_top = -340
 	frame.offset_bottom = 340
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.14, 0.11, 0.08, 0.98)
-	style.set_border_width_all(2)
-	style.border_color = Color(0.78, 0.62, 0.34)
-	style.set_corner_radius_all(10)
-	style.content_margin_left = 26
-	style.content_margin_right = 26
-	style.content_margin_top = 20
-	style.content_margin_bottom = 20
-	frame.add_theme_stylebox_override("panel", style)
+	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	frame.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 26))
 	_help_root.add_child(frame)
 
 	var vb := VBoxContainer.new()

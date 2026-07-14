@@ -12,6 +12,7 @@ extends CanvasLayer
 
 func _ready() -> void:
 	visible = false
+	background.theme = DarkFantasyTheme.build()   # 버튼·패널 다크 판타지 톤 통일
 	restart_button.pressed.connect(_on_restart_pressed)
 
 

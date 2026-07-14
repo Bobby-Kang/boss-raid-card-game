@@ -10,6 +10,18 @@
 [ext_resource type="Texture2D" uid="uid://byh1dv6cnfh1r" path="res://assets/art/gemini_image/warrior_face.png" id="8_warrior_face"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_result_screen.tscn" id="15_result"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_empty_slot"]
+bg_color = Color(0.11, 0.09, 0.07, 0.5)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.36, 0.22, 0.7)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_active"]
 bg_color = Color(0.14, 0.11, 0.08, 0.88)
 border_width_left = 2
@@ -24,18 +36,6 @@ corner_radius_bottom_left = 8
 shadow_color = Color(0, 0, 0, 0.35)
 shadow_size = 4
 shadow_offset = Vector2(0, 2)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_empty_slot"]
-bg_color = Color(0.11, 0.09, 0.07, 0.5)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.45, 0.36, 0.22, 0.7)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="MainScene" type="Control" unique_id=1878622868]
 layout_mode = 3
@@ -91,8 +91,8 @@ size_flags_horizontal = 3
 
 [node name="TurnInfoHBox" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel" unique_id=991400001]
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 16
+alignment = 1
 
 [node name="RoundLabel" type="Label" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel/TurnInfoHBox" unique_id=309408685]
 unique_name_in_owner = true
@@ -118,21 +118,20 @@ vertical_alignment = 1
 [node name="TurnSlotsContainer" type="HBoxContainer" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel/TurnInfoHBox" unique_id=2091243094]
 unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 7
+alignment = 1
 
 [node name="MarketButton" type="Button" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=991400002]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-size_flags_vertical = 1
 theme_override_font_sizes/font_size = 18
 text = "🛒 상점"
 
 [node name="BossArea" type="PanelContainer" parent="BattleField/VBoxLayout" unique_id=2063685351]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.5
+size_flags_stretch_ratio = 0.62
 
 [node name="BossVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea" unique_id=429015942]
 layout_mode = 2
@@ -328,11 +327,11 @@ drag_label_text = "⚔ 사용 / 보스 공격"
 [node name="BottomArea" type="VBoxContainer" parent="BattleField/VBoxLayout" unique_id=488632899]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.43
-theme_override_constants/separation = 8
+size_flags_stretch_ratio = 0.52
+theme_override_constants/separation = 4
 
 [node name="StatusBars" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea" unique_id=1639051553]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_override_constants/separation = 10
 
@@ -405,8 +404,8 @@ alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
-disabled = true
 theme_override_font_sizes/font_size = 15
+disabled = true
 text = "🔥 투기 발산"
 
 [node name="PlayerZones" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea" unique_id=1701593457]
@@ -454,7 +453,7 @@ vertical_alignment = 1
 
 [node name="ActiveSlot1" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow" unique_id=1989959366]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 170)
+custom_minimum_size = Vector2(100, 138)
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 1
@@ -473,7 +472,7 @@ vertical_alignment = 1
 
 [node name="ActiveSlot2" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow" unique_id=2032636891]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 170)
+custom_minimum_size = Vector2(100, 138)
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 1
@@ -510,17 +509,17 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="ActiveZoneLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone/ActiveZoneVBox" unique_id=1844332201]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.78, 0.48, 1)
-theme_override_font_sizes/font_size = 16
-text = "🃏 손패"
-horizontal_alignment = 1
-
-[node name="HandBelt" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone/ActiveZoneVBox" unique_id=1565481536]
-unique_name_in_owner = true
+[node name="HandBeltMargin" type="MarginContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone/ActiveZoneVBox" unique_id=565987340]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="HandBelt" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone/ActiveZoneVBox/HandBeltMargin" unique_id=1565481536]
+unique_name_in_owner = true
+layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="TimelinePipePanel" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones" unique_id=1898512105]
@@ -538,13 +537,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 4
-
-[node name="PipeTitleLabel" type="Label" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel/PipeVBox" unique_id=755901234]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.92, 0.78, 0.48, 1)
-theme_override_font_sizes/font_size = 18
-text = "📜 타임라인 파이프"
-horizontal_alignment = 1
 
 [node name="PipeScroll" type="ScrollContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel/PipeVBox" unique_id=625212740]
 layout_mode = 2

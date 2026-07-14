@@ -8,9 +8,25 @@ func _ready() -> void:
 	# 메인 씬과 동일한 다크 판타지 테마 적용 — 패널·버튼·라벨 통일
 	theme = DarkFantasyTheme.build()
 	_setup_background_atmosphere()
+	_apply_frames()
 
 	fight_button.pressed.connect(_on_fight_pressed)
 	back_button.pressed.connect(_on_back_pressed)
+
+
+# 씬에 박힌 패널 스타일을 Kenney 장식 프레임으로 교체 (메인 씬과 통일)
+func _apply_frames() -> void:
+	var ma := "RootMargin/RootVBox/MainArea/"
+	# 내용 패널 — 중앙 반투명(어둑) 프레임
+	for p in ["RootMargin/RootVBox/Header", ma + "PlayerPanel", ma + "BossPanel", "RootMargin/RootVBox/Footer"]:
+		var n := get_node_or_null(p)
+		if n is PanelContainer:
+			n.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 14))
+	# 초상 페이스 패널 — 중앙 미표시(아트 깨끗) 프레임
+	for p in [ma + "PlayerPanel/PlayerMargin/PlayerVBox/PlayerFacePanel", ma + "BossPanel/BossMargin/BossVBox/BossFacePanel"]:
+		var n := get_node_or_null(p)
+		if n is PanelContainer:
+			n.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(false, 6))
 
 
 func _on_fight_pressed() -> void:

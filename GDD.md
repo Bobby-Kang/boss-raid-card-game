@@ -444,13 +444,28 @@ var boss_deck_system: BossDeckSystem = null
 | TurnSlotsContainer | 4턴 교대 순서 — **원형 토큰**(플레이어=청/보스=적), 현재 턴 금테+확대 강조 |
 | MarketButton | 🛒 상점 — 마켓 모달 토글 |
 
-### 10.1.1 UI 테마 (다크 판타지 프리미엄)
+### 10.1.1 UI 테마 (다크 판타지 프리미엄 — Kenney 프레임)
 - `DarkFantasyTheme` (`scripts/ui/dark_fantasy_theme.gd`, 코드 빌드): 루트 `theme`에 적용 → 패널/버튼/라벨/구분선 자동 통일
 - 색 팔레트: 흑갈색 배경 / 양피지 텍스트(`TEXT`) / 금색 액센트(`GOLD`) / 플레이어 청(`PLAYER_BLUE`)·보스 적(`BOSS_RED`)
-- 패널: 반투명 표면 + 금색 테두리 + 둥근 모서리 + 그림자
+- **에셋 기반**: **Kenney Fantasy UI Borders (CC0)** 9-slice 프레임 (`assets/art/Kenny/`). 원본 흰 장식 테두리 + 반투명 중앙을 PowerShell로 **2톤 베벨 굽기**(테두리 = 도금 금속 위 하이라이트→아래 그림자 / 중앙 = 어두운 웜) → `assets/art/Kenny/baked/frame_*.png`. modulate 단색은 중앙이 진흙색이 되어 기각, 베벨 구움으로 해결
+- **공용 헬퍼**:
+  - `kenney_panel(draw_center, content_margin, tex_path)` — 패널 프레임 (`frame_gold` 기본, `frame_steel`/`frame_blued`로 스왑 가능)
+  - `card_frame(card_type)` — 카드 타입별 색 프레임 (공격=붉은구리 / 스킬=블루스틸 / 파워=바이올렛 / 모듈=골드)
+  - `kenney_button(state)` — 버튼 4상태 (`btn_normal/hover/pressed/disabled`, Kenney #001 둥근 프레임 기반)
+- **테마 기본** PanelContainer/Panel/Button = Kenney → 시작·선택·전투·모달·오버레이·결과까지 전 화면 자동 통일
 - 배경: 세로 그라데이션 + 가장자리 비네팅 (`_setup_background_atmosphere`)
-- 카드 이미지: mipmap + Linear 필터로 축소 에일리어싱 제거
-- 하단 영역 통일: 손패 존(`🃏 손패`)·타임라인 파이프(`📜`) 금색화, 빈 모듈 슬롯은 `＋ 모듈` + 금색 디밍 플레이스홀더, 자원/방어 라벨 색을 팔레트(금색·청)로 정돈, 형광색 → 차분한 다크 톤으로 채도 완화
+- nearest 필터 전역 (`project.godot` `default_texture_filter=0`) — 픽셀 프레임 선명
+
+### 10.1.2 프레임 적용 범위 (`_apply_premium_ui`)
+- **초상**(전사·보스): `draw_center=false` 프레임 → 아트가 깨끗이 보이고 테두리만 감쌈
+- **카드**(손패·마켓·프리뷰, `Card._apply_data`): `card_frame(card_type)` 타입별 색 — 손패 카드와 타임라인 색 체계 일치
+- **보스 카드**(`BossCardDisplay`): 붉은 프레임 + **위협 비네트**(방사형 크림슨 어둠) + 크림슨 이름/설명판 + **발광 카운트다운 뱃지**(크림슨 원형 + 발광 링 + 그림자)
+- **버튼**: Kenney #001 4상태 (호버 밝아짐 / 눌림 어둡게 / 비활성 회색)
+- **타임라인 파이프**: 타입색 원형 노드(타임라인 스톱) + 왼쪽 타입색 스파인 + 타입색 카드명
+- **모듈 슬롯 / 미니로그 / 마켓·로그 모달**: 통일 (마켓 외곽 래퍼는 투명 처리 — 이중 프레임 방지)
+- **중앙 배틀 밴드**(BossArea): 투명 무대 → 배경 그라데이션 노출
+- 드롭존 stylebox 변경이 프레임을 지우지 못하게 `DropZone`이 드래그 시작 시점의 배경을 저장·복원
+- (구 `PixelFrameLayer`·`PixelFrame` — 픽셀 돌 액자 실험 코드, 현재 미사용·보존)
 
 ### 10.2.1 중단(BossArea) 1:1 대결 구도
 | 영역 | 내용 |
@@ -772,6 +787,13 @@ var boss_deck_system: BossDeckSystem = null
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-07-14 | **UI 전면 리스킨 → Kenney Fantasy UI Borders (CC0) 프레임으로 통일** — 픽셀 돌 액자(`PixelFrameLayer`) 방식이 코믹/일러스트 아트와 톤 충돌·격자 문제로 계속 겉돌아 **에셋 기반으로 전환**. ①**베벨 굽기 파이프라인**: Kenney 흰 장식 프레임(반투명 중앙)을 PowerShell로 **2톤 굽기** — 테두리는 세로 그라데이션(위 하이라이트→아래 그림자)로 도금 금속감, 중앙은 어두운 웜 불투명 → `assets/art/Kenny/baked/frame_{gold,steel,blued,attack,power}.png` + 버튼 4상태 `btn_{normal,hover,pressed,disabled}.png`(#001 둥근 프레임). modulate 단색 틴트는 중앙이 진흙색이 되어 기각. ②**`DarkFantasyTheme` 공용 헬퍼**: `kenney_panel(draw_center, margin, tex)` / `card_frame(card_type)`(타입별 색) / `kenney_button(state)`. 테마 기본 PanelContainer/Button = Kenney → **전 화면 자동 통일**(시작·선택·전투·마켓·로그·결과·오버레이). ③**요소별 적용**(`_apply_premium_ui`): 초상=테두리만(draw_center=false)·중앙 배틀 밴드=투명 무대·모듈 슬롯·미니로그·마켓 외곽 투명(이중 프레임 방지). ④**카드**: 타입별 색 프레임(공격 붉은구리/스킬 블루스틸/파워 바이올렛/모듈 골드). ⑤**타임라인 파이프 재설계**: 타입색 원형 노드 + 왼쪽 타입색 스파인 + 타입색 카드명(손패 색 체계 연결). ⑥**보스 카드 위협화**: 붉은 프레임 + 방사형 크림슨 위협 비네트 + 크림슨 이름/설명판 + 발광 카운트다운 뱃지. `PixelFrameLayer`/`PixelFrame`는 미사용 보존. GDD §10.1.1~10.1.2 재작성 |
+| 2026-07-12 | **픽셀 프레임 2단 구조 (STONE 배경 + THIN 구획) + 요소별 액자 구도 확정** — 레퍼런스 목업(다키스트 던전식 요소별 액자)에 맞춰 재구성. ①`PixelFrameLayer`에 **두 스타일 도입**: `STONE`(`panel_frame.png`, PATCH 60, 돌 안쪽면 채움 — 큰 영역 배경)과 `THIN`(`panel_frame_thin.png`, PATCH 22, `draw_center=false`·fill 없음 → 뒤 돌바닥이 비침, boost 2.2/1.9/1.5로 어두운 테두리 밝힘 — 영역 구획용). `register(target, expand, style)` + 헬퍼 `_frame_behind[_node](..., style)`. ②**중앙 배틀**: 통짜 액자 대신 전사 초상·보스 초상·정보 컬럼을 각각 STONE 액자로(expand 18~22), 중앙 밴드(BossArea)는 투명 → 배경이 무대. ③**하단**: 전체를 STONE 돌 액자로 덮고 그 안을 모듈·손패·타임라인·기록 THIN 액자로 구획(등록 순서로 STONE 뒤·THIN 앞). ④기본 테마 갈색+금테 박스(`TurnInfoPanel`·자원/투기 바 등)가 돌 액자를 덮는 문제 → `_clear_panel_box`로 StyleBoxEmpty 투명화. `panel_frame_hollow.png`(원본 안쪽면을 PowerShell로 투명화) 생성 |
+| 2026-07-12 | **프레임 안쪽 투명화 (`DRAW_INTERIOR := false`)** — 영역 액자의 불투명 안쪽면(돌바닥)이 뒤 배경 이미지(그라데이션·비네트)를 가리는 문제. `PixelFrameLayer`에 `DRAW_INTERIOR` 스위치 추가: false면 `NinePatchRect.draw_center=false` + 돌바닥 fill 생략 → **액자 테두리만 그리고 안쪽으로 배경이 비침**. true로 되돌리면 돌 텍스처 채움 복귀. GDD §10.1.2 픽셀 프레임 레이어 문서 신설 |
+| 2026-07-12 | **픽셀 프레임 "영역별 큰 액자" 확정 (얇은 테두리 방식 기각)** — ①얇은 테두리(`panel_frame_thin.png`)를 패널마다 두르니 철사 격자처럼 읽히는 문제(교차점 마름모·선 난립)로 **패널별 프레임 방식 기각**. ②돌 텍스처 바닥(`panel_fill.png`, 159×155 균일톤) 타일 채움 조합 시도 — `PixelFrameLayer`에 fill(TextureRect STRETCH_TILE, 없으면 단색 대체) 추가했으나 격자 인상 여전. ③최종: **[상단 바/중앙 배틀/하단 전체] 3개 영역에만 두꺼운 액자**(`panel_frame.png`, 테두리+돌 안쪽면 일체) — `register(target, expand)` **expand 24로 테두리를 내용 밖에 그려** UI 공간 침범 제로(외곽 여백 26·밴드 간격 30이 테두리 자리). 안쪽 소패널은 원래 스타일 복원(액자 속 내용물). ④버그 2건: `PixelFrameLayer`를 index 1 고정 삽입 시 `_setup_background_atmosphere()`의 불투명 그라데이션(index 1~2)이 프레임을 가림 → BattleField 인덱스 기준 삽입으로 수정 / `_process`의 fill 변수가 `ColorRect` 고정 타입이라 TextureRect 대입 크래시 → `Control`로 완화. 얇은 테두리·fill 텍스처는 에셋 보존(추후 소형 위젯용) |
+| 2026-07-12 | **프레임-기능 분리 레이어 + 얇은 테두리 프레임 전환** — ①두꺼운 프레임(테두리+안쪽 띠 ~60px)이 UI 공간을 과점하는 문제로 PixelLab에서 **얇은 테두리 프레임**(`panel_frame_thin.png`, 256×256, 테두리 ~6~20px 구간·중앙 투명) 재생성. ②`PixelFrameLayer`(신규, Control) — 프레임을 기능 패널과 **분리된 배경 레이어**로 이동: NinePatchRect가 대상 패널의 전역 rect를 매 프레임 추적, 중앙이 투명이므로 안쪽 어두운 배경(`FILL_COLOR`)을 ColorRect로 코드 채움. 기능 패널은 투명(StyleBoxEmpty+여백)으로 위에 얹힘 → 드롭존 stylebox 변경이 프레임을 지우는 문제 원천 차단, 프레임/내용 크기 독립 조절(expand). ③여백 재조정: PATCH 60→22, 내용 여백 24→14, FRAME_OVERLAP 40→12 — **UI 가용 공간 사방 ~40px 확대**. ④HandBelt를 `HandBeltMargin`(MarginContainer, margin_left 24)으로 감싸 손패 왼쪽 여백. 두꺼운 구프레임(`panel_frame.png`)은 마켓·로그 모달용으로 유지 (모달=두꺼운 액자 / 상시 패널=얇은 테두리 투트랙) |
+| 2026-07-12 | **드래그 후 픽셀 프레임 사라짐 버그 수정 + 프레임 맞춤 UI 축소** — ①버그: 카드를 들었다 놓으면 파이프(드롭존) 패널의 픽셀 프레임이 사라짐. 원인은 `DropZone._ready()`가 저장한 **프레임 적용 전 평면 스타일**을 드래그 종료마다 복원(자식 `_ready`가 부모보다 먼저 실행되는 순서 문제). 수정: `NOTIFICATION_DRAG_BEGIN` 시점의 **현재 배경**(픽셀 프레임 오버라이드 포함)을 저장 후 복원 — 모든 드롭존 공통 적용. ②프레임 안에 UI가 들어가도록 축소: 손패 카드 176×248→**146×206**, 모듈 슬롯 120×170→**100×138**, 파이프 행 28px·폰트 15/16, 하단 4패널(모듈·손패·파이프·기록) 내용 여백 24px 통일, 미니 로그 폭 0.5→0.32 슬림화. 레이아웃 비율 중앙 0.62·하단 0.52 |
+| 2026-07-11 | **픽셀 다크판타지 UI 리스킨 — 9-slice 패널 프레임 (진행 중)** — 픽셀아트 2D 판타지 방향 전환. PixelLab 생성 `panel_frame.png`(256×256, 다키스트 던전 톤)을 공용 헬퍼 `PixelFrame.apply_panel()`(`StyleBoxTexture`, nearest 필터 + TILE_FIT로 확대 흐림·벙벙 방지)로 주요 패널에 적용: 캐릭터 초상·중앙 배틀(BossArea)·손패·파이프·모듈·미니로그·마켓. **프레임 맞닿기**: 컨테이너 separation 0, 하단 3분할(모듈·손패·파이프·로그)은 음수 간격(`FRAME_OVERLAP` -40)으로 겹쳐 이웃 테두리 병합(패널 사이 어두운 띠 제거). 레이아웃 비율 재조정(중앙 0.62·하단 0.52·외곽 여백 0)으로 프레임 확대. 손패 카드 144×204→**176×248**(마켓 카드와 통일, 커진 프레임에 맞춤). 얇은 바(자원·투기·턴바)는 9-slice 60px 여백이 바 높이를 초과해 깨지므로 제외 — 전용 `bar_frame`(작은 여백) 에셋 대기. 캐릭터·카드 아트는 아직 코믹 톤이라 픽셀 프레임과 혼재(추후 픽셀 아트로 교체 예정) |
 | 2026-07-09 | **보스 방어 리셋 구현 + 밀어내기 지연화 (모의 2패 대응)** — 모의 세트에서 두 패배가 모두 "강철 벽 방15가 리셋 없이 영구 벽 → 느린 빌드가 딜을 못 넣음"이 원인. ①**보스 방어 리셋을 보스 턴 시작 시로 구현**(원래 GDD 스펙 "미구현" 항목) — 웅크리기·강철 벽·야수의 외침 방어가 다음 보스 턴까지만 유지. ②**밀어내기를 "맨 뒤"→"뒤로 3장"으로** (`push_front_to_back`→`push_front_back(slots)`) — 사실상 카드 삭제였던 것을 지연으로 순화, 결국 다시 오게 |
 | 2026-07-08 | **로그 실측치 + 손패 실시간 수치 뱃지** — ①전투 기록이 카드 설명만 나열해 실제 피해를 알 수 없던 문제: 효과 실행 전후 스냅샷으로 실측 기록 — 플레이어 카드 `🗡 강타 ⇒ 보스 −12 (방어 3 파괴) · 방어 +5 · 골드 +3`, 보스 행동 `💀 강타 ⇒ 피해 −9 (방어 2 흡수) · 보스 회복 +2`, POWER 배치는 `→ 파워 존 (C2)`. 모달(full)엔 카드 설명 병기. ②손패 카드 좌하단에 **실시간 예상 수치 뱃지** `⚔9 🛡3` — 보스 방어 차감·투기·단련·인접·선봉·예지 등 현재 상황 반영(호버 프리뷰와 동일 계산을 `compute_card_totals`로 공용화). 보스 방어/HP·투기·골드·파이프 변동 시 자동 갱신 |
 | 2026-07-08 | **파워존 카드화 + 상태 상시 칩** — ①파워존이 기능은 정상이나 13pt 텍스트 한 줄로 표시돼 "카드가 안 들어간다"고 느껴지던 문제: `BossCardDisplay` 카드(130×182, 카운트다운·페이즈 뱃지 내장)로 교체, 임박(카운트≤1) 시 붉은 틴트 깜빡임, 호버 풀사이즈 프리뷰 유지. ②보스 공격력 버프가 순간 연출뿐 상시 표시가 없고 취약도 눈에 안 띄던 문제: 페이즈 라벨 옆에 **상시 상태 칩** `⚔+N`(공격력 버프)·`🐺×1.2/대기`(피 냄새, HP 조건 미충족 시 흐리게) 추가, 취약 라벨 22pt로 확대 + 툴팁 |

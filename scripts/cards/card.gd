@@ -59,6 +59,10 @@ func _apply_data() -> void:
 	if data.artwork != null:
 		artwork_area.texture = data.artwork
 
+	# 카드 프레임을 타입별 색으로 (공격=붉은구리 / 스킬=블루스틸 / 파워=바이올렛 / 모듈=골드)
+	if card_front is PanelContainer:
+		card_front.add_theme_stylebox_override("panel", DarkFantasyTheme.card_frame(data.card_type))
+
 	match data.card_type:
 		CardData.CardType.ATTACK:
 			type_label.text = "공격"

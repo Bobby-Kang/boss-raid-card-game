@@ -164,6 +164,7 @@ var _prev_boss_hp:   int = -1
 func _ready() -> void:
 	theme = DarkFantasyTheme.build()   # 전체 UI 다크 판타지 테마 적용
 	_setup_background_atmosphere()
+	_apply_premium_ui()   # A2 프리미엄 금속 패널 스타일 적용
 	_setup_helpers()
 	_setup_phase_deck_chips()   # 보스 덱 카운트 → 3-페이즈 칩 행 교체
 	_setup_game_context()
@@ -185,6 +186,82 @@ func _ready() -> void:
 
 
 # === 헬퍼 노드 (분리된 책임) ===
+
+# A2 프리미엄 UI — 금속 재질 StyleBoxFlat 패널(청동 테두리·라운드·그림자).
+# 프레임 이미지 없이 코드 스타일박스로 통일. 중앙 배틀 밴드만 투명(배경 무대 노출).
+func _apply_premium_ui() -> void:
+	# 외곽·간격을 표준 프리미엄 간격으로 (프레임 시절의 큰 여백 원복)
+	var bf := get_node_or_null("BattleField")
+	if bf is MarginContainer:
+		for m in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
+			bf.add_theme_constant_override(m, 12)
+	for p in [
+		"BattleField/VBoxLayout",
+		"BattleField/VBoxLayout/BossArea/BossVBox/TopRow",
+		"BattleField/VBoxLayout/BottomArea",
+		"BattleField/VBoxLayout/BottomArea/StatusBars",
+		"BattleField/VBoxLayout/BottomArea/PlayerZones",
+	]:
+		var c := get_node_or_null(p)
+		if c is Container:
+			c.add_theme_constant_override("separation", 12)
+
+	# 내용 패널 = 금속 프리미엄 패널 (청동 테두리 + 라운드 + 그림자)
+	for pp in [
+		"BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel",
+		"BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar",
+		"BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar",
+		"BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility",
+		"BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone",
+		"BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel",
+	]:
+		var n := get_node_or_null(pp)
+		if n is PanelContainer:
+			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # 프레임 선명하게
+			n.add_theme_stylebox_override("panel", _premium_panel())
+
+	# 초상 = 아트를 장식 테두리로 프레이밍 (중앙 미표시라 아트가 깨끗이 보임)
+	for pf in [
+		"BattleField/VBoxLayout/BossArea/BossVBox/TopRow/PlayerFace",
+		"BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossFace",
+	]:
+		var n := get_node_or_null(pf)
+		if n is PanelContainer:
+			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			n.add_theme_stylebox_override("panel", _portrait_frame())
+
+	# 마켓 외곽 래퍼는 투명 (안쪽 MarketPanel이 프레임 담당 → 이중 프레임 방지)
+	var mframe := get_node_or_null("MarketWindow/MarketFrame")
+	if mframe is PanelContainer:
+		var e := StyleBoxEmpty.new()
+		mframe.add_theme_stylebox_override("panel", e)
+
+	# 모듈 슬롯 = 골드 Kenney 프레임(빈 소켓)
+	for sp in [
+		"BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot1",
+		"BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot2",
+	]:
+		var n := get_node_or_null(sp)
+		if n is PanelContainer:
+			n.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 6))
+
+	# 중앙 배틀 밴드 = 투명 무대 (배경 그라데이션이 그대로 보임)
+	var boss_area := get_node_or_null("BattleField/VBoxLayout/BossArea")
+	if boss_area is PanelContainer:
+		var stage := StyleBoxEmpty.new()
+		for side in ["left", "right", "top", "bottom"]:
+			stage.set("content_margin_%s" % side, 6)
+		boss_area.add_theme_stylebox_override("panel", stage)
+
+
+# 내용 패널 / 초상 프레임 — 공용 Kenney 프레임 헬퍼 사용
+func _premium_panel() -> StyleBoxTexture:
+	return DarkFantasyTheme.kenney_panel(true, 14)
+
+
+func _portrait_frame() -> StyleBoxTexture:
+	return DarkFantasyTheme.kenney_panel(false, 8)   # 중앙 미표시 → 아트 깨끗
+
 
 # 배경 깊이감 — 세로 그라데이션 + 가장자리 비네팅
 func _setup_background_atmosphere() -> void:
@@ -731,6 +808,8 @@ func _rebuild_pipe_ui() -> void:
 	for child in pipe_queue.get_children():
 		child.queue_free()
 
+	# 행 사이 간격
+	pipe_queue.add_theme_constant_override("separation", 5)
 	# 큐 카드마다 행 생성 — 5장 단위(미래 손패)마다 구분선으로 "타임라인" 가독성 확보
 	for i in queue_cards.size():
 		if i % DRAW_COUNT == 0:
@@ -755,23 +834,49 @@ func _make_hand_divider(group: int) -> Control:
 	return lbl
 
 
+# 파이프 행의 카드 타입 색 (공격 빨강 / 스킬 파랑 / 파워 보라 / 모듈 골드)
+func _pipe_type_color(card: Control) -> Color:
+	if card.data == null:
+		return Color(0.60, 0.50, 0.35)
+	match card.data.card_type:
+		CardData.CardType.ATTACK: return Color(0.88, 0.46, 0.34)
+		CardData.CardType.SKILL:  return Color(0.44, 0.64, 0.90)
+		CardData.CardType.POWER:  return Color(0.66, 0.52, 0.84)
+		CardData.CardType.MODULE: return Color(0.86, 0.70, 0.40)
+	return Color(0.60, 0.50, 0.35)
+
+
 func _create_pipe_row(index: int, card: Control) -> Control:
+	var accent := _pipe_type_color(card)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 8)
+	row.custom_minimum_size = Vector2(0, 34)
 
-	# 순서 번호
-	var num_label := Label.new()
-	num_label.text = str(index)
-	num_label.custom_minimum_size = Vector2(18, 0)
-	num_label.add_theme_font_size_override("font_size", 16)
-	num_label.add_theme_color_override("font_color", Color(1, 0.85, 0.3, 1))
-	num_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(num_label)
+	# 순서 노드 — 타입색 원형 뱃지 (타임라인 스톱)
+	var node := PanelContainer.new()
+	node.custom_minimum_size = Vector2(26, 26)
+	node.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var ns := StyleBoxFlat.new()
+	ns.bg_color = accent
+	ns.set_corner_radius_all(13)
+	ns.content_margin_left = 0
+	ns.content_margin_right = 0
+	ns.content_margin_top = 0
+	ns.content_margin_bottom = 0
+	node.add_theme_stylebox_override("panel", ns)
+	var node_lbl := Label.new()
+	node_lbl.text = str(index)
+	node_lbl.add_theme_font_size_override("font_size", 13)
+	node_lbl.add_theme_color_override("font_color", Color(0.10, 0.08, 0.06))
+	node_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	node_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	node.add_child(node_lbl)
+	row.add_child(node)
 
-	# 미니 카드 패널
+	# 카드 항목 — 왼쪽 타입색 스파인 + 어두운 바
 	var mini_panel := PanelContainer.new()
-	mini_panel.custom_minimum_size = Vector2(0, 28)
 	mini_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mini_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	# 호버 활성화 — 효과 프리뷰 + 풀사이즈 카드 프리뷰 + 툴팁
 	mini_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	if card.data:
@@ -785,25 +890,31 @@ func _create_pipe_row(index: int, card: Control) -> Control:
 		mini_panel.mouse_exited.connect(card_hover.on_pipe_row_hover.bind(card, mini_panel, false))
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.22, 0.20, 0.18, 0.9)
-	style.border_color = Color(0.55, 0.45, 0.3, 1)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(3)
+	style.bg_color = Color(0.13, 0.11, 0.09, 0.92)
+	style.border_color = accent
+	style.border_width_left = 4          # 타입색 스파인
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_right = 5
+	style.content_margin_left = 9
+	style.content_margin_right = 9
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
 	mini_panel.add_theme_stylebox_override("panel", style)
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 4)
+	hbox.add_theme_constant_override("separation", 6)
 
 	var cost_lbl := Label.new()
-	cost_lbl.text = "[%d]" % card.data.cost
-	cost_lbl.add_theme_font_size_override("font_size", 15)
-	cost_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 0.4, 1))
+	cost_lbl.text = "%d AP" % card.data.cost
+	cost_lbl.add_theme_font_size_override("font_size", 13)
+	cost_lbl.add_theme_color_override("font_color", Color(0.45, 0.85, 0.45, 1))
 	cost_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(cost_lbl)
 
 	var name_lbl := Label.new()
 	name_lbl.text = card.data.card_name
 	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.add_theme_color_override("font_color", accent.lightened(0.3))
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(name_lbl)
@@ -1415,6 +1526,8 @@ func _build_log_window() -> void:
 	frame.offset_right = 420
 	frame.offset_top = -320
 	frame.offset_bottom = 320
+	frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	frame.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 22))   # Kenney 프레임
 	_log_root.add_child(frame)
 
 	var vb := VBoxContainer.new()
@@ -1454,8 +1567,10 @@ func _build_mini_log() -> void:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_FILL
-	panel.size_flags_stretch_ratio = 0.5   # 파이프 오른쪽 영역 축소
+	panel.size_flags_stretch_ratio = 0.32   # 파이프 오른쪽 영역 축소 (거의 비어 슬림하게)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	panel.add_theme_stylebox_override("panel", _premium_panel())   # 기록 = Kenney 프레임 패널
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 4)
