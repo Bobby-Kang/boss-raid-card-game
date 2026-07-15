@@ -9,7 +9,7 @@
 script = ExtResource("3_exec")
 hp_threshold = 0.3
 low_damage = 8
-high_damage = 25
+high_damage = 20
 
 [resource]
 script = ExtResource("1_script")
@@ -18,6 +18,6 @@ card_name = "처형의 일격"
 cost = 3
 gold_cost = 10
 tier = 3
-description = "보스 HP 30% 이하면 25 피해, 아니면 8 피해"
+description = "보스 HP 30% 이하면 20 피해, 아니면 8 피해"
 card_type = 0
 effects = Array[ExtResource("2_base")]([SubResource("Effect_exec")])

@@ -524,7 +524,7 @@ var boss_deck_system: BossDeckSystem = null
 | 속공 | 1 | 6 | 보스에게 4 피해 + 드로우 1 | T2 |
 | **분노의 직격** ⭐ | 0 | 6 | **투기 5 소비**, 보스 15 피해 | T2 |
 | **광폭의 검** ⭐ | 2 | 9 | 보스 **(8 + 투기)** 피해 | T3 |
-| **처형의 일격** ⭐ | 3 | 10 | 보스 HP **30% 이하 → 25 피해**, 아니면 8 피해 | T3 |
+| **처형의 일격** ⭐ | 3 | 10 | 보스 HP **30% 이하 → 20 피해**, 아니면 8 피해 | T3 |
 | **선봉 돌파** 🕰 | 1 | 5 | 보스 4 피해 + 🚩**선봉이면 +6** | T2 |
 | **예지의 일격** 🕰 | 2 | 6 | 보스 5 피해 + 👁**보스 다음 카드가 공격이면 +6** | T2 |
 
@@ -726,7 +726,7 @@ var boss_deck_system: BossDeckSystem = null
 
 ### Phase C — 모듈 시스템
 - [x] `ModuleAbility` 베이스 클래스 + 훅 인터페이스 (`on_boss_turn_end`, `on_player_turn_start` 등)
-- [x] 전사 시작 모듈: **반격 태세** (보스 턴 종료 시 방어도 1+이면 보스 2 피해)
+- [x] 전사 시작 모듈: **반격 태세** (보스 턴 종료 시 방어도 1+이면 보스 3 피해)
 - [x] 전사 마켓 모듈: **견고한 갑옷** (플레이어 턴 시작 시 방어도 +2)
 - [x] `ExileEffect` — 카드 영구 소멸 + `GameContext.exile_cards` Callable
 - [ ] 모듈 제거/교체 UI
@@ -790,6 +790,7 @@ var boss_deck_system: BossDeckSystem = null
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-07-15 | **밸런스 4차(모의 3판) + 카드 타입 전면 교정** — UI 리스킨 후 회귀 모의 3판(러시 승·컨트롤 패·경제 신승). 진단: 보스 방어 리셋으로 지난 2패 원인은 해소됐으나 ①컨트롤 승리 플랜 부재 ②처형 커트라인이 P3 콘텐츠를 스킵. **패치 A**: 처형의 일격 high 25→**20**(피니셔 유지·P3 1~2턴은 보게). **패치 B**: 반격 태세 보스 피해 2→**3**(`counter_stance_ability.gd`, 컨트롤 기본 딜 엔진 강화 — 8라운드 누적 +8딜로 2판 부족분 메움). **카드 타입 교정**: 감사 결과 방어 2장(철벽 수비·불굴의 의지)·골드 4장(약탈·전리품·대약탈·상인의 눈)이 `card_type` 누락→기본 ATTACK(0)으로 오작동 → SKILL(1) 교정. 이들이 잘못 **투기 +1**을 주고 공격 인접 판정·빨간 프레임에 걸리던 버그 해소(투기 = *공격 사용 시*만 정상). 공격 레인 10장도 `card_type=0` 명시화. 전 40장 타입-기능 일치 검증(불일치 0) |
 | 2026-07-15 | **카드 UX 마감 — 부채꼴 손패·호버 확대·카드 크롬·Pretendard(MSDF)** — ①**부채꼴 손패**: HandBelt HBox→Control 자유배치, 하단 중앙 피벗·카드당 4° 회전·30px 겹침·중앙 crest·바닥 정렬(`_update_hand_display` 재작성). ②**호버 확대 1.9×**(`_on_hand_card_hover`) — 회전 펴짐+z 200, 이탈 시 fan_pos/rot 메타로 복원. 폰트 깨짐은 **Pretendard SemiBold MSDF 임포트**로 해결(폰트 .import gitignore 예외). ③**카드 크롬**(`_style_card_chrome`): 타입색 이름 배너(하단 라인)·원형 금속 코스트 보석(StyleBoxFlat_cost_gem)·타입 배너 아이콘(⚔✦☄◈)·아트 매트(ArtMatte 신규 노드). ④**전역 필터 Linear 복귀**(nearest가 폰트 뭉갬) + 프레임 요소만 개별 nearest. ⑤**모듈 슬롯 152×212**(카드 실물 크기) + PlayerAbility stretch 0.4→0.85. ⑥실행 창 1600×900 override + `stretch/aspect=keep`(창 축소 시 리플로우 깨짐 방지). 폰트는 Noto Sans KR 시도 후 가독성 문제로 Pretendard 교체(OFL, 크레딧 추가) |
 | 2026-07-14 | **UI 전면 리스킨 → Kenney Fantasy UI Borders (CC0) 프레임으로 통일** — 픽셀 돌 액자(`PixelFrameLayer`) 방식이 코믹/일러스트 아트와 톤 충돌·격자 문제로 계속 겉돌아 **에셋 기반으로 전환**. ①**베벨 굽기 파이프라인**: Kenney 흰 장식 프레임(반투명 중앙)을 PowerShell로 **2톤 굽기** — 테두리는 세로 그라데이션(위 하이라이트→아래 그림자)로 도금 금속감, 중앙은 어두운 웜 불투명 → `assets/art/Kenny/baked/frame_{gold,steel,blued,attack,power}.png` + 버튼 4상태 `btn_{normal,hover,pressed,disabled}.png`(#001 둥근 프레임). modulate 단색 틴트는 중앙이 진흙색이 되어 기각. ②**`DarkFantasyTheme` 공용 헬퍼**: `kenney_panel(draw_center, margin, tex)` / `card_frame(card_type)`(타입별 색) / `kenney_button(state)`. 테마 기본 PanelContainer/Button = Kenney → **전 화면 자동 통일**(시작·선택·전투·마켓·로그·결과·오버레이). ③**요소별 적용**(`_apply_premium_ui`): 초상=테두리만(draw_center=false)·중앙 배틀 밴드=투명 무대·모듈 슬롯·미니로그·마켓 외곽 투명(이중 프레임 방지). ④**카드**: 타입별 색 프레임(공격 붉은구리/스킬 블루스틸/파워 바이올렛/모듈 골드). ⑤**타임라인 파이프 재설계**: 타입색 원형 노드 + 왼쪽 타입색 스파인 + 타입색 카드명(손패 색 체계 연결). ⑥**보스 카드 위협화**: 붉은 프레임 + 방사형 크림슨 위협 비네트 + 크림슨 이름/설명판 + 발광 카운트다운 뱃지. `PixelFrameLayer`/`PixelFrame`는 미사용 보존. GDD §10.1.1~10.1.2 재작성 |
 | 2026-07-12 | **픽셀 프레임 2단 구조 (STONE 배경 + THIN 구획) + 요소별 액자 구도 확정** — 레퍼런스 목업(다키스트 던전식 요소별 액자)에 맞춰 재구성. ①`PixelFrameLayer`에 **두 스타일 도입**: `STONE`(`panel_frame.png`, PATCH 60, 돌 안쪽면 채움 — 큰 영역 배경)과 `THIN`(`panel_frame_thin.png`, PATCH 22, `draw_center=false`·fill 없음 → 뒤 돌바닥이 비침, boost 2.2/1.9/1.5로 어두운 테두리 밝힘 — 영역 구획용). `register(target, expand, style)` + 헬퍼 `_frame_behind[_node](..., style)`. ②**중앙 배틀**: 통짜 액자 대신 전사 초상·보스 초상·정보 컬럼을 각각 STONE 액자로(expand 18~22), 중앙 밴드(BossArea)는 투명 → 배경이 무대. ③**하단**: 전체를 STONE 돌 액자로 덮고 그 안을 모듈·손패·타임라인·기록 THIN 액자로 구획(등록 순서로 STONE 뒤·THIN 앞). ④기본 테마 갈색+금테 박스(`TurnInfoPanel`·자원/투기 바 등)가 돌 액자를 덮는 문제 → `_clear_panel_box`로 StyleBoxEmpty 투명화. `panel_frame_hollow.png`(원본 안쪽면을 PowerShell로 투명화) 생성 |

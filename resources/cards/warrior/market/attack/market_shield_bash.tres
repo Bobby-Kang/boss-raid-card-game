@@ -17,6 +17,7 @@ script = ExtResource("4_block_dmg")
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "방패 밀치기"
+card_type = 0
 cost = 1
 gold_cost = 4
 tier = 1

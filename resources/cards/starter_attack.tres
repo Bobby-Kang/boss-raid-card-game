@@ -12,6 +12,7 @@ value = 3
 [resource]
 script = ExtResource("1_script")
 card_name = "베기"
+card_type = 0
 cost = 1
 artwork = ExtResource("4_art")
 effects = Array[ExtResource("2_base")]([SubResource("Effect_damage")])

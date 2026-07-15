@@ -16,6 +16,7 @@ peek_count = 1
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "돌격"
+card_type = 0
 cost = 1
 gold_cost = 4
 description = "보스에게 3 피해 — 파이프 다음 카드가 공격이면 +4 (연계 돌진)"

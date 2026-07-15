@@ -13,6 +13,7 @@ value = 3
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "약탈"
+card_type = 1
 cost = 0
 gold_cost = 3
 tier = 1

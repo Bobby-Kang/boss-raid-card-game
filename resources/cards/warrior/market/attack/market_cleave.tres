@@ -14,6 +14,7 @@ per_temper = 3
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "단련된 참격"
+card_type = 0
 cost = 2
 gold_cost = 6
 tier = 2

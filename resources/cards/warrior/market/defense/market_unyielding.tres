@@ -18,6 +18,7 @@ value = 4
 script = ExtResource("1_script")
 artwork = ExtResource("9_art")
 card_name = "불굴의 의지"
+card_type = 1
 cost = 1
 gold_cost = 5
 tier = 1
