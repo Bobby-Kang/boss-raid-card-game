@@ -417,7 +417,7 @@ theme_override_constants/separation = 10
 [node name="PlayerAbility" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones" unique_id=478723562]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.4
+size_flags_stretch_ratio = 0.85
 
 [node name="VBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility" unique_id=1371665688]
 layout_mode = 2
@@ -453,7 +453,7 @@ vertical_alignment = 1
 
 [node name="ActiveSlot1" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow" unique_id=1989959366]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 138)
+custom_minimum_size = Vector2(152, 212)
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 1
@@ -472,7 +472,7 @@ vertical_alignment = 1
 
 [node name="ActiveSlot2" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow" unique_id=2032636891]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 138)
+custom_minimum_size = Vector2(152, 212)
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 1
@@ -517,10 +517,9 @@ theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 24
 
-[node name="HandBelt" type="HBoxContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone/ActiveZoneVBox/HandBeltMargin" unique_id=1565481536]
+[node name="HandBelt" type="Control" parent="BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone/ActiveZoneVBox/HandBeltMargin" unique_id=1565481536]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 8
 
 [node name="TimelinePipePanel" type="PanelContainer" parent="BattleField/VBoxLayout/BottomArea/PlayerZones" unique_id=1898512105]
 unique_name_in_owner = true

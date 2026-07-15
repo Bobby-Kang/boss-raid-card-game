@@ -80,7 +80,7 @@
 ### 4.3 UI 구성
 | 영역 | 위치 | 내용 |
 |------|------|------|
-| 🃏 손패 | 하단 중앙 | 금색 테두리(`StyleBoxFlat_active`, 다크 판타지 톤), 드래그 가능한 손패 5장 |
+| 🃏 손패 | 하단 중앙 | **부채꼴 배치**(HandBelt=Control 자유배치, 하단 중앙 회전축·카드당 4°·30px 겹침·중앙 crest) + **호버 확대 1.9×**(회전 펴짐·최상단, MSDF 폰트로 확대 시에도 선명). 바닥 정렬로 카드가 아래쪽에 안착 |
 | 📜 타임라인 파이프 | 하단 우측 | 미니 카드 행(비용 칩 + 카드명 + 🔨단련 뱃지) 세로 스크롤. 행 호버 시 풀사이즈 카드 프리뷰 |
 
 ### 4.4 파이프 메커니즘 (USP 강화 — *섞지 않는 공개 FIFO*를 게임플레이로)
@@ -454,15 +454,18 @@ var boss_deck_system: BossDeckSystem = null
   - `kenney_button(state)` — 버튼 4상태 (`btn_normal/hover/pressed/disabled`, Kenney #001 둥근 프레임 기반)
 - **테마 기본** PanelContainer/Panel/Button = Kenney → 시작·선택·전투·모달·오버레이·결과까지 전 화면 자동 통일
 - 배경: 세로 그라데이션 + 가장자리 비네팅 (`_setup_background_atmosphere`)
-- nearest 필터 전역 (`project.godot` `default_texture_filter=0`) — 픽셀 프레임 선명
+- 텍스처 필터: **전역 Linear**(`default_texture_filter=1`, 텍스트·아트 부드럽게) + **프레임 요소만 개별 nearest**(패널·카드·초상·모달 등 `texture_filter` 명시) — 전역 nearest는 폰트 안티에일리어싱을 뭉개 기각
+- **폰트**: Pretendard SemiBold (OFL, `assets/fonts/`) — 테마 `default_font`. **MSDF 임포트**(`multichannel_signed_distance_field=true`)로 카드 확대 등 어떤 배율에도 글자 선명 (폰트 `.import`는 gitignore 예외로 추적)
+- **창/스케일**: 디자인 해상도 1920×1080(`viewport`) 유지, 실행 창 `window_*_override` **1600×900** + `stretch/aspect="keep"` — 창 크기와 무관하게 UI 통째 비율 스케일(리플로우 깨짐 방지)
 
 ### 10.1.2 프레임 적용 범위 (`_apply_premium_ui`)
 - **초상**(전사·보스): `draw_center=false` 프레임 → 아트가 깨끗이 보이고 테두리만 감쌈
 - **카드**(손패·마켓·프리뷰, `Card._apply_data`): `card_frame(card_type)` 타입별 색 — 손패 카드와 타임라인 색 체계 일치
+- **카드 크롬**(`_style_card_chrome`): 이름 배너 = 어두운 타입색 + 하단 타입색 라인 / 코스트 = **원형 금속 보석 뱃지**(금테+그림자) / 타입 배너 = 타입색 채움 + 아이콘(⚔공격·✦스킬·☄파워·◈모듈) / **아트 매트** = 프레임 안쪽 타입색 얇은 테두리
 - **보스 카드**(`BossCardDisplay`): 붉은 프레임 + **위협 비네트**(방사형 크림슨 어둠) + 크림슨 이름/설명판 + **발광 카운트다운 뱃지**(크림슨 원형 + 발광 링 + 그림자)
 - **버튼**: Kenney #001 4상태 (호버 밝아짐 / 눌림 어둡게 / 비활성 회색)
 - **타임라인 파이프**: 타입색 원형 노드(타임라인 스톱) + 왼쪽 타입색 스파인 + 타입색 카드명
-- **모듈 슬롯 / 미니로그 / 마켓·로그 모달**: 통일 (마켓 외곽 래퍼는 투명 처리 — 이중 프레임 방지)
+- **모듈 슬롯 / 미니로그 / 마켓·로그 모달**: 통일 (마켓 외곽 래퍼는 투명 처리 — 이중 프레임 방지). 모듈 슬롯은 카드 실제 크기 **152×212** + PlayerAbility 폭 stretch 0.85 — 장착 모듈이 풀사이즈로 보임
 - **중앙 배틀 밴드**(BossArea): 투명 무대 → 배경 그라데이션 노출
 - 드롭존 stylebox 변경이 프레임을 지우지 못하게 `DropZone`이 드래그 시작 시점의 배경을 저장·복원
 - (구 `PixelFrameLayer`·`PixelFrame` — 픽셀 돌 액자 실험 코드, 현재 미사용·보존)
@@ -787,6 +790,7 @@ var boss_deck_system: BossDeckSystem = null
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-07-15 | **카드 UX 마감 — 부채꼴 손패·호버 확대·카드 크롬·Pretendard(MSDF)** — ①**부채꼴 손패**: HandBelt HBox→Control 자유배치, 하단 중앙 피벗·카드당 4° 회전·30px 겹침·중앙 crest·바닥 정렬(`_update_hand_display` 재작성). ②**호버 확대 1.9×**(`_on_hand_card_hover`) — 회전 펴짐+z 200, 이탈 시 fan_pos/rot 메타로 복원. 폰트 깨짐은 **Pretendard SemiBold MSDF 임포트**로 해결(폰트 .import gitignore 예외). ③**카드 크롬**(`_style_card_chrome`): 타입색 이름 배너(하단 라인)·원형 금속 코스트 보석(StyleBoxFlat_cost_gem)·타입 배너 아이콘(⚔✦☄◈)·아트 매트(ArtMatte 신규 노드). ④**전역 필터 Linear 복귀**(nearest가 폰트 뭉갬) + 프레임 요소만 개별 nearest. ⑤**모듈 슬롯 152×212**(카드 실물 크기) + PlayerAbility stretch 0.4→0.85. ⑥실행 창 1600×900 override + `stretch/aspect=keep`(창 축소 시 리플로우 깨짐 방지). 폰트는 Noto Sans KR 시도 후 가독성 문제로 Pretendard 교체(OFL, 크레딧 추가) |
 | 2026-07-14 | **UI 전면 리스킨 → Kenney Fantasy UI Borders (CC0) 프레임으로 통일** — 픽셀 돌 액자(`PixelFrameLayer`) 방식이 코믹/일러스트 아트와 톤 충돌·격자 문제로 계속 겉돌아 **에셋 기반으로 전환**. ①**베벨 굽기 파이프라인**: Kenney 흰 장식 프레임(반투명 중앙)을 PowerShell로 **2톤 굽기** — 테두리는 세로 그라데이션(위 하이라이트→아래 그림자)로 도금 금속감, 중앙은 어두운 웜 불투명 → `assets/art/Kenny/baked/frame_{gold,steel,blued,attack,power}.png` + 버튼 4상태 `btn_{normal,hover,pressed,disabled}.png`(#001 둥근 프레임). modulate 단색 틴트는 중앙이 진흙색이 되어 기각. ②**`DarkFantasyTheme` 공용 헬퍼**: `kenney_panel(draw_center, margin, tex)` / `card_frame(card_type)`(타입별 색) / `kenney_button(state)`. 테마 기본 PanelContainer/Button = Kenney → **전 화면 자동 통일**(시작·선택·전투·마켓·로그·결과·오버레이). ③**요소별 적용**(`_apply_premium_ui`): 초상=테두리만(draw_center=false)·중앙 배틀 밴드=투명 무대·모듈 슬롯·미니로그·마켓 외곽 투명(이중 프레임 방지). ④**카드**: 타입별 색 프레임(공격 붉은구리/스킬 블루스틸/파워 바이올렛/모듈 골드). ⑤**타임라인 파이프 재설계**: 타입색 원형 노드 + 왼쪽 타입색 스파인 + 타입색 카드명(손패 색 체계 연결). ⑥**보스 카드 위협화**: 붉은 프레임 + 방사형 크림슨 위협 비네트 + 크림슨 이름/설명판 + 발광 카운트다운 뱃지. `PixelFrameLayer`/`PixelFrame`는 미사용 보존. GDD §10.1.1~10.1.2 재작성 |
 | 2026-07-12 | **픽셀 프레임 2단 구조 (STONE 배경 + THIN 구획) + 요소별 액자 구도 확정** — 레퍼런스 목업(다키스트 던전식 요소별 액자)에 맞춰 재구성. ①`PixelFrameLayer`에 **두 스타일 도입**: `STONE`(`panel_frame.png`, PATCH 60, 돌 안쪽면 채움 — 큰 영역 배경)과 `THIN`(`panel_frame_thin.png`, PATCH 22, `draw_center=false`·fill 없음 → 뒤 돌바닥이 비침, boost 2.2/1.9/1.5로 어두운 테두리 밝힘 — 영역 구획용). `register(target, expand, style)` + 헬퍼 `_frame_behind[_node](..., style)`. ②**중앙 배틀**: 통짜 액자 대신 전사 초상·보스 초상·정보 컬럼을 각각 STONE 액자로(expand 18~22), 중앙 밴드(BossArea)는 투명 → 배경이 무대. ③**하단**: 전체를 STONE 돌 액자로 덮고 그 안을 모듈·손패·타임라인·기록 THIN 액자로 구획(등록 순서로 STONE 뒤·THIN 앞). ④기본 테마 갈색+금테 박스(`TurnInfoPanel`·자원/투기 바 등)가 돌 액자를 덮는 문제 → `_clear_panel_box`로 StyleBoxEmpty 투명화. `panel_frame_hollow.png`(원본 안쪽면을 PowerShell로 투명화) 생성 |
 | 2026-07-12 | **프레임 안쪽 투명화 (`DRAW_INTERIOR := false`)** — 영역 액자의 불투명 안쪽면(돌바닥)이 뒤 배경 이미지(그라데이션·비네트)를 가리는 문제. `PixelFrameLayer`에 `DRAW_INTERIOR` 스위치 추가: false면 `NinePatchRect.draw_center=false` + 돌바닥 fill 생략 → **액자 테두리만 그리고 안쪽으로 배경이 비침**. true로 되돌리면 돌 텍스처 채움 복귀. GDD §10.1.2 픽셀 프레임 레이어 문서 신설 |

@@ -21,11 +21,13 @@ func _apply_frames() -> void:
 	for p in ["RootMargin/RootVBox/Header", ma + "PlayerPanel", ma + "BossPanel", "RootMargin/RootVBox/Footer"]:
 		var n := get_node_or_null(p)
 		if n is PanelContainer:
+			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			n.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 14))
 	# 초상 페이스 패널 — 중앙 미표시(아트 깨끗) 프레임
 	for p in [ma + "PlayerPanel/PlayerMargin/PlayerVBox/PlayerFacePanel", ma + "BossPanel/BossMargin/BossVBox/BossFacePanel"]:
 		var n := get_node_or_null(p)
 		if n is PanelContainer:
+			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			n.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(false, 6))
 
 

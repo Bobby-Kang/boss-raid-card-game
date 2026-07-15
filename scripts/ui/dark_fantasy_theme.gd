@@ -74,6 +74,10 @@ static func kenney_panel(draw_center: bool = true, content_margin: int = 14, tex
 static func build() -> Theme:
 	var theme := Theme.new()
 	theme.default_font_size = 16
+	# 모던 한글 폰트 (Pretendard SemiBold, OFL) — 전 화면 기본 폰트
+	var font_path := "res://assets/fonts/Pretendard-SemiBold.ttf"
+	if ResourceLoader.exists(font_path):
+		theme.default_font = load(font_path)
 
 	# ─── PanelContainer / Panel — 기본을 Kenney 프레임으로 (전 화면 통일) ───
 	theme.set_stylebox("panel", "PanelContainer", kenney_panel(true, 10))

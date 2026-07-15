@@ -222,6 +222,11 @@ assets/
   - Licensed under CC0 1.0 Universal (Public Domain)
   - https://creativecommons.org/publicdomain/zero/1.0/
 
+### 폰트 (Font)
+- **Pretendard** by Kil Hyung-jin — [github.com/orioncactus/pretendard](https://github.com/orioncactus/pretendard)
+  - 전 화면 기본 폰트 (SemiBold), 라이선스 전문 `assets/fonts/Pretendard-OFL.txt`
+  - Licensed under SIL Open Font License 1.1
+
 ### 아트워크 (Artwork)
 - 캐릭터 초상화·카드 일러스트: Google Gemini 생성 이미지
 

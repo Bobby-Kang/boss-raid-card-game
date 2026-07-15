@@ -4,6 +4,8 @@
 
 # Godot import files
 *.import
+# 단, 폰트 import는 MSDF 등 필수 설정을 담으므로 추적
+!assets/fonts/*.import
 
 # Claude Code
 .claude/

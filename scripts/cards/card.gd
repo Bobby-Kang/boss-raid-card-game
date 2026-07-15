@@ -10,6 +10,9 @@ signal hover_changed(card: Control, entered: bool)
 @onready var desc_label: Label = %DescLabel
 @onready var type_label: Label = %TypeLabel
 @onready var cost_label: Label = %CostLabel
+@onready var name_bg: PanelContainer = %NameBg
+@onready var type_bg: PanelContainer = %TypeBg
+@onready var art_matte: Panel = %ArtMatte
 
 var is_face_up: bool = false
 var is_active: bool = true
@@ -60,20 +63,63 @@ func _apply_data() -> void:
 		artwork_area.texture = data.artwork
 
 	# 카드 프레임을 타입별 색으로 (공격=붉은구리 / 스킬=블루스틸 / 파워=바이올렛 / 모듈=골드)
+	var accent := _card_accent(data.card_type)
 	if card_front is PanelContainer:
+		card_front.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # 프레임 선명
 		card_front.add_theme_stylebox_override("panel", DarkFantasyTheme.card_frame(data.card_type))
+	_style_card_chrome(accent)
 
 	match data.card_type:
 		CardData.CardType.ATTACK:
-			type_label.text = "공격"
+			type_label.text = "⚔ 공격"
 		CardData.CardType.SKILL:
-			type_label.text = "스킬"
+			type_label.text = "✦ 스킬"
 		CardData.CardType.POWER:
-			type_label.text = "파워"
+			type_label.text = "☄ 파워"
 		CardData.CardType.MODULE:
-			type_label.text = "모듈"
+			type_label.text = "◈ 모듈"
 		_:
 			type_label.text = "알 수 없음"
+
+
+# 카드 타입 색 (프레임·타임라인과 동일 체계)
+func _card_accent(t: int) -> Color:
+	match t:
+		CardData.CardType.ATTACK: return Color(0.86, 0.42, 0.31)
+		CardData.CardType.SKILL:  return Color(0.44, 0.63, 0.90)
+		CardData.CardType.POWER:  return Color(0.66, 0.51, 0.83)
+		CardData.CardType.MODULE: return Color(0.85, 0.68, 0.40)
+	return Color(0.70, 0.60, 0.40)
+
+
+# 카드 크롬(이름 배너·타입 배너·아트 매트)을 타입색으로 정돈
+func _style_card_chrome(accent: Color) -> void:
+	# ① 이름 배너 — 어두운 타입색 + 하단 타입색 라인
+	if name_bg:
+		var ns := StyleBoxFlat.new()
+		ns.bg_color = Color(accent.r * 0.26, accent.g * 0.26, accent.b * 0.26, 0.9)
+		ns.border_width_bottom = 2
+		ns.border_color = accent
+		ns.set_corner_radius_all(5)
+		name_bg.add_theme_stylebox_override("panel", ns)
+	if name_label:
+		name_label.add_theme_color_override("font_color", accent.lightened(0.6))
+	# ③ 타입 배너 — 타입색 채움
+	if type_bg:
+		var ts := StyleBoxFlat.new()
+		ts.bg_color = Color(accent.r * 0.75, accent.g * 0.75, accent.b * 0.75, 0.92)
+		ts.set_corner_radius_all(4)
+		type_bg.add_theme_stylebox_override("panel", ts)
+	if type_label:
+		type_label.add_theme_color_override("font_color", accent.lightened(0.75))
+	# ④ 아트 매트 — 안쪽 테두리를 타입색으로
+	if art_matte:
+		var ms := StyleBoxFlat.new()
+		ms.bg_color = Color(0, 0, 0, 0)
+		ms.set_border_width_all(2)
+		ms.border_color = Color(accent.r, accent.g, accent.b, 0.55)
+		ms.set_corner_radius_all(6)
+		art_matte.add_theme_stylebox_override("panel", ms)
 
 
 func set_active(active: bool) -> void:

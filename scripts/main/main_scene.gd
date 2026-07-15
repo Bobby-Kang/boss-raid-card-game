@@ -61,7 +61,7 @@ const STARTER_DECK: Array = [
 ]
 
 # 손패 존
-@onready var hand_belt: HBoxContainer = %HandBelt
+@onready var hand_belt: Control = %HandBelt
 # 타임라인 파이프
 @onready var pipe_queue: VBoxContainer = %PipeQueue
 @onready var queue_card_holder: Control = %QueueCardHolder
@@ -595,8 +595,10 @@ func _make_card(cdata: CardData, face_up: bool = true) -> Control:
 	var c: Control = CardScene.instantiate()
 	c.data = cdata.duplicate()
 	c.is_face_up = face_up
-	if c.has_signal("hover_changed") and card_hover:
-		c.hover_changed.connect(card_hover.on_card_hover_changed)
+	if c.has_signal("hover_changed"):
+		if card_hover:
+			c.hover_changed.connect(card_hover.on_card_hover_changed)
+		c.hover_changed.connect(_on_hand_card_hover)   # 손패 부채꼴 카드 확대
 	return c
 
 
@@ -775,16 +777,56 @@ func _reorder_pipe_to_front() -> void:
 
 # === 손패 UI 갱신 ===
 
+# 손패를 부채꼴로 배치 (카드게임 표준). 카드마다 하단 중앙 회전축 + 완만한 호(弧).
+const _FAN_PER_ANGLE := 4.0    # 카드당 회전(도)
+const _FAN_ARC_RAISE := 3.0    # 중앙 카드가 위로 솟는 정도(px, 부채꼴 crest)
+const _FAN_OVERLAP   := 30.0   # 카드 겹침 폭(값 클수록 더 겹침)
+const _HOVER_SCALE   := 1.9    # 호버 확대 배율
+
 func _update_hand_display() -> void:
 	_refresh_hand_live_previews()
-	if hand_cards.is_empty():
+	var n := hand_cards.size()
+	if n == 0:
 		return
-	var spacing := hand_cards[0].custom_minimum_size.x + 8
-	for i in hand_cards.size():
+	var cw: float = hand_cards[0].custom_minimum_size.x
+	var ch: float = hand_cards[0].custom_minimum_size.y
+	var belt_w: float = hand_belt.size.x if hand_belt.size.x > 0 else cw * n
+	var belt_h: float = hand_belt.size.y if hand_belt.size.y > 0 else ch
+	var step: float = cw - _FAN_OVERLAP                      # 카드 간 수평 간격(겹침)
+	var total_w: float = step * (n - 1) + cw
+	var start_x: float = maxf((belt_w - total_w) * 0.5, 0.0) # 중앙 정렬
+	var base_y: float = maxf(belt_h - ch, 0.0)              # 바닥 정렬 → 카드가 아래로
+	var center: float = (n - 1) / 2.0
+	for i in n:
 		var card: Control = hand_cards[i]
-		var tween := create_tween()
-		tween.tween_property(card, "position", Vector2(i * spacing, 0), 0.18)\
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		card.pivot_offset = Vector2(cw * 0.5, ch)           # 하단 중앙 = 부채꼴 회전축
+		var t: float = i - center
+		# 중앙이 살짝 위로 솟는 crest (가장자리는 바닥) — 클리핑 없이 부채꼴감
+		var pos := Vector2(start_x + i * step, base_y - (center * center - t * t) * _FAN_ARC_RAISE)
+		var rot := deg_to_rad(t * _FAN_PER_ANGLE)
+		card.set_meta("fan_pos", pos)                        # 호버 후 복원용
+		card.set_meta("fan_rot", rot)
+		card.z_index = i
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(card, "position", pos, 0.18).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tw.tween_property(card, "rotation", rot, 0.18).set_ease(Tween.EASE_OUT)
+		tw.tween_property(card, "scale", Vector2.ONE, 0.15)
+
+
+# 손패 카드 호버 — 확대 + 회전 펴기 + 최상단 (읽기 쉽게). 손패 카드만.
+func _on_hand_card_hover(card: Control, entered: bool) -> void:
+	if not (card in hand_cards) or not is_instance_valid(card):
+		return
+	var tw := create_tween().set_parallel(true)
+	if entered:
+		card.z_index = 200
+		tw.tween_property(card, "scale", Vector2(_HOVER_SCALE, _HOVER_SCALE), 0.12).set_ease(Tween.EASE_OUT)
+		tw.tween_property(card, "rotation", 0.0, 0.12).set_ease(Tween.EASE_OUT)
+	else:
+		card.z_index = hand_cards.find(card)
+		tw.tween_property(card, "scale", Vector2.ONE, 0.14).set_ease(Tween.EASE_OUT)
+		tw.tween_property(card, "rotation", float(card.get_meta("fan_rot", 0.0)), 0.14)
+		tw.tween_property(card, "position", card.get_meta("fan_pos", card.position), 0.14)
 
 
 # 손패 카드 좌하단에 "지금 실제로 낼 피해/방어" 뱃지 갱신
