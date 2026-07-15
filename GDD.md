@@ -181,7 +181,7 @@
 | 최대 HP | 80 |
 | 시작 HP | 80 |
 | 공격 | 카드 기반 (Phase별 다양, BGD 7.6 참조) |
-| 페이즈 | 3단계 (HP 임계 트리거, 단방향) |
+| 페이즈 | 3단계 (HP 임계 **또는** 덱 진입 트리거, 단방향) |
 
 ### 6.4 보스 페이즈
 
@@ -230,6 +230,7 @@
    - **POWER**: 제시 후 **파워 존으로 흡수**되듯 축소 이동 → 파워 존 배치(카운트다운 토큰) → 이후 매 보스 턴 -1 → 0 시 발동
    - **발동된 파워(TRIGGER)**: "💥 파워 발동!" 헤더로 카드 슬램 연출
    - **무효화(NEGATED)**: *불멸의 방패* 등으로 막히면 "🛡 행동 무효화!" + 카드 흔들림 후 폐기
+   - **카드별 시그니처 VFX** (`_play_card_signature_fx`): ATTACK/TRIGGER 임팩트 순간, 카드명별로 고유 이펙트가 얹힌다. 재사용 프리미티브(`_spawn_ring` 확장/수축 링, `_spawn_streak` 회전 섬광선)를 조합한 **7종 아키타입** — slash(발톱 3연격)/impact(충격 링+힛스톱)/roar(동심원 충격파)/poison(초록 독무 링)/shield(방어막 수축 링)/charge(수평 돌진 스트릭)/frenzy(붉은 다중 섬광 연타). `CARD_FX` 테이블이 18장 각각을 아키타입+강조색에 매핑
 5. 장착된 모듈 훅 실행 (`on_boss_turn_end`)
 6. 자동으로 다음 턴 진행
 
@@ -242,8 +243,9 @@
 ### 개요
 보스는 전투 중 **3단계 페이즈**를 거친다. 페이즈가 올라갈수록 마켓 카드 풀이 상위 티어로 이동한다.
 
-### 전환 트리거
-- **HP 임계 도달 시**만 발화 (라운드 트리거 없음)
+### 전환 트리거 (둘 중 **먼저 오는 쪽** = OR, 단방향)
+- **① HP 임계 도달** — 보스 HP 변경 시 `phase_system.check_hp_trigger()`
+- **② 보스 덱 진입** — 보스가 상위 페이즈 카드를 뽑는 순간 `phase_system.check_deck_trigger(get_phase_of(card))` (보스 행동군과 게임 페이즈의 엇박 제거)
 - 단방향 — 페이즈는 올라가기만 함 (HP 회복 시 내려가지 않음)
 
 | 페이즈 | HP 임계 |
@@ -252,11 +254,14 @@
 | 3 진입 | ≤ 33% |
 
 ### 평가 시점
-- 보스 HP 변경 시 `_on_boss_hp_changed` → `phase_system.check_hp_trigger()` 호출
+- 보스 HP 변경 시 `_on_boss_hp_changed` → `check_hp_trigger()`
+- 보스 카드 드로우 직후(`_begin_boss_turn`) → `check_deck_trigger()`
+- 공통 승격 로직은 `_advance_to(target)` — target > 현재일 때만 `phase_changed` emit
 
-### UI
+### UI / 연출 (순수 연출 — 능력치 변화 없음)
 - `%PhaseLabel` 텍스트 "페이즈 N" + 색상(흰 → 청 → 빨)
-- **페이즈 전환 시네마틱** (`_play_phase_transition_fx`): 페이즈 색 화면 섬광 + 강한 화면 흔들림 + 보스 얼굴 각성(스케일 펀치 + 밝은 틴트 펄스) + 큰 컬러 타이틀(`phase_banner.show_title`, `⚔ PHASE N ⚔` + 부제 + 스케일 팝)
+- **페이즈 전환 시네마틱** (`_play_phase_transition_fx`): 페이즈 색 화면 섬광 + 강한 화면 흔들림 + 보스 얼굴 "강해졌다" 포효(확대 + **붉은 기운 2연타** 펄스) + 큰 컬러 타이틀(`phase_banner.show_title`, `⚔ PHASE N ⚔` + 부제 + 스케일 팝)
+- **각성 능력치 없음** — 전환 시 보스에게 방어막·공격 버프를 주는 실제 강화는 넣지 않음(스노볼로 난이도 스파이크 → 폐기). 플레이어에겐 오히려 **카드 제거 보상**이 주어짐
 
 ### 구현
 - `scripts/bosses/boss_phase_system.gd` — `BossPhaseSystem` (RefCounted, `GameContext` 주입)
@@ -755,6 +760,8 @@ var boss_deck_system: BossDeckSystem = null
 - [x] 시각 연출 — 피 냄새 비네팅 / 취약·드로우 봉인 상태 인디케이터 / POWER 카운트 뱃지 (`BossCardDisplay`)
 - [x] **보스 행동 카드 연출** (`BossActionPresenter`) — 텍스트 배너 → 중앙 큰 카드 (ATTACK 슬램 / POWER 흡수 / TRIGGER 발동 / NEGATED 차단)
 - [x] **보스 카드 페이즈 가시화** — 3-페이즈 칩 행 (`P1·n / P2·n / P3·n`) + `BossCardDisplay` 좌측 컬러 스트립·좌상단 P{n} 뱃지
+- [x] **보스 덱 진입 페이즈 트리거** — 상위 페이즈 카드 드로우 시 게임 페이즈도 승격 (HP 임계와 OR, `check_deck_trigger`)
+- [x] **보스 카드별 시그니처 VFX** — 임팩트 순간 카드명별 고유 이펙트 7종 아키타입 (`BossActionPresenter.CARD_FX`)
 
 ### Phase F — 폴리시
 - [x] HP 바 (플레이어·보스, 비율 기반 색상 변환)
@@ -790,6 +797,7 @@ var boss_deck_system: BossDeckSystem = null
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-07-15 | **보스 페이즈 덱 트리거 + 카드별 시그니처 VFX + 각성 폐기·연출화 + 보스 카드 폴리시** — ①**덱 진입 페이즈 트리거**(`BossPhaseSystem.check_deck_trigger`): 보스가 상위 페이즈 카드를 뽑는 순간 게임 페이즈도 승격, HP 임계와 **OR**(먼저 오는 쪽). 공통 승격 로직 `_advance_to()`로 통합, `_begin_boss_turn` 드로우 직후 호출 → "보스는 P2 카드 쓰는데 게임은 P1"이던 엇박 제거. ②**페이즈 각성 능력치 폐기**: 처음 넣은 방어막+공격 영구 버프가 덱 트리거와 겹쳐 난이도 스파이크 → `PHASE_AWAKEN`·`_boss_phase_awaken` 삭제. 전환은 **순수 연출만**(섬광·흔들림·보스 얼굴 "붉은 기운 2연타" 포효)로 "강해 보이지만 실제 강화 없음", 플레이어에겐 카드 제거 보상 유지. ③**보스 카드별 시그니처 VFX**(`BossActionPresenter.CARD_FX` + `_play_card_signature_fx`): 임팩트 순간 카드명별 고유 이펙트 — 프리미티브 2종(`_spawn_ring`/`_spawn_streak`) 조합 7종 아키타입(slash·impact·roar·poison·shield·charge·frenzy)으로 18장 전부 매핑, 아키타입·강조색·셰이크 세기로 구분. ④**보스 카드 위젯 폴리시**(`BossCardDisplay`): 아트 매트(크림슨 1px 테두리)·타입색 이름 배너·타입 아이콘(☄파워/⚔공격)·페이즈 젬 뱃지·발광 카운트다운 뱃지 |
 | 2026-07-15 | **밸런스 4차(모의 3판) + 카드 타입 전면 교정** — UI 리스킨 후 회귀 모의 3판(러시 승·컨트롤 패·경제 신승). 진단: 보스 방어 리셋으로 지난 2패 원인은 해소됐으나 ①컨트롤 승리 플랜 부재 ②처형 커트라인이 P3 콘텐츠를 스킵. **패치 A**: 처형의 일격 high 25→**20**(피니셔 유지·P3 1~2턴은 보게). **패치 B**: 반격 태세 보스 피해 2→**3**(`counter_stance_ability.gd`, 컨트롤 기본 딜 엔진 강화 — 8라운드 누적 +8딜로 2판 부족분 메움). **카드 타입 교정**: 감사 결과 방어 2장(철벽 수비·불굴의 의지)·골드 4장(약탈·전리품·대약탈·상인의 눈)이 `card_type` 누락→기본 ATTACK(0)으로 오작동 → SKILL(1) 교정. 이들이 잘못 **투기 +1**을 주고 공격 인접 판정·빨간 프레임에 걸리던 버그 해소(투기 = *공격 사용 시*만 정상). 공격 레인 10장도 `card_type=0` 명시화. 전 40장 타입-기능 일치 검증(불일치 0) |
 | 2026-07-15 | **카드 UX 마감 — 부채꼴 손패·호버 확대·카드 크롬·Pretendard(MSDF)** — ①**부채꼴 손패**: HandBelt HBox→Control 자유배치, 하단 중앙 피벗·카드당 4° 회전·30px 겹침·중앙 crest·바닥 정렬(`_update_hand_display` 재작성). ②**호버 확대 1.9×**(`_on_hand_card_hover`) — 회전 펴짐+z 200, 이탈 시 fan_pos/rot 메타로 복원. 폰트 깨짐은 **Pretendard SemiBold MSDF 임포트**로 해결(폰트 .import gitignore 예외). ③**카드 크롬**(`_style_card_chrome`): 타입색 이름 배너(하단 라인)·원형 금속 코스트 보석(StyleBoxFlat_cost_gem)·타입 배너 아이콘(⚔✦☄◈)·아트 매트(ArtMatte 신규 노드). ④**전역 필터 Linear 복귀**(nearest가 폰트 뭉갬) + 프레임 요소만 개별 nearest. ⑤**모듈 슬롯 152×212**(카드 실물 크기) + PlayerAbility stretch 0.4→0.85. ⑥실행 창 1600×900 override + `stretch/aspect=keep`(창 축소 시 리플로우 깨짐 방지). 폰트는 Noto Sans KR 시도 후 가독성 문제로 Pretendard 교체(OFL, 크레딧 추가) |
 | 2026-07-14 | **UI 전면 리스킨 → Kenney Fantasy UI Borders (CC0) 프레임으로 통일** — 픽셀 돌 액자(`PixelFrameLayer`) 방식이 코믹/일러스트 아트와 톤 충돌·격자 문제로 계속 겉돌아 **에셋 기반으로 전환**. ①**베벨 굽기 파이프라인**: Kenney 흰 장식 프레임(반투명 중앙)을 PowerShell로 **2톤 굽기** — 테두리는 세로 그라데이션(위 하이라이트→아래 그림자)로 도금 금속감, 중앙은 어두운 웜 불투명 → `assets/art/Kenny/baked/frame_{gold,steel,blued,attack,power}.png` + 버튼 4상태 `btn_{normal,hover,pressed,disabled}.png`(#001 둥근 프레임). modulate 단색 틴트는 중앙이 진흙색이 되어 기각. ②**`DarkFantasyTheme` 공용 헬퍼**: `kenney_panel(draw_center, margin, tex)` / `card_frame(card_type)`(타입별 색) / `kenney_button(state)`. 테마 기본 PanelContainer/Button = Kenney → **전 화면 자동 통일**(시작·선택·전투·마켓·로그·결과·오버레이). ③**요소별 적용**(`_apply_premium_ui`): 초상=테두리만(draw_center=false)·중앙 배틀 밴드=투명 무대·모듈 슬롯·미니로그·마켓 외곽 투명(이중 프레임 방지). ④**카드**: 타입별 색 프레임(공격 붉은구리/스킬 블루스틸/파워 바이올렛/모듈 골드). ⑤**타임라인 파이프 재설계**: 타입색 원형 노드 + 왼쪽 타입색 스파인 + 타입색 카드명(손패 색 체계 연결). ⑥**보스 카드 위협화**: 붉은 프레임 + 방사형 크림슨 위협 비네트 + 크림슨 이름/설명판 + 발광 카운트다운 뱃지. `PixelFrameLayer`/`PixelFrame`는 미사용 보존. GDD §10.1.1~10.1.2 재작성 |

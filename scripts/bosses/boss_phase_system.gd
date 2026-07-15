@@ -3,7 +3,7 @@ extends RefCounted
 
 # 보스 페이즈 시스템
 # - 3단계 페이즈 (1, 2, 3)
-# - 전환 트리거: HP 임계값 도달 시 (단방향)
+# - 전환 트리거: ① HP 임계값 도달 ② 보스 덱이 상위 페이즈 카드에 진입 (둘 중 먼저 = OR)
 # - 단방향: 페이즈는 올라가기만 함
 
 signal phase_changed(new_phase: int, old_phase: int)
@@ -30,6 +30,16 @@ func check_hp_trigger() -> void:
 	for i in range(HP_THRESHOLDS.size()):
 		if hp_ratio <= float(HP_THRESHOLDS[i]):
 			target_phase = i + 2  # i=0 → phase 2, i=1 → phase 3
+	_advance_to(target_phase)
+
+
+# 보스 덱이 card_phase 페이즈 카드에 진입하면 게임 페이즈도 맞춰 올린다 (단방향)
+func check_deck_trigger(card_phase: int) -> void:
+	_advance_to(card_phase)
+
+
+# 공통 승격 — target이 현재보다 높을 때만 전환
+func _advance_to(target_phase: int) -> void:
 	if target_phase > current_phase:
 		var old := current_phase
 		current_phase = target_phase

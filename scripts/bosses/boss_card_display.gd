@@ -72,14 +72,30 @@ func _ready() -> void:
 	menace.texture = mg
 	panel.add_child(menace)
 
+	# ─── 아트 매트 (안쪽 크림슨 테두리 — 액자 속 그림) ───
+	var matte := Panel.new()
+	matte.set_anchors_preset(Control.PRESET_FULL_RECT)
+	matte.offset_left = 3
+	matte.offset_top = 3
+	matte.offset_right = -3
+	matte.offset_bottom = -3
+	matte.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var matte_style := StyleBoxFlat.new()
+	matte_style.bg_color = Color(0, 0, 0, 0)
+	matte_style.set_border_width_all(1)
+	matte_style.border_color = Color(0.72, 0.20, 0.16, 0.6)
+	matte_style.set_corner_radius_all(4)
+	matte.add_theme_stylebox_override("panel", matte_style)
+	panel.add_child(matte)
+
 	# ─── 상단 이름 스트립 (반투명) ───
 	var top_strip := PanelContainer.new()
 	top_strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var top_style := StyleBoxFlat.new()
-	top_style.bg_color = Color(0.17, 0.02, 0.02, 0.82)   # 크림슨 이름판
-	top_style.border_width_bottom = 1
-	top_style.border_color = Color(0.75, 0.18, 0.15, 0.85)
+	top_style.bg_color = Color(0.19, 0.02, 0.02, 0.86)   # 크림슨 이름판
+	top_style.border_width_bottom = 2
+	top_style.border_color = Color(0.92, 0.40, 0.28, 0.9)   # 밝은 크림슨 액센트 라인
 	# 좌측 페이즈 스트립(최대 10px)에 이름이 안 걸리도록 좌우 여백 확보
 	top_style.content_margin_left = 13
 	top_style.content_margin_right = 8
@@ -90,8 +106,8 @@ func _ready() -> void:
 
 	_name_label = Label.new()
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_name_label.add_theme_font_size_override("font_size", 13)
-	_name_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.80))
+	_name_label.add_theme_font_size_override("font_size", 14)
+	_name_label.add_theme_color_override("font_color", Color(1.0, 0.91, 0.85))
 	_name_label.add_theme_color_override("font_outline_color", Color(0.15, 0, 0, 1))
 	_name_label.add_theme_constant_override("outline_size", 3)
 	_name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -254,13 +270,13 @@ func _apply(card: BossCardData, current_tokens: int, phase: int = 0) -> void:
 		_icon_label.visible = true
 
 	if card.card_type == BossCardData.BossCardType.POWER:
-		_type_label.text = "파워"
-		_type_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1))
+		_type_label.text = "☄ 파워"
+		_type_label.add_theme_color_override("font_color", Color(1.0, 0.66, 0.2))
 		_countdown_badge.visible = true
 		_countdown_label.text = str(current_tokens)
 	else:
-		_type_label.text = "공격"
-		_type_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+		_type_label.text = "⚔ 공격"
+		_type_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
 		_countdown_badge.visible = false
 
 	# 페이즈 시각화 — 좌측 스트립 + 좌상단 뱃지
@@ -269,11 +285,16 @@ func _apply(card: BossCardData, current_tokens: int, phase: int = 0) -> void:
 		_phase_stripe.color = Color(pc.r, pc.g, pc.b, 0.85)
 		_phase_stripe.visible = true
 		_phase_badge_label.text = "P%d" % phase
-		# 뱃지 배경을 페이즈 색의 어두운 톤으로
+		# 뱃지 = 어두운 젬 바탕 + 페이즈색 발광 테두리 + 페이즈색 글자
 		var pb_style := _phase_badge.get_theme_stylebox("panel") as StyleBoxFlat
 		if pb_style:
-			pb_style.bg_color = Color(pc.r * 0.5, pc.g * 0.5, pc.b * 0.5, 0.95)
+			pb_style.bg_color = Color(0.06, 0.05, 0.04, 0.94)
+			pb_style.set_border_width_all(2)
 			pb_style.border_color = pc
+			pb_style.set_corner_radius_all(9)
+			pb_style.shadow_color = Color(pc.r, pc.g, pc.b, 0.4)
+			pb_style.shadow_size = 3
+		_phase_badge_label.add_theme_color_override("font_color", pc.lightened(0.2))
 		_phase_badge.visible = true
 	else:
 		_phase_stripe.visible = false

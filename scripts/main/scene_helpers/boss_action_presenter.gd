@@ -123,8 +123,7 @@ func present(card: BossCardData, kind: int, resolve_cb: Callable = Callable()) -
 			await slam.finished
 			if resolve_cb.is_valid():
 				resolve_cb.call()
-			if _combat_fx:
-				_combat_fx.shake_screen(9.0, 0.3)
+			_play_card_signature_fx(card)   # 카드별 시그니처 VFX (자체 셰이크/플래시 포함)
 			disp.modulate = Color(1.6, 1.2, 1.0, 1)  # 임팩트 화이트 플래시
 			var hit := create_tween()
 			hit.tween_property(disp, "modulate", Color.WHITE, 0.18)
@@ -180,3 +179,155 @@ func _boss_start_offset() -> Vector2:
 	var vp: Vector2 = _boss_face.get_viewport_rect().size
 	var bc: Vector2 = _boss_face.get_global_rect().get_center()
 	return bc - vp / 2.0
+
+
+# =========================================================================
+# 카드별 시그니처 VFX — 임팩트 순간 카드 고유 연출.
+# 카드명 → [아키타입, 강조색]. 미등록 카드는 기본 impact.
+# =========================================================================
+const CARD_FX := {
+	# Phase 1
+	"할퀴기":       ["slash",  Color(0.95, 0.40, 0.32)],
+	"맹독 발톱":     ["poison", Color(0.55, 0.90, 0.35)],
+	"위협":         ["roar",   Color(0.95, 0.30, 0.30)],
+	"으르렁":       ["roar",   Color(0.90, 0.45, 0.30)],
+	"웅크리기":     ["shield", Color(0.50, 0.75, 1.00)],
+	"사냥의 시작":   ["charge", Color(0.85, 0.70, 0.35)],
+	# Phase 2
+	"연속 할퀴기":   ["slash",  Color(0.98, 0.45, 0.40)],
+	"잔혹한 일격":   ["impact", Color(0.95, 0.20, 0.25)],
+	"강타":         ["impact", Color(1.00, 0.55, 0.20)],
+	"강철 벽":       ["shield", Color(0.60, 0.70, 0.95)],
+	"분노의 포효":   ["roar",   Color(1.00, 0.40, 0.25)],
+	"야수의 외침":   ["roar",   Color(0.95, 0.75, 0.30)],
+	# Phase 3
+	"피의 추격":     ["charge", Color(0.95, 0.15, 0.20)],
+	"분쇄":         ["impact", Color(0.85, 0.15, 0.15)],
+	"절망의 포효":   ["frenzy", Color(0.80, 0.20, 0.50)],
+	"광란":         ["frenzy", Color(1.00, 0.30, 0.20)],
+	"최후의 발악":   ["frenzy", Color(0.90, 0.10, 0.10)],
+	"광기의 돌진":   ["charge", Color(1.00, 0.35, 0.15)],
+}
+
+
+func _play_card_signature_fx(card: BossCardData) -> void:
+	if card == null:
+		return
+	var entry: Array = CARD_FX.get(card.card_name, ["impact", Color(0.90, 0.32, 0.28)])
+	match String(entry[0]):
+		"slash":  _fx_slash(entry[1])
+		"impact": _fx_impact(entry[1])
+		"roar":   _fx_roar(entry[1])
+		"poison": _fx_poison(entry[1])
+		"shield": _fx_shield(entry[1])
+		"charge": _fx_charge(entry[1])
+		"frenzy": _fx_frenzy(entry[1])
+		_:        _fx_impact(entry[1])
+
+
+# --- FX 프리미티브 -------------------------------------------------------
+
+# 화면 중앙(_holder 원점)에서 퍼지는(또는 조여드는) 원형 링. end_scale<1이면 수축.
+func _spawn_ring(color: Color, start_size: float, end_scale: float, dur: float, width: int) -> void:
+	var ring := Panel.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0)
+	sb.set_border_width_all(width)
+	sb.border_color = color
+	sb.set_corner_radius_all(int(start_size))   # 자동으로 절반까지 캡 → 원형
+	ring.add_theme_stylebox_override("panel", sb)
+	ring.size = Vector2(start_size, start_size)
+	ring.position = -Vector2(start_size, start_size) * 0.5
+	ring.pivot_offset = Vector2(start_size, start_size) * 0.5
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_holder.add_child(ring)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(ring, "scale", Vector2(end_scale, end_scale), dur).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "modulate:a", 0.0, dur)
+	tw.chain().tween_callback(ring.queue_free)
+
+
+# 대각선/수평 섬광 선 (발톱·돌진). offset 은 _holder 원점 기준 중심.
+func _spawn_streak(color: Color, angle_deg: float, offset: Vector2, length: float, thick: float, delay: float) -> void:
+	var line := ColorRect.new()
+	line.color = color
+	line.size = Vector2(length, thick)
+	line.position = offset - Vector2(length, thick) * 0.5
+	line.pivot_offset = Vector2(length, thick) * 0.5
+	line.rotation = deg_to_rad(angle_deg)
+	line.modulate.a = 0.0
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_holder.add_child(line)
+	var tw := create_tween()
+	tw.tween_interval(delay)
+	tw.tween_property(line, "modulate:a", 1.0, 0.05)
+	tw.tween_property(line, "modulate:a", 0.0, 0.18)
+	tw.tween_callback(line.queue_free)
+
+
+# --- 아키타입 ------------------------------------------------------------
+
+func _fx_slash(color: Color) -> void:
+	if _combat_fx:
+		_combat_fx.screen_flash(color, 0.16, 0.28)
+		_combat_fx.shake_screen(9.0, 0.28)
+	var white := Color(1.0, 0.95, 0.9)
+	_spawn_streak(white, -32, Vector2(-30, -22), 260, 5, 0.00)
+	_spawn_streak(color, -27, Vector2(6, 6),     240, 4, 0.05)
+	_spawn_streak(white, -36, Vector2(42, 38),   220, 5, 0.10)
+
+
+func _fx_impact(color: Color) -> void:
+	if _combat_fx:
+		_combat_fx.screen_flash(color, 0.28, 0.4)
+		_combat_fx.shake_screen(15.0, 0.4)
+		_combat_fx.hit_stop()
+	_spawn_ring(Color(1.0, 0.95, 0.85), 70, 5.0, 0.4, 6)
+	_spawn_ring(color, 50, 6.5, 0.5, 4)
+
+
+func _fx_roar(color: Color) -> void:
+	if _combat_fx:
+		_combat_fx.screen_flash(color, 0.22, 0.45)
+		_combat_fx.shake_screen(12.0, 0.4)
+	_spawn_ring(color, 80, 6.0, 0.55, 5)
+	_spawn_ring(color.lightened(0.3), 60, 5.0, 0.45, 3)
+
+
+func _fx_poison(color: Color) -> void:
+	if _combat_fx:
+		_combat_fx.screen_flash(color, 0.20, 0.5)
+		_combat_fx.shake_screen(6.0, 0.25)
+	_spawn_ring(color, 90, 4.0, 0.6, 10)              # 두껍고 느린 독무
+	_spawn_ring(color.lightened(0.2), 60, 3.0, 0.5, 8)
+
+
+func _fx_shield(color: Color) -> void:
+	if _combat_fx:
+		_combat_fx.screen_flash(color, 0.16, 0.35)
+		_combat_fx.shake_screen(5.0, 0.2)
+	_spawn_ring(color, 260, 0.35, 0.45, 5)            # 큰 링이 조여드는 방어막
+	_spawn_ring(color.lightened(0.25), 200, 0.4, 0.4, 3)
+
+
+func _fx_charge(color: Color) -> void:
+	if _combat_fx:
+		_combat_fx.screen_flash(color, 0.22, 0.35)
+		_combat_fx.shake_screen(13.0, 0.35)
+	_spawn_streak(Color(1.0, 0.95, 0.9), 0, Vector2(-40, -12), 360, 7, 0.00)
+	_spawn_streak(color, 0, Vector2(-20, 18), 330, 5, 0.06)
+
+
+func _fx_frenzy(color: Color) -> void:
+	if _combat_fx:
+		_combat_fx.shake_screen(16.0, 0.5)
+	for i in 3:
+		var c: Color = color if i % 2 == 0 else color.lightened(0.4)
+		var t := get_tree().create_timer(0.12 * float(i))
+		t.timeout.connect(_frenzy_burst.bind(c))
+
+
+func _frenzy_burst(c: Color) -> void:
+	if _combat_fx:
+		_combat_fx.screen_flash(c, 0.20, 0.2)
+	_spawn_ring(c, 60, 4.5, 0.35, 4)

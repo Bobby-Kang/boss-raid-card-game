@@ -1161,6 +1161,9 @@ func _begin_boss_turn() -> void:
 
 	# 2. 다음 카드 드로우
 	var drawn: BossCardData = boss_deck_system.draw_next()
+	# 덱이 상위 페이즈 카드에 진입하면 게임 페이즈도 승격 (HP 임계와 OR — 먼저 오는 쪽)
+	if drawn and phase_system:
+		phase_system.check_deck_trigger(boss_deck_system.get_phase_of(drawn))
 
 	# 3. 턴 인디케이터 / 인텐트 갱신
 	var indicator_hint := drawn.card_name if drawn else ""
@@ -1736,7 +1739,7 @@ func _on_phase_changed(new_phase: int, _old_phase: int) -> void:
 		2: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_2, 1.5)
 		3: AudioManager.crossfade_bgm(SfxLibrary.BGM_PHASE_3, 1.5)
 	_log("💢 페이즈 %d 진입!" % new_phase)
-	_play_phase_transition_fx(new_phase)
+	_play_phase_transition_fx(new_phase)   # 순수 연출만 — 실제 능력치 변화 없음
 	# 페이즈 전환 보상 — 카드 1장 영구 제거 기회 (큐잉, 안전 시점에 처리)
 	var reward_lines: Array[String] = [
 		"🌟 전사의 깨달음",
@@ -1759,7 +1762,7 @@ const PHASE_SUBTITLES := {
 	3: "최후의 발악이 시작된다",
 }
 
-# 페이즈 전환 시네마틱 — 화면 섬광 + 흔들림 + 보스 각성 + 컬러 타이틀
+# 페이즈 전환 시네마틱 — 화면 섬광 + 흔들림 + 보스 각성 + 컬러 타이틀 (순수 연출)
 func _play_phase_transition_fx(phase: int) -> void:
 	var color: Color = PHASE_COLORS.get(phase, Color(0.9, 0.4, 0.3, 1))
 	if combat_fx:
@@ -1771,8 +1774,13 @@ func _play_phase_transition_fx(phase: int) -> void:
 		var flash := color.lightened(0.4)
 		flash = Color(flash.r * 1.4, flash.g * 1.4, flash.b * 1.4, 1)
 		var roar := create_tween()
-		roar.tween_property(boss_face_texture, "scale", Vector2(1.16, 1.16), 0.18).set_ease(Tween.EASE_OUT)
+		roar.tween_property(boss_face_texture, "scale", Vector2(1.22, 1.22), 0.18).set_ease(Tween.EASE_OUT)
 		roar.parallel().tween_property(boss_face_texture, "modulate", flash, 0.18)
+		# 붉은 기운 2연타 — "강해졌다" 강조
+		roar.tween_property(boss_face_texture, "scale", Vector2(1.10, 1.10), 0.14).set_ease(Tween.EASE_IN_OUT)
+		roar.parallel().tween_property(boss_face_texture, "modulate", Color(1.0, 0.5, 0.4, 1), 0.14)
+		roar.tween_property(boss_face_texture, "scale", Vector2(1.18, 1.18), 0.14).set_ease(Tween.EASE_OUT)
+		roar.parallel().tween_property(boss_face_texture, "modulate", flash, 0.14)
 		roar.tween_property(boss_face_texture, "scale", Vector2.ONE, 0.42)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		roar.parallel().tween_property(boss_face_texture, "modulate", Color.WHITE, 0.42)
