@@ -72,10 +72,6 @@ const STARTER_DECK: Array = [
 @onready var boss_hp_label: Label = %BossHpLabel
 @onready var boss_block_label: Label = %BossBlockLabel
 @onready var turn_indicator_label: Label = %TurnIndicatorLabel
-@onready var market_button: Button = %MarketButton
-@onready var market_window: Control = %MarketWindow
-@onready var market_close_button: Button = %MarketCloseButton
-@onready var market_dim_bg: ColorRect = %DimBg
 @onready var end_turn_button: Button = %EndTurnButton
 @onready var end_turn_overlay: CanvasLayer = %EndTurnOverlay
 @onready var phase_banner: CanvasLayer = %PhaseBanner
@@ -176,11 +172,6 @@ func _ready() -> void:
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	end_turn_overlay.order_confirmed.connect(_on_end_turn_order_confirmed)
 	end_turn_overlay.cancelled.connect(_on_end_turn_cancelled)
-	# 마켓 토글 (상점 버튼으로 오버레이 열고/닫기)
-	market_button.pressed.connect(_toggle_market)
-	market_close_button.pressed.connect(_close_market)
-	market_dim_bg.gui_input.connect(_on_market_dim_input)
-	market_window.visible = false
 	# Phase 1 BGM 시작
 	AudioManager.play_bgm(SfxLibrary.BGM_PHASE_1, 1.0)
 
@@ -229,12 +220,6 @@ func _apply_premium_ui() -> void:
 		if n is PanelContainer:
 			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			n.add_theme_stylebox_override("panel", _portrait_frame())
-
-	# 마켓 외곽 래퍼는 투명 (안쪽 MarketPanel이 프레임 담당 → 이중 프레임 방지)
-	var mframe := get_node_or_null("MarketWindow/MarketFrame")
-	if mframe is PanelContainer:
-		var e := StyleBoxEmpty.new()
-		mframe.add_theme_stylebox_override("panel", e)
 
 	# 모듈 슬롯 = 골드 Kenney 프레임(빈 소켓)
 	for sp in [
@@ -696,7 +681,7 @@ func _build_tutorial_steps() -> Array:
 		{"target": hand_belt, "text": "🃏 [b]손패[/b]입니다. 카드를 [b]드래그[/b]해서 사용해요. (AP를 소모)"},
 		{"target": timeline_pipe_panel, "text": "📜 [b]타임라인 파이프[/b] — 덱을 [b]섞지 않아요.[/b] 다음에 올 카드 순서가 다 보입니다. 카드를 여기로 끌면 그냥 버려요."},
 		{"target": resource_bar, "text": "⚡ [b]AP 3[/b]으로 카드를 씁니다. [b]공격할 때마다[/b] 🔥[b]투기 +1[/b] (남은 AP도 투기로), 10이 되면 [b]투기 발산[/b]!"},
-		{"target": market_button, "text": "🛒 [b]상점[/b]에서 골드로 카드를 삽니다. 골드는 [b]턴이 끝나면 사라지니[/b] 그 턴에 쓰세요!"},
+		{"target": market_panel, "text": "🛒 [b]상점[/b]에서 골드로 카드를 삽니다. 골드는 [b]턴이 끝나면 사라지니[/b] 그 턴에 쓰세요!"},
 	]
 
 
@@ -1120,10 +1105,8 @@ func _begin_player_turn() -> void:
 	# 누적된 페이즈 보상 (보스 턴 도중 발생한 것) 처리
 	await _drain_pending_rewards()
 
-	# 장착된 모듈의 플레이어 턴 시작 훅 실행
-	for card in active_cards:
-		if card and card.data and card.data.module_ability:
-			card.data.module_ability.on_player_turn_start(game_ctx)
+	# 장착된 모듈의 플레이어 턴 시작 훅 실행 (결과는 실측 델타로 기록)
+	_run_module_hooks("player_turn_start")
 
 	var messages: Array[String] = ["플레이어 차례입니다"]
 	phase_banner.show_sequence(messages)
@@ -1208,11 +1191,45 @@ func _begin_boss_turn() -> void:
 				_log("💀 보스: %s ⇒ %s" % [drawn.card_name, result],
 					"💀 보스: %s ⇒ %s  [%s]" % [drawn.card_name, result, drawn.description])
 
-	# 6. 장착된 모듈의 보스 턴 종료 훅 실행
-	for card in active_cards:
-		if card and card.data and card.data.module_ability:
-			card.data.module_ability.on_boss_turn_end(game_ctx)
+	# 6. 장착된 모듈의 보스 턴 종료 훅 실행 (결과는 실측 델타로 기록)
+	_run_module_hooks("boss_turn_end")
 	_advance_turn()
+
+
+# 장착 모듈의 훅을 실행하고 결과를 실측 델타로 기록.
+# 모듈은 카드 사용 로그가 없어 조용히 발동 → 반격 태세 피해 등이 기록에 안 잡히던 문제.
+func _run_module_hooks(hook: String) -> void:
+	for card in active_cards:
+		if card == null or card.data == null or card.data.module_ability == null:
+			continue
+		var ab: ModuleAbility = card.data.module_ability
+		var boss_hp0: int = game_ctx.boss_hp
+		var block0: int = game_ctx.player_block
+		var player_hp0: int = game_ctx.player_hp
+		match hook:
+			"player_turn_start": ab.on_player_turn_start(game_ctx)
+			"boss_turn_end":     ab.on_boss_turn_end(game_ctx)
+			"player_turn_end":   ab.on_player_turn_end(game_ctx)
+		_log_module_result(card.data, boss_hp0, block0, player_hp0)
+
+
+# 모듈 발동 결과 기록 — 실제 변화가 없으면 로그를 남기지 않음 (조건부 모듈 대응)
+func _log_module_result(data: CardData, boss_hp0: int, block0: int, player_hp0: int) -> void:
+	var parts: PackedStringArray = PackedStringArray()
+	var dmg: int = boss_hp0 - game_ctx.boss_hp
+	var blk: int = game_ctx.player_block - block0
+	var heal: int = game_ctx.player_hp - player_hp0
+	if dmg > 0:
+		parts.append("보스 %d 피해" % dmg)
+	if blk > 0:
+		parts.append("방어 +%d" % blk)
+	if heal > 0:
+		parts.append("회복 +%d" % heal)
+	if parts.is_empty():
+		return
+	var result: String = ", ".join(parts)
+	_log("◈ %s ⇒ %s" % [data.card_name, result],
+		"◈ %s ⇒ %s  [%s]" % [data.card_name, result, data.description])
 
 
 # === 보스 덱 UI 핸들러 ===
@@ -1521,23 +1538,20 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 # === 게임 로그 시스템 ===
 
 func _setup_game_log() -> void:
-	# 상단바 상점 버튼 왼쪽에 [❓ 튜토리얼] [📜 기록] 순으로 배치
-	if market_button and market_button.get_parent():
-		var bar: Node = market_button.get_parent()
-
+	# 상단바 우측에 [❓ 튜토리얼] [📜 기록] 배치 (TurnInfoPanel이 expand → 버튼은 오른쪽으로 밀림)
+	var bar := get_node_or_null("BattleField/VBoxLayout/MiddleWrapper/MiddleArea")
+	if bar:
 		var tut_btn := Button.new()
 		tut_btn.text = "❓ 튜토리얼"
 		tut_btn.custom_minimum_size = Vector2(120, 0)
 		tut_btn.pressed.connect(_replay_tutorial)
 		bar.add_child(tut_btn)
-		bar.move_child(tut_btn, market_button.get_index())
 
 		_log_button = Button.new()
 		_log_button.text = "📜 기록"
 		_log_button.custom_minimum_size = Vector2(110, 0)
 		_log_button.pressed.connect(_toggle_log)
 		bar.add_child(_log_button)
-		bar.move_child(_log_button, market_button.get_index())
 	else:
 		_log_button = Button.new()
 		_log_button.text = "📜 기록"
@@ -1863,29 +1877,6 @@ func _update_turn_indicator(is_player: bool, _hint: String) -> void:
 
 
 # === 마켓 토글 ===
-
-func _toggle_market() -> void:
-	if market_window.visible:
-		_close_market()
-	else:
-		_open_market()
-
-
-func _open_market() -> void:
-	market_window.visible = true
-	AudioManager.play_sfx("ui.button")
-
-
-func _close_market() -> void:
-	market_window.visible = false
-	AudioManager.play_sfx("ui.button")
-
-
-func _on_market_dim_input(event: InputEvent) -> void:
-	# 어두운 배경 클릭 시 닫기
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_close_market()
-
 
 func _set_turn_focus(is_player_turn: bool) -> void:
 	# 컨텍스트 디밍: 보스 턴엔 손패/마켓을 흐리게, 내 턴엔 보스 영역을 살짝 흐리게

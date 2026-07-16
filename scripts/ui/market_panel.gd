@@ -14,8 +14,12 @@ const LANE_COUNT := 4
 ## 리롤 비용은 scripts/data/game_balance.gd 에서 수정하세요.
 const REROLL_AP_COST   := GameBalance.MARKET_REROLL_AP
 const REROLL_GOLD_COST := GameBalance.MARKET_REROLL_GOLD
-const CARD_WIDTH  := 176
-const CARD_HEIGHT := 249
+## 컴팩트 스트립 — 화면 세로 예산이 마켓에 123px밖에 없어 풀사이즈 카드(170px+)가 안 들어간다.
+## 썸네일은 transform scale로 줄여야 폰트까지 함께 축소돼 미니어처로 보인다(size로 줄이면 글자가 넘침).
+const CARD_NATURAL  := Vector2(146, 206)   # card.tscn 실제 크기
+const THUMB_SCALE   := 0.30                # 썸네일 배율 → 44×62
+const PREVIEW_SCALE := 1.15                # 호버 미리보기 배율
+const THUMB_SIZE    := Vector2(CARD_NATURAL.x * THUMB_SCALE, CARD_NATURAL.y * THUMB_SCALE)
 
 # 레인별 카드 디렉토리 경로 (씬에서 오버라이드 가능, 기본값은 전사)
 @export var attack_dir:  String = "res://resources/cards/warrior/market/attack"
@@ -50,6 +54,7 @@ var _defense_pool: Array[CardData] = []
 var _special_pool: Array[CardData] = []
 var _gold_pool:    Array[CardData] = []
 
+var _preview:          Control = null   # 호버 시 뜬 전체 카드 (1장만 유지)
 var _root_vbox:        VBoxContainer
 var _slots_hbox:       HBoxContainer
 var _reroll_ap_button: Button
@@ -69,7 +74,7 @@ func _ready() -> void:
 # Kenney 장식 프레임을 마켓 패널 배경으로 적용 (게임 전체와 통일)
 func _apply_panel_frame() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 18))
+	add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 10))
 
 
 # 디렉토리 안의 .tres 파일을 모두 로드해 CardData 배열로 반환
@@ -144,34 +149,12 @@ func _build_ui() -> void:
 	_root_vbox.add_theme_constant_override("separation", 4)
 	add_child(_root_vbox)
 
-	# 헤더 — 리롤 버튼 (제목은 모달 프레임이 담당, 중복 제거)
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 6)
-	header.alignment = BoxContainer.ALIGNMENT_END
-	_root_vbox.add_child(header)
-
-	_reroll_ap_button = Button.new()
-	_reroll_ap_button.text = "↻ 재추첨  3⚡"
-	_reroll_ap_button.tooltip_text = "AP 3을 소모해 마켓 전체를 재추첨"
-	_reroll_ap_button.custom_minimum_size = Vector2(150, 44)
-	_reroll_ap_button.add_theme_font_size_override("font_size", 18)
-	_reroll_ap_button.pressed.connect(_on_reroll_ap_pressed)
-	header.add_child(_reroll_ap_button)
-
-	_reroll_gold_button = Button.new()
-	_reroll_gold_button.text = "↻ 재추첨  3💰"
-	_reroll_gold_button.tooltip_text = "골드 3을 소모해 마켓 전체를 재추첨"
-	_reroll_gold_button.custom_minimum_size = Vector2(150, 44)
-	_reroll_gold_button.add_theme_font_size_override("font_size", 18)
-	_reroll_gold_button.pressed.connect(_on_reroll_gold_pressed)
-	header.add_child(_reroll_gold_button)
-
 	# 4-레인 슬롯 영역 (마진 감싸기)
 	var slots_margin := MarginContainer.new()
 	slots_margin.add_theme_constant_override("margin_left",   12)
 	slots_margin.add_theme_constant_override("margin_right",  12)
-	slots_margin.add_theme_constant_override("margin_top",    6)
-	slots_margin.add_theme_constant_override("margin_bottom", 6)
+	slots_margin.add_theme_constant_override("margin_top",    3)
+	slots_margin.add_theme_constant_override("margin_bottom", 3)
 	slots_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slots_margin.size_flags_vertical   = Control.SIZE_EXPAND_FILL
 	_root_vbox.add_child(slots_margin)
@@ -185,6 +168,46 @@ func _build_ui() -> void:
 	for i in range(LANE_COUNT):
 		_lane_widgets.append(_build_lane_widget(i))
 
+	_build_reroll_column()
+
+
+# 리롤 버튼 — 레인 오른쪽 세로 컬럼.
+# 전용 헤더 행을 쓰면 세로 44px를 먹는데, 상시 노출 마켓은 세로가 빠듯하고
+# 가로는 남으므로(4레인 560px) 옆으로 뺐다.
+func _build_reroll_column() -> void:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 6)
+	col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_slots_hbox.add_child(col)
+
+	var title := Label.new()
+	title.text = "↻ 재추첨"
+	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_color_override("font_color", Color(0.85, 0.82, 0.75, 1))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(title)
+
+	# 버튼 2개는 가로로 — 세로로 쌓으면 이 컬럼이 레인보다 높아져 마켓 전체 높이를 밀어올린다
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 5)
+	col.add_child(btn_row)
+
+	_reroll_ap_button = Button.new()
+	_reroll_ap_button.text = "3 ⚡"
+	_reroll_ap_button.tooltip_text = "AP 3을 소모해 마켓 전체를 재추첨"
+	_reroll_ap_button.custom_minimum_size = Vector2(64, 30)
+	_reroll_ap_button.add_theme_font_size_override("font_size", 15)
+	_reroll_ap_button.pressed.connect(_on_reroll_ap_pressed)
+	btn_row.add_child(_reroll_ap_button)
+
+	_reroll_gold_button = Button.new()
+	_reroll_gold_button.text = "3 💰"
+	_reroll_gold_button.tooltip_text = "골드 3을 소모해 마켓 전체를 재추첨"
+	_reroll_gold_button.custom_minimum_size = Vector2(64, 30)
+	_reroll_gold_button.add_theme_font_size_override("font_size", 15)
+	_reroll_gold_button.pressed.connect(_on_reroll_gold_pressed)
+	btn_row.add_child(_reroll_gold_button)
+
 
 func _build_lane_widget(index: int) -> Dictionary:
 	var meta: Dictionary = LANE_META[index]
@@ -192,38 +215,61 @@ func _build_lane_widget(index: int) -> Dictionary:
 	var lane_vbox := VBoxContainer.new()
 	lane_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL   # 4레인 균등 분산
 	lane_vbox.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
-	lane_vbox.add_theme_constant_override("separation", 0)  # 카드-버튼 간격 없음
+	lane_vbox.add_theme_constant_override("separation", 2)
 	_slots_hbox.add_child(lane_vbox)
 
 	# 레인 이름
 	var header_lbl := Label.new()
 	header_lbl.text = meta["label"]
-	header_lbl.add_theme_font_size_override("font_size", 17)
+	header_lbl.add_theme_font_size_override("font_size", 14)
 	header_lbl.add_theme_color_override("font_color", meta["color"])
 	header_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lane_vbox.add_child(header_lbl)
 
-	# 카드 자리 (컬럼 가운데 정렬)
-	var card_holder := Control.new()
-	card_holder.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
-	card_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	lane_vbox.add_child(card_holder)
+	# 본문 — [썸네일][이름 + 구매] 가로 배치 (세로 절약).
+	# 레인 슬롯이 넓어도 내용은 가운데로 모은다 (EXPAND_FILL이면 버튼이 레인 폭만큼 늘어남)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 7)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	lane_vbox.add_child(row)
 
-	# 구매 버튼 — 카드 바로 아래 (separation=0으로 밀착), 컬럼 가운데 정렬
+	# 썸네일 자리 — 호버 시 전체 카드 미리보기
+	var card_holder := Control.new()
+	card_holder.custom_minimum_size = THUMB_SIZE
+	card_holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	card_holder.mouse_filter = Control.MOUSE_FILTER_PASS
+	card_holder.tooltip_text = "마우스를 올리면 카드를 크게 봅니다"
+	card_holder.mouse_entered.connect(_show_preview.bind(index))
+	card_holder.mouse_exited.connect(_hide_preview)
+	row.add_child(card_holder)
+
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	info.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
+	info.add_theme_constant_override("separation", 4)
+	row.add_child(info)
+
+	var name_lbl := Label.new()
+	name_lbl.custom_minimum_size = Vector2(104, 0)
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_color_override("font_color", Color(0.96, 0.93, 0.86, 1))
+	info.add_child(name_lbl)
+
 	var buy_btn := Button.new()
-	buy_btn.custom_minimum_size = Vector2(CARD_WIDTH, 44)
-	buy_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	buy_btn.add_theme_font_size_override("font_size", 17)
+	buy_btn.custom_minimum_size = Vector2(104, 26)
+	buy_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	buy_btn.add_theme_font_size_override("font_size", 14)
 	buy_btn.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1))
 	buy_btn.pressed.connect(func() -> void: _on_buy_pressed(index))
 	_style_buy_button(buy_btn, meta["color"])
-	lane_vbox.add_child(buy_btn)
+	info.add_child(buy_btn)
 
 	return {
 		"lane_vbox":   lane_vbox,
 		"header_lbl":  header_lbl,
 		"card_holder": card_holder,
 		"card":        null,
+		"name_lbl":    name_lbl,
 		"buy_btn":     buy_btn,
 	}
 
@@ -273,6 +319,7 @@ func _style_buy_button(btn: Button, lane_color: Color) -> void:
 # === 렌더링 ===
 
 func _render_slots() -> void:
+	_hide_preview()   # 리롤/구매로 카드가 바뀌면 떠 있던 미리보기는 무효
 	for i in range(LANE_COUNT):
 		var w: Dictionary  = _lane_widgets[i]
 		var cd: CardData   = lane_cards[i]
@@ -283,25 +330,61 @@ func _render_slots() -> void:
 			w.card = null
 
 		if cd != null:
-			var card: Control = CardScene.instantiate()
-			card.data         = cd
-			card.is_face_up   = true
-			card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var card: Control = _make_card_visual(cd, THUMB_SCALE)
 			w.card_holder.add_child(card)
 			w.card = card
-			# 카드 본래 크기(144×204)를 레인 카드 크기로 확대
-			card.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
-			card.size = Vector2(CARD_WIDTH, CARD_HEIGHT)
-			card.pivot_offset = Vector2(CARD_WIDTH, CARD_HEIGHT) * 0.5
-			card.set_active(false)
-			card.modulate.a = 1.0
+			w.name_lbl.text   = cd.card_name
 			w.buy_btn.text    = "구매 (%d G)" % cd.gold_cost
 			w.buy_btn.visible = true
 		else:
+			w.name_lbl.text   = "—"
 			w.buy_btn.text    = "매진"
 			w.buy_btn.visible = false
 
 	_refresh_button_states()
+
+
+# 카드 비주얼 1장 생성. size가 아닌 transform scale로 축소해야 글자까지 함께 줄어든다.
+func _make_card_visual(cd: CardData, card_scale: float) -> Control:
+	var card: Control = CardScene.instantiate()
+	card.data         = cd
+	card.is_face_up   = true
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.custom_minimum_size = CARD_NATURAL
+	card.size         = CARD_NATURAL
+	card.pivot_offset = Vector2.ZERO      # 좌상단 기준 축소 → holder에 딱 맞음
+	card.scale        = Vector2(card_scale, card_scale)
+	card.set_active(false)
+	card.modulate.a   = 1.0
+	return card
+
+
+# === 호버 미리보기 — 썸네일만으론 효과를 못 읽으므로 전체 카드를 위에 띄운다 ===
+
+func _show_preview(index: int) -> void:
+	_hide_preview()
+	var cd: CardData = lane_cards[index]
+	if cd == null:
+		return
+	var w: Dictionary = _lane_widgets[index]
+	var holder: Control = w.card_holder
+	var card := _make_card_visual(cd, PREVIEW_SCALE)
+	card.z_index = 200
+	add_child(card)
+	_preview = card
+	# 썸네일 바로 위, 가로 중앙 정렬 (마켓 패널 로컬 좌표)
+	var local: Vector2 = holder.global_position - global_position
+	var pw: float = CARD_NATURAL.x * PREVIEW_SCALE
+	var ph: float = CARD_NATURAL.y * PREVIEW_SCALE
+	card.position = Vector2(
+		local.x + holder.size.x * 0.5 - pw * 0.5,
+		local.y - ph - 10)
+
+
+func _hide_preview() -> void:
+	if _preview != null and is_instance_valid(_preview):
+		_preview.queue_free()
+	_preview = null
 
 
 func _refresh_button_states() -> void:

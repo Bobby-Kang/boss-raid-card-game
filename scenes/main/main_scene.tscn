@@ -72,6 +72,7 @@ layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="MiddleWrapper" type="Control" parent="BattleField/VBoxLayout" unique_id=492146476]
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.07
@@ -121,17 +122,10 @@ layout_mode = 2
 theme_override_constants/separation = 7
 alignment = 1
 
-[node name="MarketButton" type="Button" parent="BattleField/VBoxLayout/MiddleWrapper/MiddleArea" unique_id=991400002]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "🛒 상점"
-
 [node name="BossArea" type="PanelContainer" parent="BattleField/VBoxLayout" unique_id=2063685351]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.62
+size_flags_stretch_ratio = 0.42
 
 [node name="BossVBox" type="VBoxContainer" parent="BattleField/VBoxLayout/BossArea" unique_id=429015942]
 layout_mode = 2
@@ -323,6 +317,14 @@ mouse_filter = 2
 script = ExtResource("5_dropzone")
 pass_through_when_idle = true
 drag_label_text = "⚔ 사용 / 보스 공격"
+
+[node name="MarketPanel" type="PanelContainer" parent="BattleField/VBoxLayout" unique_id=1644372998]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.25
+script = ExtResource("6_market")
 
 [node name="BottomArea" type="VBoxContainer" parent="BattleField/VBoxLayout" unique_id=488632899]
 layout_mode = 2
@@ -560,68 +562,6 @@ unique_name_in_owner = true
 
 [node name="PhaseBanner" parent="." unique_id=814868930 instance=ExtResource("4_banner")]
 unique_name_in_owner = true
-
-[node name="MarketWindow" type="Control" parent="." unique_id=991400010]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="DimBg" type="ColorRect" parent="MarketWindow" unique_id=991400011]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="MarketFrame" type="PanelContainer" parent="MarketWindow" unique_id=991400012]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -720.0
-offset_top = -300.0
-offset_right = 720.0
-offset_bottom = 300.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="MarketFrameVBox" type="VBoxContainer" parent="MarketWindow/MarketFrame" unique_id=991400013]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="MarketHeader" type="HBoxContainer" parent="MarketWindow/MarketFrame/MarketFrameVBox" unique_id=991400014]
-layout_mode = 2
-
-[node name="MarketTitle" type="Label" parent="MarketWindow/MarketFrame/MarketFrameVBox/MarketHeader" unique_id=991400015]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 24
-text = "🛒 라운드 마켓"
-
-[node name="MarketCloseButton" type="Button" parent="MarketWindow/MarketFrame/MarketFrameVBox/MarketHeader" unique_id=991400016]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "✕ 닫기"
-
-[node name="MarketPanel" type="PanelContainer" parent="MarketWindow/MarketFrame/MarketFrameVBox" unique_id=1644372998]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-script = ExtResource("6_market")
 
 [node name="GameResultScreen" parent="." unique_id=923847651 instance=ExtResource("15_result")]
 unique_name_in_owner = true
