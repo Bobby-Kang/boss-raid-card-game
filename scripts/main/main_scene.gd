@@ -72,6 +72,10 @@ const STARTER_DECK: Array = [
 @onready var boss_hp_label: Label = %BossHpLabel
 @onready var boss_block_label: Label = %BossBlockLabel
 @onready var turn_indicator_label: Label = %TurnIndicatorLabel
+@onready var market_button: Button = %MarketButton
+@onready var market_window: Control = %MarketWindow
+@onready var market_close_button: Button = %MarketCloseButton
+@onready var market_dim_bg: ColorRect = %DimBg
 @onready var end_turn_button: Button = %EndTurnButton
 @onready var end_turn_overlay: CanvasLayer = %EndTurnOverlay
 @onready var phase_banner: CanvasLayer = %PhaseBanner
@@ -172,6 +176,11 @@ func _ready() -> void:
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	end_turn_overlay.order_confirmed.connect(_on_end_turn_order_confirmed)
 	end_turn_overlay.cancelled.connect(_on_end_turn_cancelled)
+	# 마켓 토글 (상점 버튼으로 오버레이 열고/닫기)
+	market_button.pressed.connect(_toggle_market)
+	market_close_button.pressed.connect(_close_market)
+	market_dim_bg.gui_input.connect(_on_market_dim_input)
+	market_window.visible = false
 	# Phase 1 BGM 시작
 	AudioManager.play_bgm(SfxLibrary.BGM_PHASE_1, 1.0)
 
@@ -180,12 +189,43 @@ func _ready() -> void:
 
 # A2 프리미엄 UI — 금속 재질 StyleBoxFlat 패널(청동 테두리·라운드·그림자).
 # 프레임 이미지 없이 코드 스타일박스로 통일. 중앙 배틀 밴드만 투명(배경 무대 노출).
+# 턴 종료 = 우하단 원형 버튼 (레퍼런스의 ✓ 버튼 자리). 4상태 모두 원형으로.
+func _style_end_turn_button() -> void:
+	if end_turn_button == null:
+		return
+	var states := {
+		"normal":   [Color(0.16, 0.13, 0.10, 0.92), Color(0.82, 0.66, 0.36, 0.95)],
+		"hover":    [Color(0.26, 0.20, 0.13, 0.96), Color(1.00, 0.84, 0.48, 1.00)],
+		"pressed":  [Color(0.10, 0.08, 0.06, 1.00), Color(0.62, 0.48, 0.26, 1.00)],
+		"disabled": [Color(0.10, 0.10, 0.10, 0.72), Color(0.34, 0.30, 0.24, 0.6)],
+	}
+	for state in states:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = states[state][0]
+		sb.border_color = states[state][1]
+		sb.set_border_width_all(3)
+		sb.set_corner_radius_all(59)          # 118/2 → 완전한 원
+		sb.shadow_color = Color(0, 0, 0, 0.5)
+		sb.shadow_size = 6
+		end_turn_button.add_theme_stylebox_override(state, sb)
+	end_turn_button.add_theme_color_override("font_color", Color(0.98, 0.92, 0.78))
+	end_turn_button.add_theme_color_override("font_disabled_color", Color(0.45, 0.42, 0.38))
+
+
+# 보스 HUD = 크림슨 글래스 (적 정보임을 색으로 구분 — 플레이어 HUD는 앰버)
+func _apply_boss_hud_glass() -> void:
+	for p in [
+		"BattleField/VBoxLayout/BossInfoRight/BossHpPanel",
+		"BattleField/VBoxLayout/BossInfoRight/BossStatusPanel",
+	]:
+		var n := get_node_or_null(p)
+		if n is PanelContainer:
+			n.add_theme_stylebox_override("panel",
+				DarkFantasyTheme.glass_panel(10, Color(0.92, 0.36, 0.30, 0.6)))
+
+
 func _apply_premium_ui() -> void:
-	# 외곽·간격을 표준 프리미엄 간격으로 (프레임 시절의 큰 여백 원복)
-	var bf := get_node_or_null("BattleField")
-	if bf is MarginContainer:
-		for m in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
-			bf.add_theme_constant_override(m, 12)
+	# BattleField/VBoxLayout은 오버레이 전환으로 여백 없는 Control이 됨 (앵커가 배치 담당)
 	for p in [
 		"BattleField/VBoxLayout",
 		"BattleField/VBoxLayout/BossArea/BossVBox/TopRow",
@@ -210,8 +250,16 @@ func _apply_premium_ui() -> void:
 		if n is PanelContainer:
 			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # 프레임 선명하게
 			n.add_theme_stylebox_override("panel", _premium_panel())
+	_apply_boss_hud_glass()
+	_style_end_turn_button()
+
+	# 마켓 외곽 래퍼는 투명 (안쪽 MarketPanel이 프레임 담당 → 이중 프레임 방지)
+	var mframe := get_node_or_null("MarketWindow/MarketFrame")
+	if mframe is PanelContainer:
+		mframe.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
 	# 초상 = 아트를 장식 테두리로 프레이밍 (중앙 미표시라 아트가 깨끗이 보임)
+	# (오버레이 전환 후에도 초상은 무대 = 불투명 유지)
 	for pf in [
 		"BattleField/VBoxLayout/BossArea/BossVBox/TopRow/PlayerFace",
 		"BattleField/VBoxLayout/BossArea/BossVBox/TopRow/BossFace",
@@ -240,8 +288,9 @@ func _apply_premium_ui() -> void:
 
 
 # 내용 패널 / 초상 프레임 — 공용 Kenney 프레임 헬퍼 사용
-func _premium_panel() -> StyleBoxTexture:
-	return DarkFantasyTheme.kenney_panel(true, 14)
+# HUD 패널 = 글래스 (오버레이라 무대가 비쳐야 함). 액자는 카드·초상에만 남긴다.
+func _premium_panel() -> StyleBoxFlat:
+	return DarkFantasyTheme.glass_panel(14)
 
 
 func _portrait_frame() -> StyleBoxTexture:
@@ -681,7 +730,7 @@ func _build_tutorial_steps() -> Array:
 		{"target": hand_belt, "text": "🃏 [b]손패[/b]입니다. 카드를 [b]드래그[/b]해서 사용해요. (AP를 소모)"},
 		{"target": timeline_pipe_panel, "text": "📜 [b]타임라인 파이프[/b] — 덱을 [b]섞지 않아요.[/b] 다음에 올 카드 순서가 다 보입니다. 카드를 여기로 끌면 그냥 버려요."},
 		{"target": resource_bar, "text": "⚡ [b]AP 3[/b]으로 카드를 씁니다. [b]공격할 때마다[/b] 🔥[b]투기 +1[/b] (남은 AP도 투기로), 10이 되면 [b]투기 발산[/b]!"},
-		{"target": market_panel, "text": "🛒 [b]상점[/b]에서 골드로 카드를 삽니다. 골드는 [b]턴이 끝나면 사라지니[/b] 그 턴에 쓰세요!"},
+		{"target": market_button, "text": "🛒 [b]상점[/b]에서 골드로 카드를 삽니다. 골드는 [b]턴이 끝나면 사라지니[/b] 그 턴에 쓰세요!"},
 	]
 
 
@@ -767,6 +816,10 @@ const _FAN_PER_ANGLE := 4.0    # 카드당 회전(도)
 const _FAN_ARC_RAISE := 3.0    # 중앙 카드가 위로 솟는 정도(px, 부채꼴 crest)
 const _FAN_OVERLAP   := 30.0   # 카드 겹침 폭(값 클수록 더 겹침)
 const _HOVER_SCALE   := 1.9    # 호버 확대 배율
+# 손패 하단 블리드 — 카드 아래쪽을 화면 밖으로 흘려 "손에 들고 있다"는 느낌.
+# 호버하면 _on_hand_card_hover가 위로 끌어올려 전체를 보여주므로 정보 손실은 없다.
+const _FAN_BLEED     := 30.0   # 아래로 밀어내는 양(px)
+const _HOVER_LIFT    := 70.0   # 호버 시 위로 끌어올리는 양(px)
 
 func _update_hand_display() -> void:
 	_refresh_hand_live_previews()
@@ -780,7 +833,7 @@ func _update_hand_display() -> void:
 	var step: float = cw - _FAN_OVERLAP                      # 카드 간 수평 간격(겹침)
 	var total_w: float = step * (n - 1) + cw
 	var start_x: float = maxf((belt_w - total_w) * 0.5, 0.0) # 중앙 정렬
-	var base_y: float = maxf(belt_h - ch, 0.0)              # 바닥 정렬 → 카드가 아래로
+	var base_y: float = maxf(belt_h - ch, 0.0) + _FAN_BLEED  # 바닥 정렬 + 화면 밖 블리드
 	var center: float = (n - 1) / 2.0
 	for i in n:
 		var card: Control = hand_cards[i]
@@ -807,6 +860,9 @@ func _on_hand_card_hover(card: Control, entered: bool) -> void:
 		card.z_index = 200
 		tw.tween_property(card, "scale", Vector2(_HOVER_SCALE, _HOVER_SCALE), 0.12).set_ease(Tween.EASE_OUT)
 		tw.tween_property(card, "rotation", 0.0, 0.12).set_ease(Tween.EASE_OUT)
+		# 블리드로 잘려 있던 아래쪽까지 보이도록 위로 끌어올림
+		var lifted: Vector2 = Vector2(card.get_meta("fan_pos", card.position)) - Vector2(0, _HOVER_LIFT)
+		tw.tween_property(card, "position", lifted, 0.12).set_ease(Tween.EASE_OUT)
 	else:
 		card.z_index = hand_cards.find(card)
 		tw.tween_property(card, "scale", Vector2.ONE, 0.14).set_ease(Tween.EASE_OUT)
@@ -1538,20 +1594,23 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 # === 게임 로그 시스템 ===
 
 func _setup_game_log() -> void:
-	# 상단바 우측에 [❓ 튜토리얼] [📜 기록] 배치 (TurnInfoPanel이 expand → 버튼은 오른쪽으로 밀림)
-	var bar := get_node_or_null("BattleField/VBoxLayout/MiddleWrapper/MiddleArea")
-	if bar:
+	# 상단바 상점 버튼 왼쪽에 [❓ 튜토리얼] [📜 기록] 순으로 배치
+	if market_button and market_button.get_parent():
+		var bar: Node = market_button.get_parent()
+
 		var tut_btn := Button.new()
 		tut_btn.text = "❓ 튜토리얼"
 		tut_btn.custom_minimum_size = Vector2(120, 0)
 		tut_btn.pressed.connect(_replay_tutorial)
 		bar.add_child(tut_btn)
+		bar.move_child(tut_btn, market_button.get_index())
 
 		_log_button = Button.new()
 		_log_button.text = "📜 기록"
 		_log_button.custom_minimum_size = Vector2(110, 0)
 		_log_button.pressed.connect(_toggle_log)
 		bar.add_child(_log_button)
+		bar.move_child(_log_button, market_button.get_index())
 	else:
 		_log_button = Button.new()
 		_log_button.text = "📜 기록"
@@ -1877,6 +1936,29 @@ func _update_turn_indicator(is_player: bool, _hint: String) -> void:
 
 
 # === 마켓 토글 ===
+
+func _toggle_market() -> void:
+	if market_window.visible:
+		_close_market()
+	else:
+		_open_market()
+
+
+func _open_market() -> void:
+	market_window.visible = true
+	AudioManager.play_sfx("ui.button")
+
+
+func _close_market() -> void:
+	market_window.visible = false
+	AudioManager.play_sfx("ui.button")
+
+
+func _on_market_dim_input(event: InputEvent) -> void:
+	# 어두운 배경 클릭 시 닫기
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_close_market()
+
 
 func _set_turn_focus(is_player_turn: bool) -> void:
 	# 컨텍스트 디밍: 보스 턴엔 손패/마켓을 흐리게, 내 턴엔 보스 영역을 살짝 흐리게

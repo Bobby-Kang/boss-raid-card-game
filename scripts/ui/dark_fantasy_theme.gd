@@ -53,6 +53,25 @@ static func kenney_button(state: String) -> StyleBoxTexture:
 	return s
 
 
+# 글래스 HUD 패널 — 오버레이 UI용.
+# 두꺼운 금속 액자(kenney_panel) 대신 반투명 배경 + 얇은 발광 라인.
+# HUD가 무대(초상화) 위에 떠 있는 레이어라는 걸 읽히게 하는 게 목적.
+#   accent: 발광 라인 색 (기본 = 앰버). tint_alpha: 배경 불투명도
+static func glass_panel(content_margin: int = 12,
+		accent: Color = Color(0.85, 0.68, 0.38, 0.55),
+		tint_alpha: float = 0.42) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.05, 0.045, 0.06, tint_alpha)   # 차갑고 어두운 유리
+	s.border_color = accent
+	s.set_border_width_all(1)
+	s.set_corner_radius_all(6)
+	s.set_content_margin_all(content_margin)
+	# 바깥으로 번지는 은은한 글로우 (레퍼런스의 발광 느낌)
+	s.shadow_color = Color(accent.r, accent.g, accent.b, 0.16)
+	s.shadow_size = 6
+	return s
+
+
 # 공용 Kenney 프레임 스타일박스.
 #   draw_center=true  → 어두운 패널 배경까지 (색은 이미 구워짐 → modulate 없음)
 #   draw_center=false → 테두리만(아트·이미지가 깨끗이 보임)
