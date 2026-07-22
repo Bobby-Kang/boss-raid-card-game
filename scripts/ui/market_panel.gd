@@ -228,6 +228,11 @@ func _build_lane_widget(index: int) -> Dictionary:
 	}
 
 
+# 좌측 요약 스트립 등 외부에서 구매를 트리거하기 위한 공개 API
+func buy_lane(index: int) -> void:
+	_on_buy_pressed(index)
+
+
 func _style_buy_button(btn: Button, lane_color: Color) -> void:
 	# Normal — 레인 색 기반, 하단만 둥근 모서리 (카드 하단과 자연스럽게 결합)
 	var normal := StyleBoxFlat.new()

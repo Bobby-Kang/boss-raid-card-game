@@ -183,7 +183,7 @@ func _ready() -> void:
 	end_turn_overlay.order_confirmed.connect(_on_end_turn_order_confirmed)
 	end_turn_overlay.cancelled.connect(_on_end_turn_cancelled)
 	# 마켓 토글 (상점 버튼으로 오버레이 열고/닫기)
-	market_button.pressed.connect(_toggle_market)
+	market_button.pressed.connect(_open_pause)
 	market_close_button.pressed.connect(_close_market)
 	market_dim_bg.gui_input.connect(_on_market_dim_input)
 	market_window.visible = false
@@ -272,6 +272,20 @@ func _apply_premium_ui() -> void:
 			n.add_theme_stylebox_override("panel", empty)
 	_apply_boss_hud_glass()
 	_style_end_turn_button()
+
+	# 마켓은 중앙 팝업이 아니라 **좌측 스트립 옆에서 펼쳐지는 드로어**.
+	# 씬 기본은 1440×600 중앙 정렬이라 화면을 가리는 모달이었다.
+	var mframe_size := get_node_or_null("MarketWindow/MarketFrame")
+	if mframe_size is Control:
+		var mf := mframe_size as Control
+		mf.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		mf.position = Vector2(_MARKET_STRIP_W + 28, 86)   # 스트립 오른쪽에 붙임
+		mf.size = Vector2(880, 500)
+		mf.pivot_offset = Vector2(0, 40)                  # 자세히 버튼 쪽에서 자라나게
+
+	# 딤 배경 제거 — 드로어는 화면을 가리지 않는다 (전투 상황을 계속 봐야 함)
+	if market_dim_bg:
+		market_dim_bg.color = Color(0, 0, 0, 0)
 
 	# 마켓 외곽 래퍼는 투명 (안쪽 MarketPanel이 프레임 담당 → 이중 프레임 방지)
 	var mframe := get_node_or_null("MarketWindow/MarketFrame")
@@ -401,7 +415,7 @@ func _setup_background_atmosphere() -> void:
 # 픽셀 무대 배치 — 초상 텍스처를 컷아웃으로 교체하고 컨테이너에서 빼내
 # 배경 바닥선(72% ≈ y778)에 발을 딛도록 자유 앵커로 재배치.
 # %-접근 노드라 flash_recoil·포효 등 기존 애니메이션은 그대로 유지된다.
-const _HUD_TOP_Y := 690.0                        # 하단 HUD 시작 y (캐릭터 발치 근처)
+const _HUD_TOP_Y := 700.0                        # 하단 HUD 시작 y (캐릭터 발치 근처)
 const _STAGE_H := 870.0                          # 무대 높이 (배경 145px × 6)
 const _STAGE_FLOOR_Y := 708.0                    # 무대 안 바닥선 (배경 118행 × 6)
 const _PIXEL_SCALE := 6                          # 아트 1px = 화면 6px (배경 320x180)
@@ -894,6 +908,105 @@ func _quit_game() -> void:
 	get_tree().quit()
 
 
+# 좌측 마켓 요약 스트립 — 평소엔 [레인][카드명][구매]만 보여주고,
+# 자세한 카드는 상점 버튼으로 풀사이즈 모달을 연다.
+# 골드가 턴마다 증발하는 게임이라 "지금 뭘 살 수 있나"가 상시 보여야 한다.
+const _MARKET_STRIP_W := 232.0
+var _market_rows: Array = []
+
+func _build_market_strip() -> void:
+	if market_panel == null:
+		return
+	var panel := PanelContainer.new()
+	panel.name = "MarketStrip"
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.position = Vector2(16, 86)
+	panel.custom_minimum_size = Vector2(_MARKET_STRIP_W, 0)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.045, 0.05, 0.065, 0.82)
+	box.set_corner_radius_all(6)
+	box.set_content_margin_all(10)
+	panel.add_theme_stylebox_override("panel", box)
+	add_child(panel)
+	var bf := get_node_or_null("BattleField")
+	if bf:
+		move_child(panel, bf.get_index())
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 4)
+	panel.add_child(vb)
+
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 6)
+	vb.add_child(head)
+
+	var title := Label.new()
+	title.text = "🛒 상점"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 15)
+	title.add_theme_color_override("font_color", Color(0.85, 0.94, 1.0))
+	head.add_child(title)
+
+	# 확대 버튼 — 시안 테두리로 눈에 띄게 (카드를 자세히 보려면 여기)
+	var expand := Button.new()
+	expand.text = "+"
+	expand.tooltip_text = "카드를 자세히 봅니다"
+	expand.custom_minimum_size = Vector2(30, 26)
+	expand.add_theme_font_size_override("font_size", 17)
+	expand.add_theme_color_override("font_color", Color(0.85, 0.96, 1.0))
+	for st in ["normal", "hover", "pressed"]:
+		var b := StyleBoxFlat.new()
+		b.bg_color = Color(0.08, 0.14, 0.19, 0.55 if st == "normal" else 0.8)
+		b.border_color = Color(0.45, 0.82, 0.96, 0.6 if st == "normal" else 1.0)
+		b.set_border_width_all(1)
+		b.set_corner_radius_all(5)
+		b.set_content_margin_all(6)
+		expand.add_theme_stylebox_override(st, b)
+	expand.pressed.connect(_toggle_market)
+	head.add_child(expand)
+
+	for i in range(4):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		vb.add_child(row)
+
+		var name_lbl := Label.new()
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.add_theme_font_size_override("font_size", 13)
+		name_lbl.clip_text = true
+		row.add_child(name_lbl)
+
+		var buy := Button.new()
+		buy.custom_minimum_size = Vector2(62, 26)
+		buy.add_theme_font_size_override("font_size", 12)
+		buy.pressed.connect(func() -> void: market_panel.buy_lane(i))
+		row.add_child(buy)
+
+		_market_rows.append({"name": name_lbl, "buy": buy})
+	_refresh_market_strip()
+
+
+func _refresh_market_strip() -> void:
+	if _market_rows.is_empty() or market_panel == null:
+		return
+	var lanes: Array = market_panel.lane_cards
+	for i in range(_market_rows.size()):
+		var r: Dictionary = _market_rows[i]
+		var cd = lanes[i] if i < lanes.size() else null
+		var meta: Dictionary = market_panel.LANE_META[i]
+		if cd == null:
+			r.name.text = "—"
+			r.name.add_theme_color_override("font_color", DarkFantasyTheme.TEXT_DIM)
+			r.buy.text = "매진"
+			r.buy.disabled = true
+		else:
+			r.name.text = cd.card_name
+			r.name.add_theme_color_override("font_color", meta["color"])
+			r.buy.text = "%d G" % cd.gold_cost
+			var g: int = resource_bar.gold_manager.current if resource_bar else 0
+			r.buy.disabled = not market_panel.is_player_turn or g < cd.gold_cost
+
+
 func _setup_helpers() -> void:
 	combat_fx = CombatFeedback.new()
 	add_child(combat_fx)
@@ -1031,7 +1144,10 @@ func _setup_game_context() -> void:
 	# 라운드 마켓
 	market_panel.setup(resource_bar.ap_manager, resource_bar.gold_manager)
 	market_panel.card_purchased.connect(_on_market_card_purchased)
+	resource_bar.gold_manager.gold_changed.connect(func(_c: int, _m: int) -> void:
+		_refresh_market_strip())
 	market_panel.set_player_turn(false)
+	_build_market_strip()
 
 	# 보스 페이즈 시스템 (HP/라운드 트리거 → 마켓 티어 매칭)
 	phase_system = BossPhaseSystem.new(game_ctx)
@@ -1685,6 +1801,7 @@ func _start_round() -> void:
 	current_turn = 0
 	if market_panel:
 		market_panel.refresh_slots()
+	_refresh_market_strip()
 	_advance_turn()
 
 
@@ -1732,6 +1849,7 @@ func _begin_player_turn() -> void:
 	await phase_banner.banner_finished
 	if market_panel:
 		market_panel.set_player_turn(true)
+	_refresh_market_strip()
 	_start_player_turn()
 
 
@@ -1749,6 +1867,7 @@ func _describe_player_hit(hp0: int, blk0: int) -> String:
 func _begin_boss_turn() -> void:
 	if market_panel:
 		market_panel.set_player_turn(false)
+	_refresh_market_strip()
 	_set_turn_focus(false)
 
 	# 0. 보스 방어 리셋 — 웅크리기/강철 벽 방어는 다음 보스 턴 시작까지만 유지
@@ -2118,6 +2237,7 @@ func _finish_turn() -> void:
 	end_turn_button.disabled = true
 	if market_panel:
 		market_panel.set_player_turn(false)
+	_refresh_market_strip()
 	_advance_turn()
 
 
@@ -2203,8 +2323,8 @@ func _setup_game_log() -> void:
 		bar.add_child(_log_button)
 		bar.move_child(_log_button, market_button.get_index())
 
-		# 상점 버튼도 동일한 원형 아이콘으로
-		_style_icon_button(market_button, "🛒", "상점")
+		# 상점은 좌측 스트립에 상시 노출되므로, 이 자리는 설정(ESC 메뉴)으로
+		_style_icon_button(market_button, "⚙", "설정 (ESC)")
 
 		# 턴 표시를 좌상단 끝으로 (기본은 HBox가 늘어나며 중앙 정렬)
 		var tinfo := get_node_or_null("BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel/TurnInfoHBox")
@@ -2499,6 +2619,7 @@ func _trigger_game_over(is_win: bool) -> void:
 	end_turn_button.disabled = true
 	if market_panel:
 		market_panel.set_player_turn(false)
+	_refresh_market_strip()
 	# 결과 화면 표시 (배너가 재생 중이라면 잠깐 기다렸다가)
 	if phase_banner and phase_banner.visible:
 		await phase_banner.banner_finished
@@ -2527,11 +2648,27 @@ func _toggle_market() -> void:
 func _open_market() -> void:
 	market_window.visible = true
 	AudioManager.play_sfx("ui.button")
+	var mf := get_node_or_null("MarketWindow/MarketFrame")
+	if mf is Control:
+		# 버튼 쪽(좌상단 피벗)에서 펼쳐지는 느낌
+		var c := mf as Control
+		c.scale = Vector2(0.86, 0.86)
+		c.modulate.a = 0.0
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(c, "scale", Vector2.ONE, 0.16)			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		tw.tween_property(c, "modulate:a", 1.0, 0.12)
 
 
 func _close_market() -> void:
-	market_window.visible = false
 	AudioManager.play_sfx("ui.button")
+	var mf := get_node_or_null("MarketWindow/MarketFrame")
+	if mf is Control:
+		var c := mf as Control
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(c, "scale", Vector2(0.9, 0.9), 0.1).set_ease(Tween.EASE_IN)
+		tw.tween_property(c, "modulate:a", 0.0, 0.1)
+		await tw.finished
+	market_window.visible = false
 
 
 func _on_market_dim_input(event: InputEvent) -> void:
