@@ -126,7 +126,6 @@ var game_over: bool = false
 
 # === 게임 로그 (A: 모달 전체 로그 / B: 파이프 오른쪽 미니 로그) ===
 const _LOG_MAX := 150
-const _MINI_LOG_LINES := 5
 var _game_log: Array = []   # [{short: String, full: String}] — B는 short, A 모달은 full
 var _log_button: Button
 var _log_layer: CanvasLayer
@@ -416,7 +415,8 @@ func _setup_pixel_stage() -> void:
 	if player_face_texture:
 		insert_at = _place_sheet_fighter(player_face_texture, Vector2(430, _STAGE_FLOOR_Y), insert_at)
 	if boss_face_texture:
-		insert_at = _place_boss_placeholder(boss_face_texture, Vector2(1280, _STAGE_FLOOR_Y), insert_at)
+		insert_at = _place_sheet_fighter(boss_face_texture, Vector2(1280, _STAGE_FLOOR_Y),
+			insert_at, _BOSS_SCALE, _KNIGHT_DARK_DIR, false)
 
 	if p_panel: p_panel.visible = false
 	if b_panel: b_panel.visible = false
@@ -512,108 +512,17 @@ func _anim_tick() -> void:
 			_anim_timer.wait_time = want
 
 
-# 보스 자리표시자 — 같은 나이트 시트를 어둡게 구운 것. 정식 보스 팩 도입 전까지 사용.
-# 플레이어보다 크게(_BOSS_SCALE) 세워 위압감을 준다.
-const _KNIGHT_DARK_DIR := "res://assets/art/packs/knight/_dark/"
-const _SHEET_HEAD_Y := 25    # 프레임 내 머리 꼭대기 y (실측)
-const _BOSS_SCALE := 9      # 6의 1.5배 — 정수 배율이라 픽셀은 깨끗하나 플레이어보다 굵다
-
-func _place_boss_placeholder(node: TextureRect, feet: Vector2, idx: int) -> int:
-	var frames: Array = _load_anim("idle", _KNIGHT_DARK_DIR)
+# 시트 기반 캐릭터를 무대에 세운다. 플레이어와 보스가 같은 경로를 쓴다.
+# 프레임 전체(96×84)를 배치하고 **발끝(_SHEET_FEET_Y)**이 바닥선에 오도록 위치를 잡는다
+# — 프레임마다 실루엣(bbox)이 달라도 발이 안 흔들린다(작가가 발끝을 고정해둠).
+func _place_sheet_fighter(node: TextureRect, feet: Vector2, idx: int,
+		scale_mul: int = _PIXEL_SCALE, dir: String = _KNIGHT_DIR,
+		drive_anim: bool = true) -> int:
+	var frames: Array = _load_anim("idle", dir)
 	if frames.is_empty():
 		return idx
-	var sz := Vector2(_SHEET_FW, _SHEET_FH) * _BOSS_SCALE
-	var top_left := (feet - Vector2(sz.x * 0.5, _SHEET_FEET_Y * _BOSS_SCALE)).round()
-
-	var shadow := TextureRect.new()
-	shadow.name = "%s_Shadow" % node.name
-	shadow.texture = _ellipse_shadow_tex()
-	shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shadow.stretch_mode = TextureRect.STRETCH_SCALE
-	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sw := 26.0 * _BOSS_SCALE
-	shadow.size = Vector2(sw, 38)
-	shadow.position = Vector2(feet.x - sw * 0.5, feet.y - 20).round()
-	add_child(shadow)
-	move_child(shadow, idx)
-	idx += 1
-
-	node.reparent(self, false)
-	node.texture = frames[0]
-	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.stretch_mode = TextureRect.STRETCH_SCALE
-	node.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	node.custom_minimum_size = Vector2.ZERO
-	node.size = sz
-	node.position = top_left
-	node.pivot_offset = sz * 0.5
-	# 좌우 반전은 시트를 구울 때 처리했다 — scale.x = -1로 뒤집으면
-	# flash_recoil이 피격 시 scale을 ONE으로 되돌려 보스가 뒤돌아버린다.
-	move_child(node, idx)
-
-	var t := Timer.new()
-	t.wait_time = 1.0 / _IDLE_FPS
-	t.autostart = true
-	var i := {"v": 0}
-	t.timeout.connect(func() -> void:
-		i["v"] = (int(i["v"]) + 1) % frames.size()
-		node.texture = frames[int(i["v"])])
-	node.add_child(t)
-	return idx + 1
-
-
-# 시트 기반 캐릭터를 무대에 세운다. 프레임 전체(96×84)를 배치하고
-# 발끝(y=62)이 바닥선에 오도록 위치를 잡는다 — 프레임마다 bbox가 달라도 안 흔들린다.
-func _place_sheet_fighter(node: TextureRect, feet: Vector2, idx: int) -> int:
-	var frames: Array = _load_anim("idle")
-	if frames.is_empty():
-		return idx
-	var sz := Vector2(_SHEET_FW, _SHEET_FH) * _PIXEL_SCALE
-	var top_left := (feet - Vector2(sz.x * 0.5, _SHEET_FEET_Y * _PIXEL_SCALE)).round()
-
-	var shadow := TextureRect.new()
-	shadow.name = "%s_Shadow" % node.name
-	shadow.texture = _ellipse_shadow_tex()
-	shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shadow.stretch_mode = TextureRect.STRETCH_SCALE
-	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sw := 26.0 * _PIXEL_SCALE
-	shadow.size = Vector2(sw, 30)
-	shadow.position = Vector2(feet.x - sw * 0.5, feet.y - 16).round()
-	add_child(shadow)
-	move_child(shadow, idx)
-	idx += 1
-
-	node.reparent(self, false)
-	node.texture = frames[0]
-	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.stretch_mode = TextureRect.STRETCH_SCALE
-	node.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	node.custom_minimum_size = Vector2.ZERO
-	node.size = sz
-	node.position = top_left
-	node.pivot_offset = sz * 0.5
-	move_child(node, idx)
-
-	_anim_node = node
-	_anim_cur = "idle"
-	_anim_idx = 0
-	_anim_timer = Timer.new()
-	_anim_timer.wait_time = 1.0 / _IDLE_FPS
-	_anim_timer.autostart = true
-	_anim_timer.timeout.connect(_anim_tick)
-	node.add_child(_anim_timer)
-	return idx + 1
-
-
-# 컷아웃 하나를 발끝 기준으로 무대에 세운다. 접지 그림자를 먼저 깔고 그 위에 얹는다.
-# 반환: 다음 삽입 인덱스
-func _place_fighter(node: TextureRect, tex: Texture2D, feet: Vector2, idx: int) -> int:
-	var sz := Vector2(tex.get_width(), tex.get_height()) * _PIXEL_SCALE
-	# 정수 픽셀에 스냅 — 반 픽셀 위치는 nearest 텍스처를 뭉갠다
-	var top_left := (feet - Vector2(sz.x * 0.5, sz.y)).round()
+	var sz := Vector2(_SHEET_FW, _SHEET_FH) * scale_mul
+	var top_left := (feet - Vector2(sz.x * 0.5, _SHEET_FEET_Y * scale_mul)).round()
 
 	# 접지 그림자 (납작한 타원)
 	var shadow := TextureRect.new()
@@ -622,30 +531,52 @@ func _place_fighter(node: TextureRect, tex: Texture2D, feet: Vector2, idx: int) 
 	shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	shadow.stretch_mode = TextureRect.STRETCH_SCALE
 	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var shadow_w := sz.x * 0.62
-	var shadow_h := 34.0
-	shadow.size = Vector2(shadow_w, shadow_h)
-	shadow.position = Vector2(feet.x - shadow_w * 0.5, feet.y - shadow_h * 0.55).round()
+	var sw := 26.0 * scale_mul
+	var sh := 5.0 * scale_mul
+	shadow.size = Vector2(sw, sh)
+	shadow.position = Vector2(feet.x - sw * 0.5, feet.y - sh * 0.55).round()
 	add_child(shadow)
 	move_child(shadow, idx)
 	idx += 1
 
-	# 캐릭터 컷아웃
 	node.reparent(self, false)
-	node.texture = tex
+	node.texture = frames[0]
 	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	node.stretch_mode = TextureRect.STRETCH_SCALE
 	node.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	node.custom_minimum_size = Vector2.ZERO
 	node.size = sz
 	node.position = top_left
 	node.pivot_offset = sz * 0.5
+	# 좌우 반전은 시트를 구울 때 프레임별로 처리한다 — scale.x = -1로 뒤집으면
+	# flash_recoil이 피격 연출 끝에 scale을 ONE으로 되돌려 캐릭터가 뒤돌아버린다.
 	move_child(node, idx)
+
+	var t := Timer.new()
+	t.wait_time = 1.0 / _IDLE_FPS
+	t.autostart = true
+	node.add_child(t)
+	if drive_anim:
+		# 플레이어 — 공격·피격 등 상태 전환을 받는 애니메이터
+		_anim_node = node
+		_anim_cur = "idle"
+		_anim_idx = 0
+		_anim_timer = t
+		t.timeout.connect(_anim_tick)
+	else:
+		# 보스 — idle만 단순 순환
+		var i := {"v": 0}
+		t.timeout.connect(func() -> void:
+			i["v"] = (int(i["v"]) + 1) % frames.size()
+			node.texture = frames[int(i["v"])])
 	return idx + 1
 
 
-# 재사용 가능한 타원 그림자 텍스처 (radial: 중앙 검정 → 가장자리 투명)
+# 플레이어보다 크게(_BOSS_SCALE) 세워 위압감을 준다.
+const _KNIGHT_DARK_DIR := "res://assets/art/packs/knight/_dark/"
+const _SHEET_HEAD_Y := 25    # 프레임 내 머리 꼭대기 y (실측)
+const _BOSS_SCALE := 9      # 6의 1.5배 — 정수 배율이라 픽셀은 깨끗하나 플레이어보다 굵다
 var _shadow_tex_cache: GradientTexture2D
 func _ellipse_shadow_tex() -> GradientTexture2D:
 	if _shadow_tex_cache:
@@ -763,8 +694,6 @@ func _apply_kenney_bar(container: Control) -> void:
 		f.offset_top = _KENNEY_BAR_INSET
 		f.offset_bottom = -_KENNEY_BAR_INSET
 
-
-const _BOSS_HP_X_OFFSET := 100.0   # 보스 몸통 중심 보정 (철퇴가 왼쪽으로 뻗어 있음)
 
 # 보스 HP를 보스 머리 위로 띄운다 (레퍼런스 = 적 HP가 적 위에 부유).
 # HP 바는 _create_hp_bar가 패널 '형제'로 넣으므로 라벨 패널과 바를 함께 옮긴다.
