@@ -39,3 +39,8 @@ Thumbs.db
 # Python (tools/)
 __pycache__/
 *.pyc
+
+# 구매/다운로드한 서드파티 에셋 팩 — 재배포 금지 조항이 있어 저장소에 넣지 않는다.
+# 각 팩의 출처와 라이선스는 CREDITS.md에 기록. 받는 방법은 assets/art/packs/README.md 참고.
+assets/art/packs/*
+!assets/art/packs/README.md
