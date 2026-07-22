@@ -72,10 +72,12 @@ func compute_card_totals(card: Control) -> Dictionary:
 				kind = "damage"
 			"rage_scale_damage":
 				var rage: int = _rage_stacks()
+				@warning_ignore("integer_division")
 				amount = int(info.get("base", 0)) + rage * int(info.get("mul", 1)) / maxi(int(info.get("div", 1)), 1)
 				kind = "damage"
 			"rage_scale_block":
 				var rage_b: int = _rage_stacks()
+				@warning_ignore("integer_division")
 				amount = int(info.get("base", 0)) + rage_b / maxi(int(info.get("div", 1)), 1)
 				kind = "block"
 			"execute_damage":

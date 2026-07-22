@@ -41,9 +41,11 @@ const BUGBEAR_PHASE3: Array = [
 ]
 
 # Rage UI
+const _HP_BAR_H := 14
+const _HP_GREEN := Color(0.20, 0.82, 0.30)
 const RAGE_COLOR := Color(1.0, 0.55, 0.15, 1.0)
-const RAGE_EMPTY_COLOR := Color(0.35, 0.35, 0.35, 1.0)
-const RAGE_ORB_SIZE := 12
+const RAGE_EMPTY_COLOR := Color(0.22, 0.24, 0.28, 1.0)
+const RAGE_ORB_SIZE := ResourceBar.ORB_SIZE   # 골드·AP 오브와 같은 크기로 통일
 
 # Phase UI
 const PHASE_COLORS := {
@@ -131,7 +133,6 @@ var _log_layer: CanvasLayer
 var _log_root: Control
 var _log_list_vbox: VBoxContainer
 var _log_scroll: ScrollContainer
-var _mini_log_label: Label
 
 # === Scene 헬퍼 (분리된 책임) ===
 var combat_fx: CombatFeedback           # 플래시·셰이크·Hit-stop
@@ -155,8 +156,8 @@ var turn_order: Array[String] = []
 var turn_slot_labels: Array[Label] = []
 
 # === HP 바 / 데미지 팝업 ===
-var _player_hp_fill: ColorRect = null   # 플레이어 HP 바 채움 rect
-var _boss_hp_fill:   ColorRect = null   # 보스 HP 바 채움 rect
+var _player_hp_fill: Panel = null   # 플레이어 HP 바 채움
+var _boss_hp_fill:   Panel = null   # 보스 HP 바 채움
 var _prev_player_hp: int = -1           # 이전 HP (데미지 팝업 계산용)
 var _prev_boss_hp:   int = -1
 
@@ -165,10 +166,15 @@ func _ready() -> void:
 	theme = DarkFantasyTheme.build()   # 전체 UI 다크 판타지 테마 적용
 	_setup_background_atmosphere()
 	_apply_premium_ui()   # A2 프리미엄 금속 패널 스타일 적용
+	_setup_pixel_stage()  # 초상 → 픽셀 컷아웃, 무대 바닥에 배치 (premium_ui 이후 = 프레임 덮어씀)
 	_setup_helpers()
 	_setup_phase_deck_chips()   # 보스 덱 카운트 → 3-페이즈 칩 행 교체
 	_setup_game_context()
+	_float_boss_hp()          # HP 바 생성 이후에야 옮길 수 있다
+	_merge_player_cluster()   # 골드·AP·투기를 좌하단 HP·모듈 패널로 통합
 	_setup_drop_zones()
+	_build_pause_menu()
+	_build_help_overlay()
 	_setup_game_log()   # 로그 UI를 먼저 만들어 _init_starter_deck의 첫 로그부터 반영
 	_init_starter_deck()
 	resource_bar.gold_manager.set_to(0)
@@ -189,27 +195,30 @@ func _ready() -> void:
 
 # A2 프리미엄 UI — 금속 재질 StyleBoxFlat 패널(청동 테두리·라운드·그림자).
 # 프레임 이미지 없이 코드 스타일박스로 통일. 중앙 배틀 밴드만 투명(배경 무대 노출).
-# 턴 종료 = 우하단 원형 버튼 (레퍼런스의 ✓ 버튼 자리). 4상태 모두 원형으로.
+# 턴 종료 = 우하단 원형 버튼 (레퍼런스의 ✓ 버튼 자리). 시안 발광 링.
 func _style_end_turn_button() -> void:
 	if end_turn_button == null:
 		return
+	# [배경, 테두리(시안), 글로우 세기]
 	var states := {
-		"normal":   [Color(0.16, 0.13, 0.10, 0.92), Color(0.82, 0.66, 0.36, 0.95)],
-		"hover":    [Color(0.26, 0.20, 0.13, 0.96), Color(1.00, 0.84, 0.48, 1.00)],
-		"pressed":  [Color(0.10, 0.08, 0.06, 1.00), Color(0.62, 0.48, 0.26, 1.00)],
-		"disabled": [Color(0.10, 0.10, 0.10, 0.72), Color(0.34, 0.30, 0.24, 0.6)],
+		"normal":   [Color(0.07, 0.12, 0.16, 0.92), Color(0.42, 0.82, 0.96, 0.95), 0.35],
+		"hover":    [Color(0.10, 0.18, 0.24, 0.96), Color(0.60, 0.95, 1.00, 1.00), 0.55],
+		"pressed":  [Color(0.05, 0.09, 0.12, 1.00), Color(0.35, 0.70, 0.88, 1.00), 0.25],
+		"disabled": [Color(0.09, 0.10, 0.11, 0.72), Color(0.34, 0.40, 0.44, 0.55), 0.0],
 	}
 	for state in states:
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = states[state][0]
-		sb.border_color = states[state][1]
+		var border: Color = states[state][1]
+		sb.border_color = border
 		sb.set_border_width_all(3)
 		sb.set_corner_radius_all(59)          # 118/2 → 완전한 원
-		sb.shadow_color = Color(0, 0, 0, 0.5)
-		sb.shadow_size = 6
+		# 시안 글로우 (레퍼런스의 발광 링)
+		sb.shadow_color = Color(border.r, border.g, border.b, states[state][2])
+		sb.shadow_size = 12
 		end_turn_button.add_theme_stylebox_override(state, sb)
-	end_turn_button.add_theme_color_override("font_color", Color(0.98, 0.92, 0.78))
-	end_turn_button.add_theme_color_override("font_disabled_color", Color(0.45, 0.42, 0.38))
+	end_turn_button.add_theme_color_override("font_color", Color(0.85, 0.96, 1.0))
+	end_turn_button.add_theme_color_override("font_disabled_color", Color(0.42, 0.46, 0.5))
 
 
 # 보스 HUD = 크림슨 글래스 (적 정보임을 색으로 구분 — 플레이어 HUD는 앰버)
@@ -237,19 +246,30 @@ func _apply_premium_ui() -> void:
 		if c is Container:
 			c.add_theme_constant_override("separation", 12)
 
-	# 내용 패널 = 금속 프리미엄 패널 (청동 테두리 + 라운드 + 그림자)
+	# 내용 패널 = 청색 글래스 (텍스트 목록이라 어두운 배경이 있어야 읽히는 것만 남김)
 	for pp in [
-		"BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel",
-		"BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar",
-		"BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar",
 		"BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility",
-		"BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone",
 		"BattleField/VBoxLayout/BottomArea/PlayerZones/TimelinePipePanel",
 	]:
 		var n := get_node_or_null(pp)
 		if n is PanelContainer:
 			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # 프레임 선명하게
 			n.add_theme_stylebox_override("panel", _premium_panel())
+
+	# 상자를 없애 요소가 무대 위에 떠 있게 (레퍼런스는 손패·상단바에 컨테이너가 없다).
+	# 여백은 그대로 둬야 배치가 안 밀린다.
+	for tp in [
+		"BattleField/VBoxLayout/BottomArea/PlayerZones/ActiveZone",        # 손패
+		"BattleField/VBoxLayout/MiddleWrapper/MiddleArea/TurnInfoPanel",   # 상단바
+		"BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar",        # 골드·AP
+		"BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar",            # 투기
+	]:
+		var n := get_node_or_null(tp)
+		if n is PanelContainer:
+			var empty := StyleBoxEmpty.new()
+			for side in ["left", "right", "top", "bottom"]:
+				empty.set("content_margin_%s" % side, 14)
+			n.add_theme_stylebox_override("panel", empty)
 	_apply_boss_hud_glass()
 	_style_end_turn_button()
 
@@ -269,14 +289,16 @@ func _apply_premium_ui() -> void:
 			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			n.add_theme_stylebox_override("panel", _portrait_frame())
 
-	# 모듈 슬롯 = 골드 Kenney 프레임(빈 소켓)
+	# 모듈 슬롯 = 납작한 청색 유리 소켓 (금색 액자 걷어냄)
 	for sp in [
 		"BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot1",
 		"BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox/ActiveRow/ActiveSlot2",
 	]:
 		var n := get_node_or_null(sp)
 		if n is PanelContainer:
-			n.add_theme_stylebox_override("panel", DarkFantasyTheme.kenney_panel(true, 6))
+			n.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			n.add_theme_stylebox_override("panel",
+				_kenney_pixel_box("slot_frame_x3.png", 14, 10))
 
 	# 중앙 배틀 밴드 = 투명 무대 (배경 그라데이션이 그대로 보임)
 	var boss_area := get_node_or_null("BattleField/VBoxLayout/BossArea")
@@ -287,36 +309,55 @@ func _apply_premium_ui() -> void:
 		boss_area.add_theme_stylebox_override("panel", stage)
 
 
-# 내용 패널 / 초상 프레임 — 공용 Kenney 프레임 헬퍼 사용
-# HUD 패널 = 글래스 (오버레이라 무대가 비쳐야 함). 액자는 카드·초상에만 남긴다.
-func _premium_panel() -> StyleBoxFlat:
-	return DarkFantasyTheme.glass_panel(14)
+# HUD 크롬 = Kenney "UI Pack · Pixel Adventure"(CC0) 타일을 3배로 구운 것.
+# 원본 16px을 그대로 쓰면 UI 픽셀이 무대보다 3배 촘촘해져 격자가 어긋나므로 ×3로 굽는다.
+# 속은 어두운 반투명으로 치환해 무대가 비치게 유지(테두리만 Kenney).
+const _KP := "res://assets/art/Kenny/pixel_adventure/_baked/"
+
+func _kenney_pixel_box(tex_name: String, margin: int, content: int) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = load(_KP + tex_name)
+	s.texture_margin_left = margin
+	s.texture_margin_right = margin
+	s.texture_margin_top = margin
+	s.texture_margin_bottom = margin
+	s.content_margin_left = content
+	s.content_margin_right = content
+	s.content_margin_top = content
+	s.content_margin_bottom = content
+	return s
+
+
+# 큰 HUD 패널에 Kenney 두꺼운 액자를 두르니 화면이 답답해졌다.
+# 큰 면적은 '테두리 없는 어두운 판'으로 두고, Kenney 픽셀 크롬은
+# 작은 요소(바·슬롯·버튼)에만 쓴다.
+func _premium_panel() -> StyleBox:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.05, 0.06, 0.08, 0.5)
+	s.set_corner_radius_all(4)
+	s.set_content_margin_all(14)
+	return s
 
 
 func _portrait_frame() -> StyleBoxTexture:
 	return DarkFantasyTheme.kenney_panel(false, 8)   # 중앙 미표시 → 아트 깨끗
 
 
-# 배경 깊이감 — 세로 그라데이션 + 가장자리 비네팅
+# 배경 — 픽셀아트 던전 무대 + 가장자리 비네팅
 func _setup_background_atmosphere() -> void:
-	# 1) 세로 그라데이션 (상단 갈색 → 하단 흑갈색)
-	var grad := GradientTexture2D.new()
-	grad.fill = GradientTexture2D.FILL_LINEAR
-	grad.fill_from = Vector2(0.5, 0.0)
-	grad.fill_to = Vector2(0.5, 1.0)
-	var g := Gradient.new()
-	g.set_color(0, DarkFantasyTheme.BG_MID)
-	g.set_color(1, DarkFantasyTheme.BG_DEEP)
-	grad.gradient = g
-	var grad_rect := TextureRect.new()
-	grad_rect.name = "BgGradient"
-	grad_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	grad_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	grad_rect.texture = grad
-	grad_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	grad_rect.stretch_mode = TextureRect.STRETCH_SCALE
-	add_child(grad_rect)
-	move_child(grad_rect, 1)   # Background ColorRect 바로 위 (트리 순서로 위에 그려짐)
+	# 1) 픽셀 배경 (640×360 원본 → nearest로 정수 확대, 화면 꽉 채움)
+	var bg_tex := load("res://assets/art/pixel-lab/battle_bg.png")
+	if bg_tex:
+		var bg := TextureRect.new()
+		bg.name = "BgPixel"
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.texture = bg_tex
+		bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_SCALE
+		add_child(bg)
+		move_child(bg, 1)   # Background ColorRect(레터박스 색) 바로 위
 
 	# 2) 가장자리 비네팅 (radial: 중앙 투명 → 가장자리 어둠)
 	var vig_grad := GradientTexture2D.new()
@@ -336,6 +377,390 @@ func _setup_background_atmosphere() -> void:
 	vig.stretch_mode = TextureRect.STRETCH_SCALE
 	add_child(vig)
 	move_child(vig, 2)   # gradient 위, BattleField 아래
+
+
+# 픽셀 무대 배치 — 초상 텍스처를 컷아웃으로 교체하고 컨테이너에서 빼내
+# 배경 바닥선(72% ≈ y778)에 발을 딛도록 자유 앵커로 재배치.
+# %-접근 노드라 flash_recoil·포효 등 기존 애니메이션은 그대로 유지된다.
+const _STAGE_FLOOR_Y := 778.0                    # 배경 벽/바닥 경계 (720p의 72%)
+const _PIXEL_SCALE := 3                          # 아트 1px = 화면 3px
+
+func _setup_pixel_stage() -> void:
+	var war := load("res://assets/art/pixel-lab/warrior_cutout.png")
+	var bug := load("res://assets/art/pixel-lab/bugbear_cutout.png")
+	# 초상 패널 프레임을 안 보이게 (텍스처를 빼내면 빈 액자만 남으므로)
+	var p_panel: Control = player_face_texture.get_parent() if player_face_texture else null
+	var b_panel: Control = boss_face_texture.get_parent() if boss_face_texture else null
+
+	var insert_at := 3   # Background(0)·BgPixel(1)·BgVignette(2) 뒤, BattleField 앞
+	if war and player_face_texture:
+		insert_at = _place_fighter(player_face_texture, war, Vector2(300, _STAGE_FLOOR_Y), insert_at)
+	if bug and boss_face_texture:
+		insert_at = _place_fighter(boss_face_texture, bug, Vector2(1290, _STAGE_FLOOR_Y), insert_at)
+
+	_start_idle_breathing(player_face_texture, "warrior_cutout")
+
+	if p_panel: p_panel.visible = false
+	if b_panel: b_panel.visible = false
+	var vs := get_node_or_null("%VsLabel")
+	if vs: vs.visible = false
+
+	# 초상 패널을 비우면 무대 컨테이너(TopRow/BossVBox)가 상단까지 확장돼 상단바 버튼을
+	# 가로챈다. Godot의 입력 판정은 z_index를 무시하고 트리 순서만 보므로,
+	# MiddleWrapper의 z_index=10은 '그리기'만 고칠 뿐 입력은 무대가 먹는다.
+	for p in [
+		"BattleField/VBoxLayout/BossArea/BossVBox",
+		"BattleField/VBoxLayout/BossArea/BossVBox/TopRow",
+	]:
+		var n := get_node_or_null(p)
+		if n is Control:
+			(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+# idle 호흡 — 프레임을 번갈아 표시(1→2→1→3). 프레임은 `tools/make_idle.py`가
+# 원본 한 장에서 상체만 1px 올려 합성한 것(다리는 완전 고정).
+# AI로 프레임을 따로 생성하면 매번 다시 그려서 다리까지 지글거린다(실측 확인).
+const _IDLE_DIR := "res://assets/art/pixel-lab/_idle/"
+const _IDLE_FRAME_SEC := 0.55
+
+func _start_idle_breathing(node: TextureRect, base_name: String) -> void:
+	if node == null:
+		return
+	var frames: Array[Texture2D] = []
+	for suffix in ["idle1", "idle2", "idle1", "idle3"]:   # 들숨 → 복귀 → 날숨
+		var t := load("%s%s_%s.png" % [_IDLE_DIR, base_name, suffix])
+		if t == null:
+			return   # 프레임이 없으면 조용히 정지 상태 유지
+		frames.append(t)
+
+	node.texture = frames[0]
+	var timer := Timer.new()
+	timer.wait_time = _IDLE_FRAME_SEC
+	timer.autostart = true
+	node.add_child(timer)
+	var i := {"v": 0}
+	timer.timeout.connect(func() -> void:
+		i["v"] = (int(i["v"]) + 1) % frames.size()
+		node.texture = frames[int(i["v"])])
+
+
+# 컷아웃 하나를 발끝 기준으로 무대에 세운다. 접지 그림자를 먼저 깔고 그 위에 얹는다.
+# 반환: 다음 삽입 인덱스
+func _place_fighter(node: TextureRect, tex: Texture2D, feet: Vector2, idx: int) -> int:
+	var sz := Vector2(tex.get_width(), tex.get_height()) * _PIXEL_SCALE
+	# 정수 픽셀에 스냅 — 반 픽셀 위치는 nearest 텍스처를 뭉갠다
+	var top_left := (feet - Vector2(sz.x * 0.5, sz.y)).round()
+
+	# 접지 그림자 (납작한 타원)
+	var shadow := TextureRect.new()
+	shadow.name = "%s_Shadow" % node.name
+	shadow.texture = _ellipse_shadow_tex()
+	shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shadow.stretch_mode = TextureRect.STRETCH_SCALE
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shadow_w := sz.x * 0.62
+	var shadow_h := 34.0
+	shadow.size = Vector2(shadow_w, shadow_h)
+	shadow.position = Vector2(feet.x - shadow_w * 0.5, feet.y - shadow_h * 0.55).round()
+	add_child(shadow)
+	move_child(shadow, idx)
+	idx += 1
+
+	# 캐릭터 컷아웃
+	node.reparent(self, false)
+	node.texture = tex
+	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	node.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	node.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	node.custom_minimum_size = Vector2.ZERO
+	node.size = sz
+	node.position = top_left
+	node.pivot_offset = sz * 0.5
+	move_child(node, idx)
+	return idx + 1
+
+
+# 재사용 가능한 타원 그림자 텍스처 (radial: 중앙 검정 → 가장자리 투명)
+var _shadow_tex_cache: GradientTexture2D
+func _ellipse_shadow_tex() -> GradientTexture2D:
+	if _shadow_tex_cache:
+		return _shadow_tex_cache
+	var t := GradientTexture2D.new()
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 128
+	t.height = 128
+	var g := Gradient.new()
+	g.set_color(0, Color(0, 0, 0, 0.5))
+	g.set_color(1, Color(0, 0, 0, 0.0))
+	t.gradient = g
+	_shadow_tex_cache = t
+	return t
+
+
+# 플레이어 정보를 좌하단 한 패널로 통합한다.
+# 원래 골드·AP(ResourceBar)와 투기(BuffBar)가 화면 폭 전체를 가로지르는 별도 행이었는데,
+# HP·모듈이 있는 PlayerAbility 안으로 넣어 "플레이어 것은 좌하단" 한 덩어리로 만든다.
+# 자원바 행이 통째로 사라지므로 세로 예산은 그대로다.
+func _merge_player_cluster() -> void:
+	var vbox := get_node_or_null("BattleField/VBoxLayout/BottomArea/PlayerZones/PlayerAbility/VBox")
+	var res  := get_node_or_null("BattleField/VBoxLayout/BottomArea/StatusBars/ResourceBar")
+	var buff := get_node_or_null("BattleField/VBoxLayout/BottomArea/StatusBars/BuffBar")
+	if vbox == null or res == null or buff == null:
+		return
+	var active_row := vbox.get_node_or_null("ActiveRow")
+
+	# AP를 골드보다 위로 — 카드 사용의 핵심 자원이라 가장 자주 확인한다
+	var rvb := res.get_node_or_null("VBox")
+	if rvb:
+		var ap_row := rvb.get_node_or_null("ApRow")
+		if ap_row:
+			rvb.move_child(ap_row, 0)
+			_emphasize_ap(ap_row)
+
+	# 자원은 '가로로' 나란히 — 세로로 쌓으면 패널이 430px까지 자라 무대를 침범한다
+	var row := HBoxContainer.new()
+	row.name = "ResourceRow"
+	row.add_theme_constant_override("separation", 18)
+	vbox.add_child(row)
+	if active_row:
+		vbox.move_child(row, active_row.get_index())
+	for c: Control in [res, buff]:
+		c.reparent(row, false)
+		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		c.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		c.custom_minimum_size.x = 0
+
+	# 좌측 클러스터를 넓히고 파이프를 줄인다 (기록 제거로 파이프가 과하게 커졌다)
+	var ability := vbox.get_parent()
+	if ability is Control:
+		(ability as Control).size_flags_stretch_ratio = 1.3
+	if timeline_pipe_panel:
+		timeline_pipe_panel.size_flags_stretch_ratio = 0.9
+
+	# 비워진 자원바 행은 레이아웃에서 빼야 공간이 회수된다
+	var sb := get_node_or_null("BattleField/VBoxLayout/BottomArea/StatusBars")
+	if sb is Control:
+		(sb as Control).visible = false
+
+
+# AP는 매 카드 사용마다 보는 값이라 눈에 띄어야 한다.
+# 단 오브 크기는 건드리지 않는다 — 골드와 크기가 달라지면 UI가 들쭉날쭉해 보인다.
+# 강조는 라벨(크기·색)로만.
+func _emphasize_ap(ap_row: Node) -> void:
+	var lbl := ap_row.get_node_or_null("ApLabel")
+	if lbl is Label:
+		var l := lbl as Label
+		l.add_theme_font_size_override("font_size", 20)
+		l.add_theme_color_override("font_color", Color(0.62, 0.90, 1.0))
+
+
+# Kenney 픽셀 바 프레임을 HP 바에 씌운다.
+# 원본 16px 타일을 3배로 구운 것(=무대와 픽셀 밀도 동일). 프레임 두께 4px → 12px.
+# ×3(48px)은 화면을 너무 먹어 답답했다. 바만 ×2로 낮추고 프레임도 붉은색 → 청회색 리컬러.
+const _KENNEY_BAR_TEX := "res://assets/art/Kenny/pixel_adventure/_baked/bar_track_x2.png"
+const _KENNEY_BAR_H := 32      # 16px × 2
+const _KENNEY_BAR_INSET := 8   # 프레임 두께 4px × 2
+
+func _apply_kenney_bar(container: Control) -> void:
+	var tex := load(_KENNEY_BAR_TEX)
+	if tex == null or container.get_child_count() < 2:
+		return
+	container.custom_minimum_size.y = _KENNEY_BAR_H
+
+	var sb := StyleBoxTexture.new()
+	sb.texture = tex
+	sb.texture_margin_left = _KENNEY_BAR_INSET
+	sb.texture_margin_right = _KENNEY_BAR_INSET
+	sb.texture_margin_top = _KENNEY_BAR_INSET
+	sb.texture_margin_bottom = _KENNEY_BAR_INSET
+
+	var bg := container.get_child(0)
+	if bg is Panel:
+		(bg as Panel).texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		(bg as Panel).add_theme_stylebox_override("panel", sb)
+
+	# 채움은 프레임 안쪽으로 밀어 넣는다 (anchor_right는 비율 표현이라 그대로 둔다)
+	var fill := container.get_child(1)
+	if fill is Control:
+		var f := fill as Control
+		f.offset_left = _KENNEY_BAR_INSET
+		f.offset_right = -_KENNEY_BAR_INSET
+		f.offset_top = _KENNEY_BAR_INSET
+		f.offset_bottom = -_KENNEY_BAR_INSET
+
+
+const _BOSS_HP_X_OFFSET := 100.0   # 보스 몸통 중심 보정 (철퇴가 왼쪽으로 뻗어 있음)
+
+# 보스 HP를 보스 머리 위로 띄운다 (레퍼런스 = 적 HP가 적 위에 부유).
+# HP 바는 _create_hp_bar가 패널 '형제'로 넣으므로 라벨 패널과 바를 함께 옮긴다.
+# HP 바 생성 이후(_setup_game_context 뒤)에 호출해야 한다.
+func _float_boss_hp() -> void:
+	if boss_face_texture == null:
+		return
+	var panel := get_node_or_null("BattleField/VBoxLayout/BossInfoRight/BossHpPanel")
+	if not (panel is Control):
+		return
+	var col := panel.get_parent()
+	var idx: int = panel.get_index()
+	var bar: Node = col.get_child(idx + 1) if col.get_child_count() > idx + 1 else null
+
+	var holder := VBoxContainer.new()
+	holder.name = "BossHpFloat"
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_theme_constant_override("separation", 3)
+	add_child(holder)
+	var bf := get_node_or_null("BattleField")
+	if bf:
+		move_child(holder, bf.get_index())   # 무대 위 · HUD 아래
+
+	(panel as Control).reparent(holder, false)
+	if bar is Control:
+		(bar as Control).reparent(holder, false)
+		_apply_kenney_bar(bar as Control)
+
+	var w := 300.0   # 우측 '다음 예고' 카드와 붙지 않도록
+	holder.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	holder.custom_minimum_size = Vector2(w, 0)
+	holder.size = Vector2(w, 52)
+	# 스프라이트 중심이 아니라 '몸통' 중심에 맞춘다 — 버그베어는 철퇴가 왼쪽으로
+	# 길게 뻗어 있어 bbox 중심이 실제 덩치보다 왼쪽으로 치우친다.
+	var cx: float = boss_face_texture.position.x + boss_face_texture.size.x * 0.5 + _BOSS_HP_X_OFFSET
+	holder.position = Vector2(cx - w * 0.5, boss_face_texture.position.y - 72).round()
+
+	# 방어도 패널은 값이 0이면 빈 상자만 남으므로 초기부터 숨김
+	var sp := get_node_or_null("BattleField/VBoxLayout/BossInfoRight/BossStatusPanel")
+	if sp is Control and boss_block_label:
+		(sp as Control).visible = boss_block_label.visible
+
+
+# === ESC 메뉴 (타이틀 화면 대체) ===
+# 타이틀·캐릭터 선택 화면을 없앤 대신, 전투 중 ESC로 [계속/다시 시작/도움말/종료].
+
+var _pause_root: Control = null
+var _help_root: Control = null
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("ui_cancel"):
+		return
+	get_viewport().set_input_as_handled()
+	if _help_root and _help_root.visible:      # 도움말이 먼저 닫힌다
+		_help_root.visible = false
+	elif _pause_root and _pause_root.visible:
+		_close_pause()
+	else:
+		_open_pause()
+
+
+func _dim_layer(layer_num: int) -> Control:
+	var layer := CanvasLayer.new()
+	layer.layer = layer_num
+	add_child(layer)
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.visible = false
+	layer.add_child(root)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02, 0.03, 0.04, 0.82)
+	root.add_child(dim)
+	return root
+
+
+func _build_pause_menu() -> void:
+	_pause_root = _dim_layer(21)
+
+	var vb := VBoxContainer.new()
+	vb.set_anchors_preset(Control.PRESET_CENTER)
+	vb.offset_left = -170; vb.offset_right = 170
+	vb.offset_top = -150;  vb.offset_bottom = 150
+	vb.add_theme_constant_override("separation", 14)
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	_pause_root.add_child(vb)
+
+	var title := Label.new()
+	title.text = "일시정지"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color(0.85, 0.94, 1.0))
+	vb.add_child(title)
+
+	for item in [
+		{"label": "▶  계속하기", "fn": Callable(self, "_close_pause")},
+		{"label": "↻  다시 시작", "fn": Callable(self, "_restart_game")},
+		{"label": "📖  도움말",   "fn": Callable(self, "_show_help")},
+		{"label": "✕  종료",     "fn": Callable(self, "_quit_game")},
+	]:
+		var b := Button.new()
+		b.text = item["label"]
+		b.custom_minimum_size = Vector2(0, 52)
+		b.add_theme_font_size_override("font_size", 20)
+		b.pressed.connect(item["fn"])
+		vb.add_child(b)
+
+
+func _build_help_overlay() -> void:
+	_help_root = _dim_layer(22)
+
+	var frame := PanelContainer.new()
+	frame.set_anchors_preset(Control.PRESET_CENTER)
+	frame.offset_left = -450; frame.offset_right = 450
+	frame.offset_top = -340;  frame.offset_bottom = 340
+	frame.add_theme_stylebox_override("panel", _premium_panel())
+	_help_root.add_child(frame)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	frame.add_child(vb)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vb.add_child(scroll)
+
+	var rich := RichTextLabel.new()
+	rich.bbcode_enabled = true
+	rich.fit_content = true
+	rich.scroll_active = false
+	rich.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rich.add_theme_font_size_override("normal_font_size", 17)
+	rich.add_theme_color_override("default_color", Color(0.91, 0.85, 0.73))
+	rich.text = HelpText.BBCODE
+	scroll.add_child(rich)
+
+	var close_btn := Button.new()
+	close_btn.text = "✕ 닫기"
+	close_btn.custom_minimum_size = Vector2(0, 44)
+	close_btn.pressed.connect(func() -> void: _help_root.visible = false)
+	vb.add_child(close_btn)
+
+
+# get_tree().paused는 쓰지 않는다 — 트리를 멈추면 메뉴 버튼 자체도 처리를 멈춘다.
+# 턴제라 실제 정지가 필요 없고, 딤 오버레이(ColorRect)가 뒤쪽 입력을 막아준다.
+func _open_pause() -> void:
+	if _pause_root:
+		_pause_root.visible = true
+
+
+func _close_pause() -> void:
+	if _pause_root:
+		_pause_root.visible = false
+
+
+func _restart_game() -> void:
+	get_tree().reload_current_scene()
+
+
+func _show_help() -> void:
+	if _help_root:
+		_help_root.visible = true
+
+
+func _quit_game() -> void:
+	get_tree().quit()
 
 
 func _setup_helpers() -> void:
@@ -485,6 +910,8 @@ func _setup_game_context() -> void:
 	# HP 바 생성 (레이블 아래에 삽입)
 	_player_hp_fill = _create_hp_bar(hp_label)
 	_boss_hp_fill   = _create_hp_bar(boss_hp_label)
+	if _player_hp_fill:
+		_apply_kenney_bar(_player_hp_fill.get_parent() as Control)
 
 	# 카드 호버 프리뷰 — game_ctx + 앵커 라벨 주입
 	card_hover.setup(self, CardScene, game_ctx, boss_hp_label, block_label, hp_label)
@@ -551,6 +978,10 @@ func _on_boss_hp_changed(current: int, max_hp: int) -> void:
 func _on_boss_block_changed(block: int) -> void:
 	boss_block_label.text = "🛡 %d" % block
 	boss_block_label.visible = block > 0
+	# 라벨만 숨기면 패널 배경(빈 상자)이 남는다 — 패널째 숨긴다
+	var status_panel := boss_block_label.get_parent()
+	if status_panel is Control:
+		(status_panel as Control).visible = block > 0
 	_refresh_hand_live_previews()   # 보스 방어 차감 반영 뱃지 갱신
 
 
@@ -1575,10 +2006,12 @@ func _clear_cards() -> void:
 func _create_rage_orbs(count: int) -> void:
 	for child in rage_orbs.get_children():
 		child.queue_free()
+	rage_orbs.add_theme_constant_override("separation", 4)
 	for i in range(count):
-		var orb := ColorRect.new()
+		var orb := Panel.new()
 		orb.custom_minimum_size = Vector2(RAGE_ORB_SIZE, RAGE_ORB_SIZE)
-		orb.color = RAGE_EMPTY_COLOR
+		orb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		orb.add_theme_stylebox_override("panel", ResourceBar.orb_style(RAGE_EMPTY_COLOR, false))
 		rage_orbs.add_child(orb)
 
 
@@ -1586,37 +2019,74 @@ func _on_rage_changed(stacks: int, max_stacks: int) -> void:
 	rage_label.text = "🔥 %d/%d" % [stacks, max_stacks]
 	var orbs := rage_orbs.get_children()
 	for i in range(orbs.size()):
-		orbs[i].color = RAGE_COLOR if i < stacks else RAGE_EMPTY_COLOR
+		var lit := i < stacks
+		orbs[i].add_theme_stylebox_override("panel",
+			ResourceBar.orb_style(RAGE_COLOR if lit else RAGE_EMPTY_COLOR, lit))
 	rage_button.disabled = stacks < max_stacks
 	_refresh_hand_live_previews()   # 투기 스케일 카드 뱃지 갱신
 
 
 # === 게임 로그 시스템 ===
 
+# 원형 아이콘 버튼 — Kenney 픽셀 원형 타일(×3). 텍스처 크기와 버튼 크기를 같게 맞춰
+# 늘어남 없이 1:1로 그린다. 상태는 modulate 밝기로만 구분.
+# 32px 큰 타일 × 2 = 64px. 작은 타일(×3=48)은 너무 작았고, 크기만 늘리면 뭉개지므로
+# 더 큰 원본으로 다시 구웠다. 배율 ×2는 바(_KENNEY_BAR_TEX)와 동일 → UI 픽셀 밀도 일치.
+const _ICON_BTN_SIZE := 64
+
+func _icon_btn_box(tint: Color) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = load(_KP + "round_btn_x2.png")
+	s.modulate_color = tint
+	return s
+
+func _style_icon_button(btn: Button, glyph: String, tip: String = "") -> void:
+	btn.text = glyph
+	btn.tooltip_text = tip
+	btn.custom_minimum_size = Vector2(_ICON_BTN_SIZE, _ICON_BTN_SIZE)
+	btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER   # 늘어나면 원이 타원이 된다
+	btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	btn.add_theme_font_size_override("font_size", 26)
+	btn.add_theme_stylebox_override("normal",   _icon_btn_box(Color(1, 1, 1)))
+	btn.add_theme_stylebox_override("hover",    _icon_btn_box(Color(1.35, 1.45, 1.5)))
+	btn.add_theme_stylebox_override("pressed",  _icon_btn_box(Color(0.75, 0.82, 0.9)))
+	btn.add_theme_stylebox_override("disabled", _icon_btn_box(Color(0.5, 0.52, 0.55)))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
 func _setup_game_log() -> void:
-	# 상단바 상점 버튼 왼쪽에 [❓ 튜토리얼] [📜 기록] 순으로 배치
+	# 상단바 우측에 원형 아이콘 버튼 [❓][📜][🛒] 배치
 	if market_button and market_button.get_parent():
 		var bar: Node = market_button.get_parent()
 
 		var tut_btn := Button.new()
-		tut_btn.text = "❓ 튜토리얼"
-		tut_btn.custom_minimum_size = Vector2(120, 0)
+		_style_icon_button(tut_btn, "❓", "튜토리얼")
 		tut_btn.pressed.connect(_replay_tutorial)
 		bar.add_child(tut_btn)
 		bar.move_child(tut_btn, market_button.get_index())
 
 		_log_button = Button.new()
-		_log_button.text = "📜 기록"
-		_log_button.custom_minimum_size = Vector2(110, 0)
+		_style_icon_button(_log_button, "📜", "전투 기록")
 		_log_button.pressed.connect(_toggle_log)
 		bar.add_child(_log_button)
 		bar.move_child(_log_button, market_button.get_index())
+
+		# 상점 버튼도 동일한 원형 아이콘으로
+		_style_icon_button(market_button, "🛒", "상점")
+
+		# 상단바 컨테이너(기본 52px)가 아이콘 버튼보다 낮으면 버튼이 밖으로 넘친다
+		var top_bar := get_node_or_null("BattleField/VBoxLayout/MiddleWrapper")
+		if top_bar is Control:
+			var tb := top_bar as Control
+			var h := float(_ICON_BTN_SIZE + 8)
+			tb.custom_minimum_size.y = h
+			tb.offset_bottom = tb.offset_top + h
 	else:
 		_log_button = Button.new()
 		_log_button.text = "📜 기록"
 		_log_button.pressed.connect(_toggle_log)
 	_build_log_window()
-	_build_mini_log()
+	# 하단 미니 로그 없음 — 상단 📜 아이콘이 전체 기록 모달을 연다
 
 
 # A: 전체 로그 모달 (마켓 모달과 동일 패턴)
@@ -1677,45 +2147,6 @@ func _build_log_window() -> void:
 	_log_scroll.add_child(_log_list_vbox)
 
 
-# B: 파이프 오른쪽 미니 로그 (최근 N줄 상시 표시)
-func _build_mini_log() -> void:
-	var zones: Node = timeline_pipe_panel.get_parent() if timeline_pipe_panel else null
-	if zones == null:
-		return
-	var panel := PanelContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_FILL
-	panel.size_flags_stretch_ratio = 0.32   # 파이프 오른쪽 영역 축소 (거의 비어 슬림하게)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	panel.add_theme_stylebox_override("panel", _premium_panel())   # 기록 = Kenney 프레임 패널
-
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 4)
-	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(vb)
-
-	var title := Label.new()
-	title.text = "📜 기록"
-	title.add_theme_font_size_override("font_size", 15)
-	title.add_theme_color_override("font_color", DarkFantasyTheme.GOLD_BRIGHT)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(title)
-
-	_mini_log_label = Label.new()
-	_mini_log_label.add_theme_font_size_override("font_size", 13)
-	_mini_log_label.add_theme_color_override("font_color", DarkFantasyTheme.TEXT_DIM)
-	_mini_log_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_mini_log_label.clip_text = true
-	_mini_log_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_mini_log_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	_mini_log_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vb.add_child(_mini_log_label)
-
-	zones.add_child(panel)   # 파이프가 마지막 자식이므로 그 오른쪽에 배치됨
-
-
-# 로그 1줄 추가 — full 생략 시 short와 동일. B(미니)는 short, A(모달)는 full 표시.
 func _log(short: String, full: String = "") -> void:
 	if full == "":
 		full = short
@@ -1723,19 +2154,8 @@ func _log(short: String, full: String = "") -> void:
 	_game_log.append({"short": prefix + short, "full": prefix + full})
 	if _game_log.size() > _LOG_MAX:
 		_game_log.pop_front()
-	_update_mini_log()
 	if _log_root and _log_root.visible:
 		_refresh_log_panel()
-
-
-func _update_mini_log() -> void:
-	if _mini_log_label == null:
-		return
-	var start_i: int = maxi(0, _game_log.size() - _MINI_LOG_LINES)
-	var lines: PackedStringArray = []
-	for e in _game_log.slice(start_i):
-		lines.append(e["short"])
-	_mini_log_label.text = "\n".join(lines)
 
 
 func _toggle_log() -> void:
@@ -1867,7 +2287,7 @@ func _play_phase_transition_fx(phase: int) -> void:
 
 # 레이블 아래에 HP 바를 삽입, fill ColorRect 반환
 # PanelContainer는 다중 자식을 지원 안 하므로 조부모 레벨에 삽입
-func _create_hp_bar(label: Label) -> ColorRect:
+func _create_hp_bar(label: Label) -> Panel:
 	var insert_parent := label.get_parent()
 	var insert_index  := label.get_index() + 1
 	if insert_parent is PanelContainer:
@@ -1875,40 +2295,63 @@ func _create_hp_bar(label: Label) -> ColorRect:
 		insert_parent = insert_parent.get_parent()
 
 	var container := Control.new()
-	container.custom_minimum_size = Vector2(0, 9)
+	container.custom_minimum_size = Vector2(0, _HP_BAR_H)
 	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	insert_parent.add_child(container)
 	insert_parent.move_child(container, insert_index)
 
-	# 배경
-	var bg := ColorRect.new()
+	# 홈(트랙) — 어두운 라운드 배경
+	var bg := Panel.new()
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = Color(0.12, 0.04, 0.04, 0.9)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.add_theme_stylebox_override("panel", _hp_track_style())
 	container.add_child(bg)
 
 	# 채움 (anchor_right로 비율 표현)
-	var fill := ColorRect.new()
+	var fill := Panel.new()
 	fill.anchor_left   = 0.0
 	fill.anchor_right  = 1.0
 	fill.anchor_top    = 0.0
 	fill.anchor_bottom = 1.0
-	fill.color = Color(0.15, 0.82, 0.2, 1)
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fill.add_theme_stylebox_override("panel", _hp_fill_style(_HP_GREEN))
 	container.add_child(fill)
 
 	return fill
 
 
-func _update_hp_bar(fill: ColorRect, current: int, max_hp: int) -> void:
+# HP 바 = 납작한 ColorRect가 아니라 둥근 트랙 + 발광 채움.
+# (Kenney 팩엔 바 에셋이 없고, 9-slice 프레임은 얇은 바에서 깨진다 — GDD 이력 참조)
+func _hp_track_style() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.05, 0.05, 0.07, 0.92)
+	s.set_corner_radius_all(roundi(_HP_BAR_H / 2.0))
+	s.border_color = Color(0, 0, 0, 0.6)
+	s.set_border_width_all(1)
+	return s
+
+
+func _hp_fill_style(c: Color) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = c
+	s.set_corner_radius_all(roundi(_HP_BAR_H / 2.0))
+	s.shadow_color = Color(c.r, c.g, c.b, 0.40)
+	s.shadow_size = 4
+	return s
+
+
+func _update_hp_bar(fill: Panel, current: int, max_hp: int) -> void:
 	if fill == null:
 		return
 	var ratio := clampf(float(current) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 0.0
 	fill.anchor_right = ratio
-	if ratio > 0.6:
-		fill.color = Color(0.15, 0.82, 0.2,  1)   # 초록
-	elif ratio > 0.3:
-		fill.color = Color(0.95, 0.78, 0.08, 1)   # 노랑
-	else:
-		fill.color = Color(0.95, 0.2,  0.1,  1)   # 빨강
+	var c := _HP_GREEN
+	if ratio <= 0.3:
+		c = Color(0.95, 0.24, 0.14)
+	elif ratio <= 0.6:
+		c = Color(0.95, 0.78, 0.08)
+	fill.add_theme_stylebox_override("panel", _hp_fill_style(c))
 
 
 # === 게임 종료 ===

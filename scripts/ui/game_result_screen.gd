@@ -33,4 +33,5 @@ func show_result(is_win: bool) -> void:
 
 
 func _on_restart_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/main/title_screen.tscn")
+	# 타이틀 화면을 없앴으므로 전투를 바로 다시 시작한다
+	get_tree().reload_current_scene()

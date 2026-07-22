@@ -35,3 +35,7 @@ Thumbs.db
 /index.apple-touch-icon.png
 /index.audio.worklet.js
 /index.audio.position.worklet.js
+
+# Python (tools/)
+__pycache__/
+*.pyc
