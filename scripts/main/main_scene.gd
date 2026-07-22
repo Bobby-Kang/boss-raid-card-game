@@ -273,13 +273,18 @@ func _apply_premium_ui() -> void:
 	_apply_boss_hud_glass()
 	_style_end_turn_button()
 
+	# 보스 정보 컬럼을 좌측 상점 스트립과 같은 높이에서 시작하도록 (좌우 대칭)
+	var binfo := get_node_or_null("BattleField/VBoxLayout/BossInfoRight")
+	if binfo is Control:
+		(binfo as Control).offset_top = _STRIP_TOP_Y
+
 	# 마켓은 중앙 팝업이 아니라 **좌측 스트립 옆에서 펼쳐지는 드로어**.
 	# 씬 기본은 1440×600 중앙 정렬이라 화면을 가리는 모달이었다.
 	var mframe_size := get_node_or_null("MarketWindow/MarketFrame")
 	if mframe_size is Control:
 		var mf := mframe_size as Control
 		mf.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		mf.position = Vector2(_MARKET_STRIP_W + 28, 86)   # 스트립 오른쪽에 붙임
+		mf.position = Vector2(_MARKET_STRIP_W + 28, _STRIP_TOP_Y)   # 스트립 오른쪽에 붙임
 		mf.size = Vector2(880, 500)
 		mf.pivot_offset = Vector2(0, 40)                  # 자세히 버튼 쪽에서 자라나게
 
@@ -502,6 +507,11 @@ func play_anim_once(anim: String) -> void:
 	_anim_cur = anim
 	_anim_idx = 0
 	_anim_once = true
+	# 다음 타이머 틱을 기다리면 idle 간격(6fps=167ms)만큼 늦게 시작한다.
+	# 카드를 낸 즉시 반응하도록 첫 프레임을 바로 그리고 타이머를 재시작.
+	_anim_tick()
+	if _anim_timer:
+		_anim_timer.start(1.0 / _fps_for(anim))
 
 
 func _anim_tick() -> void:
@@ -912,6 +922,7 @@ func _quit_game() -> void:
 # 자세한 카드는 상점 버튼으로 풀사이즈 모달을 연다.
 # 골드가 턴마다 증발하는 게임이라 "지금 뭘 살 수 있나"가 상시 보여야 한다.
 const _MARKET_STRIP_W := 232.0
+const _STRIP_TOP_Y := 86.0   # 좌측 상점 스트립 / 우측 보스 정보 공통 상단 y
 var _market_rows: Array = []
 
 func _build_market_strip() -> void:
@@ -920,7 +931,7 @@ func _build_market_strip() -> void:
 	var panel := PanelContainer.new()
 	panel.name = "MarketStrip"
 	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	panel.position = Vector2(16, 86)
+	panel.position = Vector2(16, _STRIP_TOP_Y)
 	panel.custom_minimum_size = Vector2(_MARKET_STRIP_W, 0)
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0.045, 0.05, 0.065, 0.82)
@@ -974,6 +985,10 @@ func _build_market_strip() -> void:
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_lbl.add_theme_font_size_override("font_size", 13)
 		name_lbl.clip_text = true
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
+		var lane_i := i
+		name_lbl.mouse_entered.connect(func() -> void: _strip_hover(lane_i, name_lbl, true))
+		name_lbl.mouse_exited.connect(func() -> void: _strip_hover(lane_i, name_lbl, false))
 		row.add_child(name_lbl)
 
 		var buy := Button.new()
@@ -984,6 +999,32 @@ func _build_market_strip() -> void:
 
 		_market_rows.append({"name": name_lbl, "buy": buy})
 	_refresh_market_strip()
+
+
+# 스트립 카드명 호버 → 파이프 행과 같은 풀사이즈 카드 프리뷰.
+# 프리뷰 헬퍼가 Card 노드를 요구하므로 CardData로 임시 카드를 만들어 넘긴다.
+var _strip_hover_card: Control = null
+
+func _strip_hover(lane: int, anchor: Control, entered: bool) -> void:
+	if card_hover == null or market_panel == null:
+		return
+	if not entered:
+		card_hover.clear_pipe_card_preview()
+		if _strip_hover_card and is_instance_valid(_strip_hover_card):
+			_strip_hover_card.queue_free()
+		_strip_hover_card = null
+		return
+	var lanes: Array = market_panel.lane_cards
+	if lane >= lanes.size() or lanes[lane] == null:
+		return
+	var tmp: Control = CardScene.instantiate()
+	tmp.data = lanes[lane]
+	tmp.is_face_up = true
+	tmp.visible = false
+	tmp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(tmp)
+	_strip_hover_card = tmp
+	card_hover.on_pipe_row_hover(tmp, anchor, true)
 
 
 func _refresh_market_strip() -> void:
@@ -2804,102 +2845,111 @@ func _play_card_impact(card: Control) -> void:
 				combat_fx.shake_screen(5.0, 0.18)
 		if has_block and combat_fx:
 			combat_fx.flash_buff(player_face_texture, Color(0.5, 0.85, 1.4, 1))
+			_spawn_guard_fx(player_face_texture)
 		if has_gold:
 			_spawn_floating_text("💰", Color(0.95, 0.82, 0.35, 1), player_face_texture)
 		if adj_bonus:
 			var anchor: Control = target if target else boss_face_texture
 			_spawn_floating_text("⚡ 연계!", Color(1.0, 0.9, 0.4, 1), anchor)
 
-	# 돌진은 "타격" 연출 — 공격/방어처럼 대상이 있을 때만.
-	# 골드·드로우·조작 등 비전투 카드는 돌진 없이 팝업만 (어색한 큰 잔상 방지)
-	if target != null:
-		# 대상이 보스면 공격 모션 (방어·버프는 자기 대상이라 제외)
-		if target == boss_face_texture:
-			play_anim_once("attack")
-		_spawn_card_lunge(card, target, on_impact)
+	# 카드 잔상 돌진은 제거했다 — 나이트가 실제 공격 모션을 연기하므로 역할이
+	# 겹치고, 잔상이 코믹 카드아트라 픽셀 무대와 충돌했다.
+	# 대신 임팩트를 **모션의 타격 프레임**에 맞춰 호출한다.
+	if target == boss_face_texture:
+		play_anim_once("attack")
+		_call_at_impact_frame(on_impact)
+	elif target != null:
+		# 방어·버프 — 막기 모션의 방패를 드는 프레임에 맞춘다
+		play_anim_once("defend")
+		_call_after(on_impact, _DEFEND_IMPACT_FRAME / _ANIM_FPS)
 	else:
 		on_impact.call()
 
 
-# 카드 잔상이 손패에서 대상으로 빠르게 돌진했다 사라지는 연출 (경쾌·타격감)
-func _spawn_card_lunge(card: Control, target: Control, on_impact: Callable) -> void:
-	if card == null or not card.data:
-		on_impact.call()
+# 모션에서 실제 타격/방어가 일어나는 프레임에 맞춰 호출한다.
+# 12fps 기준 2프레임 ≈ 0.17초 — 카드를 낸 직후 반응하는 느낌.
+const _ATTACK_IMPACT_FRAME := 2   # 검이 닿는 프레임 (6프레임 중)
+const _DEFEND_IMPACT_FRAME := 2   # 방패를 올리는 프레임 (6프레임 중)
+
+func _call_at_impact_frame(cb: Callable) -> void:
+	_call_after(cb, _ATTACK_IMPACT_FRAME / _ANIM_FPS)
+
+
+func _call_after(cb: Callable, delay: float) -> void:
+	if delay <= 0.0:
+		cb.call()
 		return
-	# 시작점 = 전사 얼굴 (카드를 휘두르는 주체). 없으면 플레이존(무대 중앙) → 손패 순 폴백.
-	var start: Vector2
-	if player_face_texture != null and is_instance_valid(player_face_texture):
-		start = player_face_texture.get_global_rect().get_center() - global_position
-	elif play_drop_zone != null:
-		start = play_drop_zone.get_global_rect().get_center() - global_position
-	else:
-		start = card.get_global_rect().get_center() - global_position
-	var dest: Vector2 = start
-	if target != null and is_instance_valid(target):
-		dest = target.get_global_rect().get_center() - global_position
-	else:
-		dest = start + Vector2(0, -130)   # 파이프(상단) 방향으로 가볍게
-
-	# 손패 카드 크기의 2배로 (card.size 우선, 없으면 custom_minimum_size 폴백)
-	var ghost_size: Vector2 = card.size if card.size.length() > 1.0 else card.custom_minimum_size
-	if ghost_size.length() < 1.0:
-		ghost_size = Vector2(144, 204)
-	ghost_size *= 2.0
-	var half := ghost_size * 0.5
-	var ghost := TextureRect.new()
-	ghost.texture = card.data.artwork
-	ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	ghost.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ghost.z_index = 145
-	add_child(ghost)
-	# add_child 후 anchor·size 강제 (레이아웃이 size를 텍스처 원본으로 키우는 것 방지)
-	ghost.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	ghost.custom_minimum_size = ghost_size
-	ghost.size = ghost_size
-	ghost.pivot_offset = half
-	ghost.position = start - half
-	ghost.modulate = Color(1, 1, 1, 0.92)
-
-	# 제자리(방어 등)면 더 오래 보여주고, 멀리 돌진(공격)이면 빠른 타격감
-	var stationary: bool = start.distance_to(dest) < 30.0
-	var hold: float = 0.4 if stationary else 0.06
-	var fade: float = 0.3 if stationary else 0.16
-
-	# 대상 70% 지점까지 가속 돌진 → 착지 임팩트 → 체류 → 페이드아웃
-	var land: Vector2 = start.lerp(dest, 0.7) - half
-	var tween := create_tween()
-	tween.tween_property(ghost, "position", land, 0.16).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_callback(on_impact)
-	tween.tween_interval(hold)
-	tween.tween_property(ghost, "modulate:a", 0.0, fade)
-	tween.tween_callback(ghost.queue_free)
+	var t := get_tree().create_timer(delay)
+	t.timeout.connect(func() -> void: cb.call())
 
 
-# 보스 얼굴을 가로지르는 대각선 슬래시 연출
+# 픽셀 이펙트 공통 — 6배 격자에 맞춘 정사각 파티클.
+# 부드러운 Line2D/원형 대신 '픽셀 덩어리'를 써야 무대와 톤이 맞는다.
+const _FX_PX := 6          # 이펙트 1픽셀 = 화면 6px (_PIXEL_SCALE과 동일)
+
+func _fx_pixel(pos: Vector2, size_px: int, color: Color, z: int = 150) -> ColorRect:
+	var r := ColorRect.new()
+	r.color = color
+	r.size = Vector2(size_px, size_px) * _FX_PX
+	r.position = (pos - r.size * 0.5).round()
+	r.z_index = z
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(r)
+	return r
+
+
+# 공격 — 대각 슬래시를 '픽셀 계단'으로 그린다. 굵기가 가운데서 두껍고 끝이 얇다.
 func _spawn_slash_fx(target: Control) -> void:
 	if target == null:
 		return
 	var rect := target.get_global_rect()
 	var center := rect.get_center() - global_position
-	var half := rect.size * 0.42
-	var line := Line2D.new()
-	line.width = 7.0
-	line.default_color = Color(1, 1, 1, 0.95)
-	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	line.z_index = 150
-	line.add_point(center + Vector2(-half.x, -half.y))
-	line.add_point(center + Vector2(half.x, half.y))
-	add_child(line)
-	# 짧게 번쩍였다 사라짐
-	line.modulate.a = 0.0
-	var tween := create_tween()
-	tween.tween_property(line, "modulate:a", 1.0, 0.05)
-	tween.tween_property(line, "modulate:a", 0.0, 0.22).set_ease(Tween.EASE_IN)
-	tween.tween_callback(line.queue_free)
+	var reach: float = minf(rect.size.x, rect.size.y) * 0.46
+	var steps := 9
+	var parts: Array[ColorRect] = []
+	for i in range(steps):
+		var t := float(i) / float(steps - 1)          # 0..1
+		var along := lerpf(-reach, reach, t)
+		# 가운데가 굵은 칼자국 (끝으로 갈수록 얇게)
+		var thick := 3 if absf(t - 0.5) < 0.18 else (2 if absf(t - 0.5) < 0.36 else 1)
+		var p := center + Vector2(along, along * 0.85)
+		var col := Color(1, 0.97, 0.88) if thick >= 2 else Color(0.75, 0.9, 1.0)
+		var px := _fx_pixel(p, thick, col)
+		px.modulate.a = 0.0
+		parts.append(px)
+
+	# 칼이 지나가듯 순차 점등 → 일괄 소멸
+	for i in range(parts.size()):
+		var pxr := parts[i]
+		var tw := create_tween()
+		tw.tween_interval(i * 0.012)
+		tw.tween_property(pxr, "modulate:a", 1.0, 0.02)
+		tw.tween_interval(0.06)
+		tw.tween_property(pxr, "modulate:a", 0.0, 0.14).set_ease(Tween.EASE_IN)
+		tw.tween_callback(pxr.queue_free)
 	AudioManager.play_sfx("combat.hit_boss", -3.0, 0.1)
+
+
+# 방어 — 대상 주위로 픽셀 조각이 퍼졌다 모이는 방패막
+func _spawn_guard_fx(target: Control) -> void:
+	if target == null:
+		return
+	var rect := target.get_global_rect()
+	var center := rect.get_center() - global_position
+	var radius: float = minf(rect.size.x, rect.size.y) * 0.42
+	var count := 10
+	for i in range(count):
+		var ang := TAU * float(i) / float(count) - PI * 0.5
+		var dir := Vector2(cos(ang), sin(ang) * 0.8)
+		var px := _fx_pixel(center + dir * radius * 1.35, 2, Color(0.62, 0.88, 1.0))
+		px.modulate.a = 0.0
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(px, "modulate:a", 1.0, 0.08)
+		tw.tween_property(px, "position",
+			(center + dir * radius - px.size * 0.5).round(), 0.18)			.set_ease(Tween.EASE_OUT)
+		tw.chain().tween_property(px, "modulate:a", 0.0, 0.2)
+		tw.tween_callback(px.queue_free)
+	AudioManager.play_sfx("ui.button", -6.0, 0.1)
 
 
 # 앵커 노드 위에 잠깐 떠올랐다 사라지는 강조 텍스트 (공통 헬퍼)

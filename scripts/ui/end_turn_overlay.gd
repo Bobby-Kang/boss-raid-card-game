@@ -4,6 +4,7 @@ signal order_confirmed(ordered_cards: Array[Control])
 signal cancelled
 
 const CardScene := preload("res://scenes/cards/card.tscn")
+const MAX_PER_ROW := 5   # 한 줄에 놓을 카드 수
 
 @onready var dim_bg: ColorRect = $DimBackground
 @onready var card_row: HFlowContainer = $DimBackground/CenterVBox/CardRow
@@ -29,6 +30,57 @@ func _ready() -> void:
 	cancel_button.pressed.connect(_on_cancel)
 	confirm_button.disabled = true
 	visible = false
+	_build_frame()
+
+
+# 내용을 액자로 감싼다. @onready 참조는 이미 해결된 뒤라 재부모화해도 살아있다.
+# 씬 기본은 1360×680 고정이라 버튼이 손패 위까지 내려가 겹쳐 보였다 → 내용에 맞춰 축소.
+func _build_frame() -> void:
+	var vbox := $DimBackground/CenterVBox as Control
+	if vbox == null:
+		return
+	dim_bg.color = Color(0.02, 0.025, 0.035, 0.86)
+
+	var frame := PanelContainer.new()
+	frame.name = "Frame"
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.055, 0.065, 0.085, 0.97)
+	box.border_color = Color(0.45, 0.72, 0.95, 0.85)
+	box.set_border_width_all(1)
+	box.set_corner_radius_all(8)
+	box.set_content_margin_all(24)
+	box.shadow_color = Color(0.2, 0.5, 0.75, 0.28)
+	box.shadow_size = 14
+	frame.add_theme_stylebox_override("panel", box)
+
+	# CenterContainer로 감싼다 — 내용 크기가 매번 달라지므로 앵커/오프셋으로
+	# 중앙을 맞추면 어긋난다(좌상단에 박히는 버그가 있었다).
+	var center := CenterContainer.new()
+	center.name = "FrameCenter"
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim_bg.add_child(center)
+	center.add_child(frame)
+
+	vbox.reparent(frame, false)
+	# 내용 크기에 맞춰 줄어들도록 (고정 오프셋 해제)
+	vbox.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	vbox.custom_minimum_size = Vector2.ZERO
+	vbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_theme_constant_override("separation", 18)
+
+	# 제목 강조
+	info_label.add_theme_font_size_override("font_size", 22)
+	info_label.add_theme_color_override("font_color", Color(0.85, 0.94, 1.0))
+
+	# 버튼을 가운데로 + 여유 크기
+	var brow := vbox.get_node_or_null("ButtonRow")
+	if brow is HBoxContainer:
+		(brow as HBoxContainer).alignment = BoxContainer.ALIGNMENT_CENTER
+		(brow as HBoxContainer).add_theme_constant_override("separation", 14)
+	for b in [confirm_button, cancel_button]:
+		b.custom_minimum_size = Vector2(150, 46)
+		b.add_theme_font_size_override("font_size", 18)
 
 
 ## 전체 선택 모드 (턴 종료용)
@@ -67,6 +119,11 @@ func _open(hand_cards: Array[Control], required: int, prompt_verb: String = "버
 	var slot_h: int = int(212 * card_scale)
 	var order_font: int = maxi(int(44 * card_scale), 22)
 
+	# 한 줄에 최대 5장 — HFlowContainer는 부모 폭에 맞춰 접히므로 폭을 직접 준다.
+	# (액자가 내용에 맞춰 줄어들다 보니 2장씩 접혀 세로로 길어졌었다)
+	var sep := card_row.get_theme_constant("h_separation")
+	card_row.custom_minimum_size.x = slot_w * MAX_PER_ROW + sep * (MAX_PER_ROW - 1)
+
 	for i in range(_original_cards.size()):
 		var card: Control = _original_cards[i]
 
@@ -81,6 +138,28 @@ func _open(hand_cards: Array[Control], required: int, prompt_verb: String = "버
 		preview.position = Vector2.ZERO
 		slot.add_child(preview)
 
+		# 순서 뱃지 — 평평한 글자 대신 입체 원형 메달 (그림자 + 금테 + 하이라이트)
+		var badge_d: int = maxi(int(order_font * 1.5), 40)
+		var badge := Panel.new()
+		badge.name = "OrderBadge"
+		badge.custom_minimum_size = Vector2(badge_d, badge_d)
+		badge.size = Vector2(badge_d, badge_d)
+		# 앵커 프리셋 + 수동 position을 섞으면 위치가 어긋난다 → TOP_LEFT 고정 후 직접 배치
+		badge.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		badge.position = ((Vector2(slot_w, slot_h) - Vector2(badge_d, badge_d)) * 0.5).round()
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.visible = false
+		var bstyle := StyleBoxFlat.new()
+		bstyle.bg_color = Color(0.16, 0.12, 0.04, 0.96)
+		bstyle.set_corner_radius_all(roundi(badge_d / 2.0))
+		bstyle.border_color = Color(1.0, 0.82, 0.32)
+		bstyle.set_border_width_all(3)
+		bstyle.shadow_color = Color(0, 0, 0, 0.75)     # 아래로 떨어지는 그림자 = 떠 있는 느낌
+		bstyle.shadow_size = 8
+		bstyle.shadow_offset = Vector2(0, 4)
+		badge.add_theme_stylebox_override("panel", bstyle)
+		slot.add_child(badge)
+
 		var order_label := Label.new()
 		order_label.name = "OrderLabel"
 		order_label.text = ""
@@ -88,12 +167,15 @@ func _open(hand_cards: Array[Control], required: int, prompt_verb: String = "버
 		order_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		order_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		order_label.add_theme_font_size_override("font_size", order_font)
-		order_label.add_theme_color_override("font_color", Color(1, 1, 0, 1))
-		order_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-		order_label.add_theme_constant_override("shadow_offset_x", 2)
-		order_label.add_theme_constant_override("shadow_offset_y", 2)
+		order_label.add_theme_color_override("font_color", Color(1.0, 0.93, 0.62))
+		# 검은 외곽선 + 아래 그림자 → 글자가 뱃지 위로 솟아 보인다
+		order_label.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.0))
+		order_label.add_theme_constant_override("outline_size", 6)
+		order_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+		order_label.add_theme_constant_override("shadow_offset_x", 0)
+		order_label.add_theme_constant_override("shadow_offset_y", 3)
 		order_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slot.add_child(order_label)
+		badge.add_child(order_label)
 
 		var click_btn := Button.new()
 		click_btn.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -118,25 +200,32 @@ func _on_slot_clicked(index: int) -> void:
 		_order_sequence.resize(pos)
 		_current_order = _order_sequence.size()
 		for r_idx in removed:
-			var label: Label = _preview_slots[r_idx].get_node("OrderLabel")
-			label.text = ""
+			_set_order_badge(r_idx, 0)
 	else:
 		# N장 모드에서 이미 필요한 만큼 선택했으면 무시
 		if _required_count > 0 and _order_sequence.size() >= _required_count:
 			return
 		_order_sequence.append(index)
 		_current_order += 1
-		var label: Label = _preview_slots[index].get_node("OrderLabel")
-		label.text = str(_current_order)
+		_set_order_badge(index, _current_order)
 
 	_update_ui()
 
 
+# 순서 뱃지 갱신 — n이 0이면 숨긴다
+func _set_order_badge(slot_index: int, n: int) -> void:
+	var badge := _preview_slots[slot_index].get_node_or_null("OrderBadge")
+	if badge == null:
+		return
+	badge.visible = n > 0
+	var label := badge.get_node_or_null("OrderLabel")
+	if label is Label:
+		(label as Label).text = str(n) if n > 0 else ""
+
+
 func _update_ui() -> void:
 	for i in range(_order_sequence.size()):
-		var idx := _order_sequence[i]
-		var label: Label = _preview_slots[idx].get_node("OrderLabel")
-		label.text = str(i + 1)
+		_set_order_badge(_order_sequence[i], i + 1)
 
 	var total: int = _original_cards.size() if _required_count < 0 else _required_count
 	var selected := _order_sequence.size()
